@@ -8,12 +8,14 @@ import socket
 import subprocess
 import sys
 import time
+from contextlib import suppress
 from pathlib import Path
 
 from draco_roundtrip.utils import ensure_directory, resolve_executable
 from draco_roundtrip.utils.protocol import (
     Message,
     MSG_DATA,
+    MSG_EOF,
     MSG_ERROR,
     recv_message,
     send_message,
@@ -26,13 +28,20 @@ def decode_drc(decoder: Path, drc_bytes: bytes, out_dir: Path, stem: str) -> byt
     ply_path = out_dir / f"{stem}.decoded.ply"
     drc_path.write_bytes(drc_bytes)
     cmd = [str(decoder), "-i", str(drc_path), "-o", str(ply_path)]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"draco_decoder failed (rc={proc.returncode}):\n"
-            f"STDOUT: {proc.stdout.strip()}\nSTDERR: {proc.stderr.strip()}"
-        )
-    return ply_path.read_bytes()
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"draco_decoder failed (rc={proc.returncode}):\n"
+                f"STDOUT: {proc.stdout.strip()}\nSTDERR: {proc.stderr.strip()}"
+            )
+        return ply_path.read_bytes()
+    finally:
+        # NOTE: Clean up intermediate artifacts to keep long-lived servers tidy.
+        with suppress(FileNotFoundError):
+            drc_path.unlink()
+        with suppress(FileNotFoundError):
+            ply_path.unlink()
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -54,7 +63,14 @@ def main(argv: list[str] | None = None) -> None:
     bytes_in = 0
     bytes_out = 0
 
-    with socket.create_server((args.host, args.port), reuse_port=True) as server:
+    try:
+        server = socket.create_server((args.host, args.port), reuse_port=True)
+    except OSError as exc:
+        # NOTE: Retry without SO_REUSEPORT for platforms lacking the option.
+        print(f"[SERVER] WARN: reuse_port failed ({exc}), retrying without it")
+        server = socket.create_server((args.host, args.port))
+
+    with server:
         print(f"[SERVER] Listening on {args.host}:{args.port}")
         conn, addr = server.accept()
         print(f"[SERVER] Connection from {addr}")
@@ -63,6 +79,10 @@ def main(argv: list[str] | None = None) -> None:
                 msg = recv_message(conn)
                 if msg is None:
                     print("[SERVER] End of stream")
+                    break
+                if msg.kind == MSG_EOF:
+                    print("[SERVER] Received EOF marker from client")
+                    send_message(conn, Message(kind=MSG_EOF, name="", payload=b""))
                     break
                 if msg.kind != MSG_DATA:
                     print(f"[SERVER] Ignoring unexpected message kind: {msg.kind}")

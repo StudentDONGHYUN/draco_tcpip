@@ -132,14 +132,11 @@ def _candidate_config_roots(
             )
 
     here = Path(__file__).resolve()
-    roots.extend(
-        [
-            here.parents[2] / "configs",
-            here.parents[3] / "configs",
-            here.parents[5] / "configs",
-            Path.cwd() / "configs",
-        ]
-    )
+    for depth in (2, 3, 5):
+        if depth < len(here.parents):
+            # NOTE: Guard against shallow installs where the indexed parent is missing.
+            roots.append(here.parents[depth] / "configs")
+    roots.append(Path.cwd() / "configs")
 
     seen: set[Path] = set()
     unique_roots: list[Path] = []
@@ -240,11 +237,10 @@ def _default_data_root(profile: ProfileConfig | None) -> Path:
         return cwd_data
 
     here = Path(__file__).resolve()
-    for candidate in (
-        here.parents[5] / "data",
-        here.parents[4] / "data",
-    ):
-        candidate = candidate.resolve()
+    for depth in (5, 4):
+        if depth >= len(here.parents):
+            continue
+        candidate = (here.parents[depth] / "data").resolve()
         if _can_use_directory(candidate, allow_create=True):
             return candidate
 
