@@ -5,7 +5,7 @@
 ## 1. 공용 유틸리티 정합성 검증
 - [ ] `draco_roundtrip/utils/{protocol, executable, ply_io, metrics}.py`가 스트리밍 노드(`nodes/`), CLI(`cli/`), 툴(`tools/`) 전반에서 일관되게 사용되는지 코드 감사 및 문서화한다. → 모든 호출부에 대한 참조 표 업데이트.
 - [x] `draco_tools/core/encoder.py`를 단일 진입점으로 사용하도록 `draco_roundtrip.nodes.stream_client`와 `draco_tools.cli.encode_ply_to_draco`가 동일 함수 시그니처를 호출하도록 리팩토링한다. → 중복 옵션 파싱 제거, 통합된 로그 포맷 문서화. (PR: encoder CLI helper + shared log formatter, 테스트: `tests/test_core_encoder_cli.py`)
-- [ ] `draco_roundtrip/utils/config.py`가 QoS override, 출력 디렉터리, 프로필 파일을 단일 소스로 관리하도록 확장한다. → `offline_pipeline`, `stream_client`, 쉘 스크립트에서 해당 헬퍼를 사용하도록 수정하고 회귀 테스트.
+- [x] `draco_roundtrip/utils/config.py`가 QoS override, 출력 디렉터리, 프로필 파일을 단일 소스로 관리하도록 확장한다. → `offline_pipeline`, `stream_client`, 쉘 스크립트에서 해당 헬퍼를 사용하도록 수정하고 회귀 테스트. (PR: 레이아웃 프로필 헬퍼, 테스트: `tests/test_utils_config.py`)
 
 ## 2. 테스트 및 품질 보증 체계
 - [x] `ros2_ws/src/draco_roundtrip/tests/` 디렉터리를 생성하고 TCP 프로토콜, PLY 로딩, metric 계산에 대한 단위 테스트를 추가한다. → `colcon test` 통과 여부를 CI에 등록. (테스트 파일: `test_utils_protocol.py`, `test_utils_ply_io.py`, `test_utils_metrics.py`, `pytest.ini`)

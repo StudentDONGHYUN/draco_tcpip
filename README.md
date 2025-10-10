@@ -66,7 +66,8 @@ ros2 run draco_roundtrip stream_client \
     --topic /sensing/lidar/top/pointcloud \
     --prefix cycle_sample
 ```
-- QoS override는 기본적으로 `configs/qos_override.yaml`을 참조합니다. 필요 시 `--qos-override`로 다른 파일을 지정할 수 있습니다.
+- QoS override는 기본적으로 `configs/qos_override.yaml`을 참조합니다. 필요 시 `--qos-override`로 다른 파일을 지정하거나 레이아웃 프로필에서 `qos_override`를 정의할 수 있습니다.
+- `--layout-profile`을 지정하면 `configs/*.profile.yaml|json`에 정의된 데이터 루트와 디렉터리 구성이 적용됩니다. `--data-root`, `--ply-dir`, `--work-dir`, `--decoded-dir`를 통해 필요한 경로만 덮어쓸 수 있습니다.
 - `--encoder`, `--decoder` 옵션으로 Draco 실행 파일 경로를 직접 지정할 수 있으며, `--cl`, `--qp`, `--qg`로 압축 품질을 조정할 수 있습니다.
 - 수신/복원된 포인트클라우드는 `stream_pair/source`, `stream_pair/decoded` 토픽으로 퍼블리시됩니다.
 
@@ -75,7 +76,7 @@ ros2 run draco_roundtrip stream_client \
 ros2 run draco_tools encode_ply_to_draco --input data/ply_stream --out data/drc
 ros2 run draco_tools offline_pipeline --bag /path/to/rosbag_directory --config configs/draco.json
 ```
-위 명령은 PLY → Draco 변환 및 품질 분석 리포트를 생성합니다. 상세 옵션은 `--help`로 확인하세요.
+위 명령은 PLY → Draco 변환 및 품질 분석 리포트를 생성합니다. `offline_pipeline`도 `--layout-profile`, `--data-root`, `--ply-dir` 등 동일한 디렉터리 헬퍼를 사용하므로 스트리밍 환경과 동일한 결과 디렉터리를 간편하게 재사용할 수 있습니다. 상세 옵션은 `--help`로 확인하세요.
 
 ### 4. SLAM 연계 런치
 ```bash
@@ -87,6 +88,7 @@ ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
 - `docs/HOWTO.md`: 세부 운영 시나리오와 환경 설정 가이드
 - `docs/3d_slam_setup.md`: SLAM 연동 구성 절차
 - `docs/encoder_cli.md`: Draco 인코더 CLI 헬퍼와 통합 로그 포맷 가이드
+- `docs/layout_profiles.md`: 디렉터리/프로필 설정 규칙과 예시
 - `docs/results_template.md`: 실험 결과 정리 템플릿
 - `refac.md`: 현재 진행 중인 리팩토링 제안 및 단계별 목표
 

@@ -23,7 +23,7 @@ from draco_tools.core.encoder import (
 )
 from draco_roundtrip.analysis.metrics import compute_basic_metrics
 from draco_roundtrip.io.ply_codec import load_xyz, load_xyz_from_bytes
-from draco_roundtrip.utils import ensure_directory, resolve_qos_override
+from draco_roundtrip.utils.config import resolve_data_layout, resolve_qos_override
 from draco_roundtrip.net.protocol import (
     ConnectionClosed,
     Message,
@@ -36,10 +36,10 @@ from draco_roundtrip.ros.playback import start_playback_thread
 
 
 
-def launch_bag_to_ply(args: argparse.Namespace) -> subprocess.Popen:
+def launch_bag_to_ply(args: argparse.Namespace, ply_dir: Path) -> subprocess.Popen:
     cmd = [sys.executable, '-m', 'draco_roundtrip.io.bag_recorder',
            '--topic', args.topic,
-           '--out', str(Path(args.ply_dir).resolve()),
+           '--out', str(ply_dir),
            '--prefix', args.prefix,
            '--idle-timeout-sec', str(args.idle_timeout)]
     if args.best_effort:
@@ -54,7 +54,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--bag', required=True)
     ap.add_argument('--topic', required=True)
     ap.add_argument('--prefix', required=True)
-    ap.add_argument('--ply-dir', default='data/ply_stream')
+    ap.add_argument('--layout-profile', default=None,
+                    help='Name or path of a layout profile (configs/*.profile.{yaml,json})')
+    ap.add_argument('--data-root', default=None,
+                    help='Base directory for generated artifacts (overrides profile/data root)')
+    ap.add_argument('--ply-dir', default=None,
+                    help='Override the spool directory for captured PLY frames')
     add_encoder_arguments(
         ap,
         hint_option='--encoder',
@@ -65,35 +70,55 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--idle-timeout', type=float, default=10.0)
     ap.add_argument('--max-frames', type=int, default=0)
     ap.add_argument('--best-effort', action='store_true')
-    ap.add_argument('--work-dir', default='data/client_tmp')
-    ap.add_argument('--decoded-dir', default='data/decoded_from_server')
+    ap.add_argument('--work-dir', default=None,
+                    help='Override temporary directory for encoder scratch data')
+    ap.add_argument('--decoded-dir', default=None,
+                    help='Override directory where decoded frames from the server are stored')
     ap.add_argument('--server-host', default='127.0.0.1')
     ap.add_argument('--server-port', type=int, default=5000)
     ap.add_argument('--play-frame-id', default='lidar_link')
     ap.add_argument('--play-topic-prefix', default='stream_pair')
     ap.add_argument('--play-hz', type=float, default=10.0)
     ap.add_argument('--play-sample', type=int, default=50000)
+    ap.add_argument('--qos-override', default=None,
+                    help='Override QoS profile file. Defaults to layout profile or package configs')
     return ap
 
 
 def main(argv: Iterable[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
 
+    layout = resolve_data_layout(
+        {
+            'ply_dir': 'ply_stream',
+            'work_dir': 'client_work',
+            'decoded_dir': 'decoded_from_server',
+        },
+        profile=args.layout_profile,
+        overrides={
+            'ply_dir': args.ply_dir,
+            'work_dir': args.work_dir,
+            'decoded_dir': args.decoded_dir,
+        },
+        base=args.data_root,
+        ensure=True,
+    )
+
     encoder_hint, encoder_options, _ = resolve_encoder_options(args)
     encoder_path = find_draco_encoder(encoder_hint)
 
-    ply_dir = ensure_directory(Path(args.ply_dir).resolve())
-    work_dir = ensure_directory(Path(args.work_dir).resolve())
-    decoded_dir = ensure_directory(Path(args.decoded_dir).resolve())
+    ply_dir = layout['ply_dir']
+    work_dir = layout['work_dir']
+    decoded_dir = layout['decoded_dir']
 
-    bag_cmd = ['ros2', 'bag', 'play', str(Path(args.bag).resolve())]
-    qos_override = resolve_qos_override()
+    bag_cmd = ['ros2', 'bag', 'play', str(Path(args.bag).expanduser().resolve())]
+    qos_override = resolve_qos_override(args.qos_override, profile=layout.profile)
     if qos_override is not None:
         bag_cmd += ['--qos-profile-overrides-path', str(qos_override)]
     else:
         print('[CLIENT] WARN: QoS override file not found, falling back to recorded QoS', file=sys.stderr)
     bag_process = subprocess.Popen(bag_cmd)
-    saver_proc = launch_bag_to_ply(args)
+    saver_proc = launch_bag_to_ply(args, ply_dir)
 
     to_play: queue.Queue = queue.Queue()
     playback_thread = start_playback_thread(to_play, args.play_frame_id, args.play_topic_prefix, args.play_hz)
