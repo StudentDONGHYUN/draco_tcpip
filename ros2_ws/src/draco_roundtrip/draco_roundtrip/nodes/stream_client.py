@@ -13,6 +13,7 @@ import asyncio
 import contextlib
 import itertools
 import json
+import math
 import queue
 import socket
 import subprocess
@@ -53,9 +54,16 @@ from draco_roundtrip.utils.protocol import (
 )
 from draco_roundtrip.shared_memory import SharedMemoryReceiver, SharedMemoryDescriptor
 from draco_roundtrip.ros.playback import start_playback_thread
+from draco_roundtrip.utils.stream_protocol import (
+    CONTROL_CHANNEL,
+    DATA_CHANNEL,
+    decode_frame_address,
+    encode_frame_address,
+)
 
 
-_capture_seq = itertools.count()
+_capture_ticket = itertools.count()
+_sequence_ids = itertools.count()
 _CAPTURE_SENTINEL = object()
 _ENCODE_SENTINEL = object()
 
@@ -94,7 +102,7 @@ async def _put_with_retry(
 
 async def _signal_capture_stop(queue: "asyncio.PriorityQueue", count: int) -> None:
     for _ in range(count):
-        await _put_with_retry(queue, (float("inf"), next(_capture_seq), None))
+        await _put_with_retry(queue, (float("inf"), next(_capture_ticket), None))
 
 
 def _safe_unlink(path: Path) -> None:
@@ -124,6 +132,7 @@ def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: flo
 class FrameContext:
     """Track inflight frames with timing metadata for RTT calculations."""
 
+    sequence: int
     handle: "FrameHandle"
     captured_at: float
     encoded_at: float
@@ -142,6 +151,7 @@ class ReplyEvent:
 class CapturePayload:
     """Represent a frame awaiting encoding with capture timing info."""
 
+    sequence: int
     handle: "FrameHandle"
     captured_at: float
 
@@ -150,6 +160,7 @@ class CapturePayload:
 class EncodedFrame:
     """Encoded payload ready to be sent across the network."""
 
+    sequence: int
     handle: "FrameHandle"
     payload: bytes
     captured_at: float
@@ -191,12 +202,51 @@ class PipelineStats:
     encode_time: StageStats = dataclass_field(default_factory=StageStats)
     encode_to_send: StageStats = dataclass_field(default_factory=StageStats)
     round_trip: StageStats = dataclass_field(default_factory=StageStats)
+    network_rtt: StageStats = dataclass_field(default_factory=StageStats)
+    round_trip_samples: list[float] = dataclass_field(default_factory=list)
+    network_rtt_samples: list[float] = dataclass_field(default_factory=list)
+    skipped_frames: int = 0
+    error_frames: int = 0
 
     def reset(self) -> None:
         self.capture_to_encode = StageStats()
         self.encode_time = StageStats()
         self.encode_to_send = StageStats()
         self.round_trip = StageStats()
+        self.network_rtt = StageStats()
+        self.round_trip_samples.clear()
+        self.network_rtt_samples.clear()
+        self.skipped_frames = 0
+        self.error_frames = 0
+
+    def record_round_trip(self, total_latency: float, rtt: float) -> None:
+        self.round_trip.record(total_latency)
+        self.round_trip_samples.append(total_latency)
+        if rtt > 0:
+            self.network_rtt.record(rtt)
+            self.network_rtt_samples.append(rtt)
+
+    def percentile(self, samples: list[float], percentile: float) -> float | None:
+        if not samples:
+            return None
+        percentile = max(0.0, min(100.0, percentile))
+        index = (len(samples) - 1) * percentile / 100.0
+        lower = int(math.floor(index))
+        upper = int(math.ceil(index))
+        if lower == upper:
+            return samples[lower]
+        lower_val = samples[lower]
+        upper_val = samples[upper]
+        return lower_val + (upper_val - lower_val) * (index - lower)
+
+    def latency_percentiles(self) -> dict[str, float]:
+        ordered = sorted(self.round_trip_samples)
+        percentiles = {}
+        for label, value in (("p50", 50.0), ("p95", 95.0), ("p99", 99.0)):
+            percentile = self.percentile(ordered, value)
+            if percentile is not None:
+                percentiles[label] = percentile
+        return percentiles
 
 
 @dataclass(slots=True)
@@ -205,6 +255,68 @@ class TrafficStats:
 
     sent: int = 0
     received: int = 0
+    inflight_peak: int = 0
+    capture_depth_peak: int = 0
+    network_depth_peak: int = 0
+
+
+@dataclass(slots=True)
+class WindowController:
+    """Manage the TX window based on optional adaptive heuristics."""
+
+    base_limit: int
+    max_limit: int
+    adaptive: bool = False
+    alpha: float = 0.2
+    min_limit: int = 1
+    current_limit: int = dataclass_field(init=False)
+    ema_payload: float = 0.0
+    ema_throughput: float = 0.0
+    ema_rtt: float = 0.0
+
+    def __post_init__(self) -> None:
+        base = max(self.min_limit, self.base_limit)
+        self.current_limit = max(self.min_limit, min(self.max_limit, base))
+
+    def limit(self) -> int:
+        return max(self.min_limit, min(self.max_limit, self.current_limit))
+
+    def observe_payload(self, payload_size: int) -> None:
+        if payload_size <= 0:
+            return
+        if self.ema_payload == 0.0:
+            self.ema_payload = float(payload_size)
+        else:
+            self.ema_payload = (1.0 - self.alpha) * self.ema_payload + self.alpha * float(payload_size)
+
+    def observe_ack(self, payload_size: int, rtt: float) -> None:
+        if not self.adaptive or payload_size <= 0 or rtt <= 0:
+            return
+        throughput = float(payload_size) / rtt
+        if self.ema_throughput == 0.0:
+            self.ema_throughput = throughput
+        else:
+            self.ema_throughput = (1.0 - self.alpha) * self.ema_throughput + self.alpha * throughput
+        if self.ema_rtt == 0.0:
+            self.ema_rtt = rtt
+        else:
+            self.ema_rtt = (1.0 - self.alpha) * self.ema_rtt + self.alpha * rtt
+        self.observe_payload(payload_size)
+        if self.ema_payload > 0:
+            bdp_bytes = self.ema_throughput * self.ema_rtt
+            target = int(round(bdp_bytes / self.ema_payload)) + 1
+            self.current_limit = max(self.min_limit, min(self.max_limit, target))
+
+
+@dataclass(slots=True)
+class DecodedResult:
+    """Hold decoded payloads awaiting publish order."""
+
+    sequence: int | None
+    base_name: str
+    payload: bytes
+    context: FrameContext
+    received_at: float
 
 
 class ReplyPump(threading.Thread):
@@ -383,6 +495,7 @@ async def capture_stage(
     bag_done: asyncio.Event,
     saver_done: asyncio.Event,
     encode_workers: int,
+    traffic: TrafficStats,
     idle_rounds: int = 5,
 ) -> None:
     """Monitor the capture source and enqueue frames for encoding."""
@@ -390,18 +503,24 @@ async def capture_stage(
     try:
         initial = frame_supplier.drain_initial()
         for handle in initial:
-            payload = CapturePayload(handle=handle, captured_at=time.monotonic())
-            await capture_queue.put((handle.priority_hint(), next(_capture_seq), payload))
-            _telemetry("capture_enqueue", handle.name, depth=capture_queue.qsize())
+            sequence = next(_sequence_ids)
+            payload = CapturePayload(sequence=sequence, handle=handle, captured_at=time.monotonic())
+            await capture_queue.put((handle.priority_hint(), next(_capture_ticket), payload))
+            depth = capture_queue.qsize()
+            traffic.capture_depth_peak = max(traffic.capture_depth_peak, depth)
+            _telemetry("capture_enqueue", handle.name, depth=depth, seq=sequence)
         empty_rounds = 0
         while not stop_event.is_set():
             handles = await asyncio.to_thread(frame_supplier.wait_for_new, 0.2)
             if handles:
                 empty_rounds = 0
                 for handle in handles:
-                    payload = CapturePayload(handle=handle, captured_at=time.monotonic())
-                    await capture_queue.put((handle.priority_hint(), next(_capture_seq), payload))
-                    _telemetry("capture_enqueue", handle.name, depth=capture_queue.qsize())
+                    sequence = next(_sequence_ids)
+                    payload = CapturePayload(sequence=sequence, handle=handle, captured_at=time.monotonic())
+                    await capture_queue.put((handle.priority_hint(), next(_capture_ticket), payload))
+                    depth = capture_queue.qsize()
+                    traffic.capture_depth_peak = max(traffic.capture_depth_peak, depth)
+                    _telemetry("capture_enqueue", handle.name, depth=depth, seq=sequence)
             else:
                 empty_rounds += 1
             if (
@@ -428,6 +547,7 @@ async def encode_worker(
     work_dir: Path,
     stats: PipelineStats,
     stop_event: asyncio.Event,
+    traffic: TrafficStats,
 ) -> None:
     """Encode frames pulled from the capture queue and forward them."""
 
@@ -438,11 +558,18 @@ async def encode_worker(
             # Always deliver the sentinel so the network sender unblocks, even when
             # shutdown has already been requested via ``stop_event``.
             await _put_with_retry(network_queue, None)
+            traffic.network_depth_peak = max(traffic.network_depth_peak, network_queue.qsize())
             break
         handle = payload.handle
+        sequence = payload.sequence
         captured_at = payload.captured_at
         encode_start = time.monotonic()
-        _telemetry("encode_start", handle.name, wait_ms=(encode_start - captured_at) * 1000.0)
+        _telemetry(
+            "encode_start",
+            handle.name,
+            wait_ms=(encode_start - captured_at) * 1000.0,
+            seq=sequence,
+        )
         try:
             encoder_input = await asyncio.to_thread(handle.ensure_encoder_input, work_dir)
             result = await asyncio.to_thread(
@@ -466,14 +593,21 @@ async def encode_worker(
                 )
             )
             encoded = EncodedFrame(
+                sequence=sequence,
                 handle=handle,
                 payload=drc_bytes,
                 captured_at=captured_at,
                 encoded_at=encoded_at,
             )
-            _telemetry("encode_complete", handle.name, latency_ms=(encoded_at - encode_start) * 1000.0)
+            _telemetry(
+                "encode_complete",
+                handle.name,
+                latency_ms=(encoded_at - encode_start) * 1000.0,
+                seq=sequence,
+            )
             if not await _put_with_retry(network_queue, encoded, stop_event=stop_event):
                 break
+            traffic.network_depth_peak = max(traffic.network_depth_peak, network_queue.qsize())
         except asyncio.CancelledError:
             stop_event.set()
             raise
@@ -489,14 +623,14 @@ async def network_sender(
     sock: socket.socket,
     protocol: ProtocolHandler,
     network_queue: "asyncio.Queue[Optional[EncodedFrame]]",
-    inflight: Dict[str, FrameContext],
+    inflight: Dict[int, FrameContext],
     *,
     stats: PipelineStats,
     traffic: TrafficStats,
     stop_event: asyncio.Event,
     inflight_condition: asyncio.Condition,
     encode_workers: int,
-    max_inflight: int,
+    window: WindowController,
 ) -> None:
     """Send encoded frames while respecting inflight limits."""
 
@@ -513,7 +647,15 @@ async def network_sender(
                     while inflight and not stop_event.is_set():
                         await inflight_condition.wait()
                 if not inflight and not stop_event.is_set():
-                    message = Message(kind=MSG_EOF, name="", payload=b"")
+                    message = Message(
+                        kind=MSG_EOF,
+                        name=encode_frame_address(
+                            None,
+                            "final",
+                            channel=CONTROL_CHANNEL,
+                        ),
+                        payload=b"",
+                    )
                     try:
                         await asyncio.to_thread(protocol.send, sock, message)
                         print("[CLIENT] Sent EOF marker to server")
@@ -531,9 +673,14 @@ async def network_sender(
 
         encoded = item
         async with inflight_condition:
-            while len(inflight) >= max_inflight and not stop_event.is_set():
+            while len(inflight) >= window.limit() and not stop_event.is_set():
+                # Wait until the adaptive window controller permits another send.
                 await inflight_condition.wait()
-        message = Message(kind=MSG_DATA, name=encoded.handle.name, payload=encoded.payload)
+        message = Message(
+            kind=MSG_DATA,
+            name=encode_frame_address(encoded.sequence, encoded.handle.name, channel=DATA_CHANNEL),
+            payload=encoded.payload,
+        )
         try:
             await asyncio.to_thread(protocol.send, sock, message)
         except Exception as exc:
@@ -548,13 +695,17 @@ async def network_sender(
         _telemetry("send_complete", encoded.handle.name, size=len(encoded.payload))
         sent_at = time.monotonic()
         stats.encode_to_send.record(sent_at - encoded.encoded_at)
-        inflight[encoded.handle.name] = FrameContext(
+        window.observe_payload(len(encoded.payload))
+        ctx = FrameContext(
+            sequence=encoded.sequence,
             handle=encoded.handle,
             captured_at=encoded.captured_at,
             encoded_at=encoded.encoded_at,
             sent_at=sent_at,
             payload_size=len(encoded.payload),
         )
+        inflight[encoded.sequence] = ctx
+        traffic.inflight_peak = max(traffic.inflight_peak, len(inflight))
         traffic.sent += len(encoded.payload)
         print(f"[CLIENT] Sent {encoded.handle.name} ({len(encoded.payload)} bytes)")
         network_queue.task_done()
@@ -562,18 +713,66 @@ async def network_sender(
 
 async def reply_consumer(
     reply_queue: "asyncio.Queue[ReplyEvent]",
-    inflight: Dict[str, FrameContext],
+    inflight: Dict[int, FrameContext],
     *,
     stats: PipelineStats,
     traffic: TrafficStats,
     stop_event: asyncio.Event,
     inflight_condition: asyncio.Condition,
+    window: WindowController,
     decoded_dir: Path,
     to_play: "queue.Queue",
     play_sample: int,
     frame_counter: itertools.count,
+    print_metrics: bool,
 ) -> None:
     """Process replies from the server and release inflight slots."""
+
+    # Reorder buffer tracks decoded frames until the next in-order sequence is ready.
+    reorder_buffer: Dict[int, DecodedResult] = {}
+    skipped_sequences: Dict[int, str] = {}
+    next_sequence = 0
+
+    async def emit_result(result: DecodedResult) -> None:
+        base_name = result.base_name or result.context.handle.name
+        decoded_name = base_name if base_name.endswith(".ply") else f"{base_name}.ply"
+        decoded_path = decoded_dir / decoded_name
+        await asyncio.to_thread(decoded_path.write_bytes, result.payload)
+        pts_src = await asyncio.to_thread(result.context.handle.load_source_points)
+        pts_dec = await asyncio.to_thread(load_xyz_from_bytes, result.payload)
+        metrics = await asyncio.to_thread(compute_basic_metrics, pts_src, pts_dec, play_sample)
+        frame_idx = next(frame_counter)
+        to_play.put((frame_idx, decoded_name, pts_src, pts_dec))
+        if print_metrics:
+            print(f"[CLIENT] Metrics {decoded_name}: {metrics}")
+        with contextlib.suppress(Exception):
+            result.context.handle.on_consumed()
+
+    async def drain_ready(force: bool = False) -> None:
+        nonlocal next_sequence
+        while True:
+            if next_sequence in skipped_sequences:
+                detail = skipped_sequences.pop(next_sequence)
+                print(f"[CLIENT] Skipping frame seq={next_sequence}: {detail}")
+                stats.skipped_frames += 1
+                next_sequence += 1
+                continue
+            result = reorder_buffer.get(next_sequence)
+            if result is None:
+                break
+            reorder_buffer.pop(next_sequence, None)
+            await emit_result(result)
+            next_sequence += 1
+        if force:
+            for sequence in sorted(reorder_buffer):
+                await emit_result(reorder_buffer[sequence])
+            reorder_buffer.clear()
+            if skipped_sequences:
+                for sequence in sorted(skipped_sequences):
+                    detail = skipped_sequences[sequence]
+                    print(f"[CLIENT] Skipped pending seq={sequence}: {detail}")
+                    stats.skipped_frames += 1
+                skipped_sequences.clear()
 
     while not stop_event.is_set():
         event = await reply_queue.get()
@@ -591,46 +790,68 @@ async def reply_consumer(
             reply_queue.task_done()
             continue
         message = event.message
+        address = decode_frame_address(message.name)
         if message.kind == MSG_EOF:
             print("[CLIENT] EOF handshake complete")
             stop_event.set()
             async with inflight_condition:
                 inflight_condition.notify_all()
             _telemetry("recv_eof", "all")
+            await drain_ready(force=True)
             reply_queue.task_done()
             break
-        stem = Path(message.name or "").stem
+
         async with inflight_condition:
-            ctx = inflight.pop(stem, None)
+            ctx = inflight.pop(address.sequence, None) if address.sequence is not None else None
+            if ctx is None:
+                for key, candidate in list(inflight.items()):
+                    if candidate.handle.name == address.name or candidate.sequence == address.sequence:
+                        ctx = inflight.pop(key)
+                        break
             inflight_condition.notify_all()
         if ctx is None:
             print(f"[CLIENT] WARN: Received reply for unknown frame {message.name}")
             reply_queue.task_done()
             continue
+
+        now = time.monotonic()
+        rtt = max(0.0, now - ctx.sent_at)
+        total_latency = max(0.0, now - ctx.captured_at)
+        stats.record_round_trip(total_latency, rtt)
+        window.observe_ack(ctx.payload_size, rtt)
+
         if message.kind == MSG_ERROR:
-            detail = message.payload.decode(errors="ignore")
-            print(f"[CLIENT] SERVER ERROR for {message.name or stem}: {detail}")
-            _telemetry("recv_error", stem, detail=detail)
+            detail = message.payload.decode(errors="ignore") or "server error"
+            print(f"[CLIENT] SERVER ERROR for seq={ctx.sequence}: {detail}")
+            stats.error_frames += 1
+            skipped_sequences[ctx.sequence] = detail
+            _telemetry("recv_error", address.name or str(ctx.sequence), detail=detail)
             with contextlib.suppress(Exception):
-                ctx.handle.on_consumed()
+                ctx.handle.on_aborted()
+            await drain_ready()
             reply_queue.task_done()
             continue
-        traffic.received += len(message.payload)
-        _telemetry("recv_data", stem, size=len(message.payload))
-        decoded_name = message.name or f"{stem}.decoded"
-        if not decoded_name.endswith(".ply"):
-            decoded_name = f"{decoded_name}.ply"
-        decoded_path = decoded_dir / decoded_name
-        await asyncio.to_thread(decoded_path.write_bytes, message.payload)
-        pts_src = await asyncio.to_thread(ctx.handle.load_source_points)
-        pts_dec = await asyncio.to_thread(load_xyz_from_bytes, message.payload)
-        metrics = await asyncio.to_thread(compute_basic_metrics, pts_src, pts_dec, play_sample)
-        stats.round_trip.record(time.monotonic() - ctx.sent_at)
-        frame_idx = next(frame_counter)
-        to_play.put((frame_idx, decoded_name, pts_src, pts_dec))
-        print(f"[CLIENT] Metrics {decoded_name}: {metrics}")
-        with contextlib.suppress(Exception):
-            ctx.handle.on_consumed()
+
+        payload = message.payload
+        traffic.received += len(payload)
+        _telemetry("recv_data", address.name or ctx.handle.name, size=len(payload), seq=ctx.sequence)
+        result = DecodedResult(
+            sequence=ctx.sequence,
+            base_name=address.name or f"{ctx.handle.name}.decoded",
+            payload=payload,
+            context=ctx,
+            received_at=now,
+        )
+        if result.sequence is None:
+            await emit_result(result)
+        else:
+            if result.sequence < next_sequence:
+                print(
+                    f"[CLIENT] WARN: Late arrival for already published seq={result.sequence}, dropping",
+                )
+            else:
+                reorder_buffer[result.sequence] = result
+            await drain_ready()
         reply_queue.task_done()
 
 
@@ -834,8 +1055,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     default='binary',
                     help='Framing protocol to use (default: %(default)s). Options: '
                     + ', '.join(f"{name}={desc}" for name, desc in protocol_help.items()))
-    ap.add_argument('--max-inflight', type=int, default=1,
-                    help='Maximum number of frames to pipeline before waiting for replies')
+    ap.add_argument('--max-inflight', '--max-pending', dest='max_inflight', type=int, default=4,
+                    help='Upper bound on in-flight frames awaiting ACK/decoded replies')
+    ap.add_argument('--initial-inflight', type=int, default=None,
+                    help='Initial TX window before adaptive control adjusts it (defaults to max)')
+    ap.add_argument('--adaptive-window', action='store_true',
+                    help='Enable RTT/throughput based TX window adaptation')
+    ap.add_argument('--window-ema-alpha', type=float, default=0.2,
+                    help='EMA smoothing factor for adaptive window telemetry (0-1)')
     ap.add_argument('--capture-queue', type=int, default=4,
                     help='Maximum capture queue depth before applying backpressure')
     ap.add_argument('--encode-workers', type=int, default=2,
@@ -850,6 +1077,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Frame capture backend: filesystem spool (legacy) or shared-memory zero copy')
     ap.add_argument('--metrics-out', default=None,
                     help='Optional path to write pipeline timing/throughput metrics as JSON')
+    ap.add_argument('--print-metrics', action='store_true',
+                    help='Stream per-frame latency/accuracy metrics to stdout during playback')
     return ap
 
 
@@ -899,7 +1128,16 @@ async def run_client(args: argparse.Namespace) -> None:
     traffic = TrafficStats()
     pipeline_stats = PipelineStats()
     frame_counter = itertools.count()
-    inflight: Dict[str, FrameContext] = {}
+    inflight: Dict[int, FrameContext] = {}
+    pending_inflight = 0
+    max_window = max(1, args.max_inflight)
+    initial_window = max(1, min(args.initial_inflight or max_window, max_window))
+    window_controller = WindowController(
+        base_limit=initial_window,
+        max_limit=max_window,
+        adaptive=args.adaptive_window,
+        alpha=max(0.01, min(0.99, args.window_ema_alpha)),
+    )
     start_time = time.monotonic()
 
     try:
@@ -971,6 +1209,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             bag_done=bag_done,
                             saver_done=saver_done,
                             encode_workers=args.encode_workers,
+                            traffic=traffic,
                         )
                     )
                 )
@@ -986,6 +1225,7 @@ async def run_client(args: argparse.Namespace) -> None:
                                 work_dir=work_dir,
                                 stats=pipeline_stats,
                                 stop_event=stop_event,
+                                traffic=traffic,
                             )
                         )
                     )
@@ -1001,7 +1241,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             stop_event=stop_event,
                             inflight_condition=inflight_condition,
                             encode_workers=args.encode_workers,
-                            max_inflight=max(1, args.max_inflight),
+                            window=window_controller,
                         )
                     )
                 )
@@ -1014,10 +1254,12 @@ async def run_client(args: argparse.Namespace) -> None:
                             traffic=traffic,
                             stop_event=stop_event,
                             inflight_condition=inflight_condition,
+                            window=window_controller,
                             decoded_dir=decoded_dir,
                             to_play=to_play,
                             play_sample=args.play_sample,
                             frame_counter=frame_counter,
+                            print_metrics=args.print_metrics,
                         )
                     )
                 )
@@ -1050,9 +1292,11 @@ async def run_client(args: argparse.Namespace) -> None:
                         pump.join(timeout=1.0)
     finally:
         stop_event.set()
+        pending_inflight = len(inflight)
         for ctx in list(inflight.values()):
             with contextlib.suppress(Exception):
                 ctx.handle.on_aborted()
+        inflight.clear()
         to_play.put(None)
         if playback_thread.is_alive():
             playback_thread.join(timeout=1.0)
@@ -1070,11 +1314,28 @@ async def run_client(args: argparse.Namespace) -> None:
         f"  received: {traffic.received} bytes"
         f" ({traffic.received * 8 / elapsed / 1e6:.3f} Mbps)"
     )
+    percentiles = pipeline_stats.latency_percentiles()
+    if percentiles:
+        print("  latency percentiles (capture→reply):")
+        for label in ("p50", "p95", "p99"):
+            if label in percentiles:
+                print(f"    {label}: {percentiles[label] * 1000.0:.2f} ms")
     print('  stage metrics:')
     print(f"    capture→encode: {pipeline_stats.capture_to_encode.summary()}")
     print(f"    encode latency: {pipeline_stats.encode_time.summary()}")
     print(f"    encode→send: {pipeline_stats.encode_to_send.summary()}")
     print(f"    round-trip: {pipeline_stats.round_trip.summary()}")
+    print(f"    network RTT: {pipeline_stats.network_rtt.summary()}")
+    print(
+        f"  inflight_peak: {traffic.inflight_peak} window_limit={window_controller.limit()}"
+        f" adaptive={'on' if args.adaptive_window else 'off'}"
+    )
+    print(
+        f"  queue peaks: capture={traffic.capture_depth_peak} network={traffic.network_depth_peak}"
+    )
+    print(
+        f"  drops/skipped: {pipeline_stats.skipped_frames} errors={pipeline_stats.error_frames} pending={pending_inflight}"
+    )
 
     metrics_out_path = Path(args.metrics_out).expanduser() if args.metrics_out else work_dir / 'pipeline_metrics.json'
     metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1088,6 +1349,18 @@ async def run_client(args: argparse.Namespace) -> None:
             'encode_latency': pipeline_stats.encode_time.as_dict(),
             'encode_to_send': pipeline_stats.encode_to_send.as_dict(),
             'round_trip': pipeline_stats.round_trip.as_dict(),
+            'network_rtt': pipeline_stats.network_rtt.as_dict(),
+            'latency_percentiles_ms': {
+                key: value * 1000.0 for key, value in percentiles.items()
+            },
+            'inflight_peak': traffic.inflight_peak,
+            'capture_queue_peak': traffic.capture_depth_peak,
+            'network_queue_peak': traffic.network_depth_peak,
+            'skipped_frames': pipeline_stats.skipped_frames,
+            'error_frames': pipeline_stats.error_frames,
+            'pending_inflight': pending_inflight,
+            'adaptive_window': args.adaptive_window,
+            'window_final': window_controller.limit(),
         }
         metrics_out_path.write_text(json.dumps(metrics_payload, indent=2), encoding='utf-8')
         print(f"[CLIENT] Wrote pipeline metrics to {metrics_out_path}")
