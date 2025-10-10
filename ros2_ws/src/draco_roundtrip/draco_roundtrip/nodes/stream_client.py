@@ -55,14 +55,28 @@ _CAPTURE_SENTINEL = object()
 _ENCODE_SENTINEL = object()
 
 
-async def _put_with_retry(queue: asyncio.Queue, item: object) -> None:
-    """Insert an item even if the queue is temporarily full (backpressure friendly)."""
+async def _put_with_retry(
+    queue: asyncio.Queue,
+    item: object,
+    *,
+    stop_event: asyncio.Event | None = None,
+) -> bool:
+    """Insert an item even if the queue is temporarily full (backpressure friendly).
+
+    Returns ``True`` if the item was enqueued. When ``stop_event`` is provided and
+    set while waiting for space, the enqueue is abandoned and ``False`` is
+    returned so callers can bail out instead of deadlocking on a full queue.
+    """
 
     while True:
+        if stop_event is not None and stop_event.is_set():
+            return False
         try:
             queue.put_nowait(item)
-            return
+            return True
         except asyncio.QueueFull:
+            if stop_event is not None and stop_event.is_set():
+                return False
             await asyncio.sleep(0.05)
 
 
@@ -407,7 +421,7 @@ async def encode_worker(
         priority, _, payload = await capture_queue.get()
         if payload is None:
             capture_queue.task_done()
-            await _put_with_retry(network_queue, None)
+            await _put_with_retry(network_queue, None, stop_event=stop_event)
             break
         handle = payload.handle
         captured_at = payload.captured_at
@@ -440,7 +454,10 @@ async def encode_worker(
                 captured_at=captured_at,
                 encoded_at=encoded_at,
             )
-            await network_queue.put(encoded)
+            if not await _put_with_retry(network_queue, encoded, stop_event=stop_event):
+                with contextlib.suppress(Exception):
+                    handle.on_aborted()
+                break
         except asyncio.CancelledError:
             stop_event.set()
             raise
