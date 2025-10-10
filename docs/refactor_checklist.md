@@ -9,7 +9,7 @@
 
 ## 2. 테스트 및 품질 보증 체계
 - [x] `ros2_ws/src/draco_roundtrip/tests/` 디렉터리를 생성하고 TCP 프로토콜, PLY 로딩, metric 계산에 대한 단위 테스트를 추가한다. → `colcon test` 통과 여부를 CI에 등록. (테스트 파일: `test_utils_protocol.py`, `test_utils_ply_io.py`, `test_utils_metrics.py`, `pytest.ini`)
-- [ ] 최소 1회 왕복을 수행하는 엔드투엔드 스크립트(`tests/e2e_roundtrip.sh` 또는 pytest 기반)를 추가하고, 로컬/CI에서 실행 가능한 의존성 조건을 정리한다. → 실행 로그를 `docs/results_template.md`와 연계.
+- [x] 최소 1회 왕복을 수행하는 엔드투엔드 스크립트(`tests/e2e_roundtrip.sh` 또는 pytest 기반)를 추가하고, 로컬/CI에서 실행 가능한 의존성 조건을 정리한다. → 실행 로그를 `docs/results_template.md`와 연계. (스크립트: `ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh`, 테스트: `tests/test_e2e_roundtrip.py`)
 - [ ] GitHub Actions 등 자동화 파이프라인에 `colcon build` + `colcon test` + 품질 스크립트를 추가해 리팩토링 후 회귀 검증을 자동화한다.
 
 ## 3. 레거시 자산 정리
