@@ -20,6 +20,7 @@
    ros2 run draco_roundtrip stream_server --port 5000
    ```
    - 주요 로직: `draco_roundtrip/nodes/stream_server.py`가 TCP 수신, Draco 디코딩, ROS 토픽 퍼블리시를 담당합니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py†L1-L160】
+   - 기본값으로 디코딩 중간 산출물(`.drc`, `.decoded.ply`)은 자동 정리됩니다. 분석 목적이라면 `--keep-artifacts` 플래그를 추가해 세션이 끝난 뒤에도 파일을 보존하세요.
 2. 필요 시 네트워크 조건을 설정합니다.
    ```bash
    # 명령만 확인하고자 할 때 (dry-run)
@@ -38,6 +39,7 @@
    - 클라이언트는 `draco_roundtrip/nodes/stream_client.py`에서 인플라이트 제어, 공유 메모리, Draco 인코더 연동을 처리합니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py†L1-L222】
    - `--layout-profile` 또는 `--data-root`로 출력 디렉터리를 손쉽게 구성할 수 있습니다. 프로파일 구조는 `../references/layout_profiles.md`를 참고하세요.
    - QoS 설정을 변경하려면 `--qos-override configs/qos_override.yaml`를 지정하거나 프로파일에 `qos_override` 항목을 추가합니다.
+   - 스트림이 종료되면 클라이언트가 `MSG_EOF`를 서버에 전송하고 로그에 `[CLIENT] Sent EOF marker to server`/`[CLIENT] EOF handshake complete`가 출력됩니다. 해당 메시지가 보이면 큐가 모두 비워졌고 양쪽에서 세션이 정상적으로 마무리됐음을 의미합니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py†L650-L825】
 4. 서버는 복원된 포인트클라우드를 `/stream_pair/decoded` 토픽으로 퍼블리시하며, 클라이언트는 원본/복원 토픽을 동시에 노출합니다.
 
 ## 3. 모니터링 및 재생 도구

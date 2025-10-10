@@ -23,9 +23,11 @@ from typing import Callable, Dict, Iterable
 from draco_roundtrip.utils import ensure_directory, resolve_executable
 from draco_roundtrip.utils.protocol import (
     Message,
+    MSG_ACK,
     MSG_DATA,
     MSG_EOF,
     MSG_ERROR,
+    MSG_HEARTBEAT,
     available_protocols,
     resolve_protocol,
 )
@@ -185,6 +187,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Memory-map decoded PLY payloads to reduce copy overhead when sending replies')
     ap.add_argument('--legacy-mode', action='store_true',
                     help='Fallback to the synchronous legacy loop for troubleshooting')
+    ap.add_argument('--heartbeat-interval', type=float, default=2.0,
+                    help='Interval (seconds) for control-plane heartbeat messages; 0 disables keepalive')
     protocol_help = available_protocols()
     ap.add_argument('--protocol',
                     choices=sorted(protocol_help.keys()),
@@ -201,13 +205,38 @@ async def _recv_loop(
     stop_event: asyncio.Event,
     producer_done: asyncio.Event,
     totals: Dict[str, int],
+    heartbeat_interval: float,
 ) -> None:
+    heartbeat_interval = max(0.0, heartbeat_interval)
+    last_heartbeat = time.monotonic()
     while not stop_event.is_set():
         try:
             message = await asyncio.to_thread(protocol.recv, conn)
         except socket.timeout:
             if producer_done.is_set():
                 break
+            if heartbeat_interval > 0 and (time.monotonic() - last_heartbeat) >= heartbeat_interval:
+                try:
+                    await asyncio.to_thread(
+                        protocol.send,
+                        conn,
+                        Message(
+                            kind=MSG_HEARTBEAT,
+                            name=encode_frame_address(
+                                None,
+                                "server-heartbeat",
+                                channel=CONTROL_CHANNEL,
+                            ),
+                            payload=b"",
+                        ),
+                    )
+                    _telemetry("send_heartbeat", "all")
+                except Exception as exc:
+                    print(f"[SERVER] WARN: Failed to send heartbeat: {exc}")
+                    stop_event.set()
+                    break
+                finally:
+                    last_heartbeat = time.monotonic()
             continue
         except Exception as exc:
             print(f"[SERVER] ERROR receiving frame: {exc}")
@@ -217,6 +246,7 @@ async def _recv_loop(
             print("[SERVER] Client closed connection")
             stop_event.set()
             break
+        last_heartbeat = time.monotonic()
         address = decode_frame_address(message.name)
         if message.kind == MSG_EOF:
             print("[SERVER] Received EOF marker from client")
@@ -244,6 +274,21 @@ async def _recv_loop(
             depth=decode_queue.qsize(),
             seq=job.sequence,
         )
+        try:
+            await asyncio.to_thread(
+                protocol.send,
+                conn,
+                Message(
+                    kind=MSG_ACK,
+                    name=encode_frame_address(job.sequence, job.name, channel=CONTROL_CHANNEL),
+                    payload=b"",
+                ),
+            )
+            _telemetry("send_ack", job.name, seq=job.sequence)
+        except Exception as exc:
+            print(f"[SERVER] WARN: Failed to send ACK for {job.name}: {exc}")
+            stop_event.set()
+            break
     producer_done.set()
 
 
@@ -428,7 +473,15 @@ async def handle_connection(
         producer_done = asyncio.Event()
 
         recv_task = asyncio.create_task(
-            _recv_loop(protocol, conn, decode_queue, stop_event, producer_done, totals)
+            _recv_loop(
+                protocol,
+                conn,
+                decode_queue,
+                stop_event,
+                producer_done,
+                totals,
+                args.heartbeat_interval,
+            )
         )
         worker_tasks = [
             asyncio.create_task(
@@ -567,6 +620,18 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                 if address.channel != DATA_CHANNEL:
                     print(f"[SERVER][LEGACY] WARN: data on control channel: {msg.name}")
                 stem = address.name or "frame"
+                try:
+                    protocol.send(
+                        conn,
+                        Message(
+                            kind=MSG_ACK,
+                            name=encode_frame_address(address.sequence, stem, channel=CONTROL_CHANNEL),
+                            payload=b"",
+                        ),
+                    )
+                    _telemetry("send_ack", stem, seq=address.sequence if address.sequence is not None else -1)
+                except Exception as exc:
+                    print(f"[SERVER][LEGACY] WARN: Failed to send ACK for {stem}: {exc}")
                 bytes_in += len(msg.payload)
                 try:
                     artifact = decode_drc(
