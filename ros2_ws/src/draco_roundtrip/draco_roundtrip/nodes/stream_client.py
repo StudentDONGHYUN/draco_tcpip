@@ -21,10 +21,13 @@ from draco_tools.core.encoder import (
     format_encode_log,
     resolve_encoder_options,
 )
-from draco_roundtrip.analysis.metrics import compute_basic_metrics
-from draco_roundtrip.io.ply_codec import load_xyz, load_xyz_from_bytes
 from draco_roundtrip.utils.config import resolve_data_layout, resolve_qos_override
-from draco_roundtrip.net.protocol import (
+from draco_roundtrip.utils.metrics import compute_basic_metrics
+from draco_roundtrip.utils.ply_io import (
+    load_points as load_xyz,
+    load_points_from_bytes as load_xyz_from_bytes,
+)
+from draco_roundtrip.utils.protocol import (
     ConnectionClosed,
     Message,
     MSG_DATA,
