@@ -13,8 +13,9 @@ import threading
 import time
 from collections import deque
 from dataclasses import dataclass
+from multiprocessing import shared_memory
 from pathlib import Path
-from typing import Deque, Dict, Iterable, Optional
+from typing import Deque, Dict, Iterable, Optional, Protocol
 
 import numpy as np
 
@@ -27,6 +28,7 @@ from draco_tools.core.encoder import (
 )
 from draco_roundtrip.utils.config import resolve_data_layout, resolve_qos_override
 from draco_roundtrip.utils.metrics import compute_basic_metrics
+from draco_roundtrip.io.ply_codec import save_xyz
 from draco_roundtrip.utils.ply_io import (
     load_points as load_xyz,
     load_points_from_bytes as load_xyz_from_bytes,
@@ -37,9 +39,11 @@ from draco_roundtrip.utils.protocol import (
     MSG_DATA,
     MSG_EOF,
     MSG_ERROR,
-    recv_message,
-    send_message,
+    ProtocolHandler,
+    available_protocols,
+    resolve_protocol,
 )
+from draco_roundtrip.shared_memory import SharedMemoryReceiver, SharedMemoryDescriptor
 from draco_roundtrip.ros.playback import start_playback_thread
 
 
@@ -65,7 +69,7 @@ def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: flo
 class FrameContext:
     """Track inflight frames so replies can be matched without stalling the sender."""
 
-    path: Path
+    handle: FrameHandle
     sent_at: float
     payload_size: int
 
@@ -85,16 +89,18 @@ class ReplyPump(threading.Thread):
         sock: socket.socket,
         queue: "queue.Queue[ReplyEvent]",
         stop_event: threading.Event,
+        protocol: ProtocolHandler,
     ) -> None:
         super().__init__(daemon=True)
         self._sock = sock
         self._queue = queue
         self._stop_event = stop_event
+        self._protocol = protocol
 
     def run(self) -> None:  # pragma: no cover - threading behaviour is timing sensitive.
         while not self._stop_event.is_set():
             try:
-                message = recv_message(self._sock)
+                message = self._protocol.recv(self._sock)
             except socket.timeout:
                 continue
             except Exception as exc:  # noqa: BLE001 - bubble up to the producer loop.
@@ -106,6 +112,118 @@ class ReplyPump(threading.Thread):
             self._queue.put(ReplyEvent(kind="message", message=message))
             if message.kind == MSG_EOF:
                 return
+
+
+class FrameHandle(Protocol):
+    name: str
+
+    def ensure_encoder_input(self, work_dir: Path) -> Path:
+        ...
+
+    def load_source_points(self) -> np.ndarray:
+        ...
+
+    def on_consumed(self) -> None:
+        ...
+
+    def on_aborted(self) -> None:
+        ...
+
+
+class FilesystemFrameHandle:
+    """Adapter that exposes filesystem-backed frames via the FrameHandle protocol."""
+
+    def __init__(self, watcher: "SpoolWatcher", path: Path):
+        self._watcher = watcher
+        self._path = path
+        self.name = path.stem
+
+    def ensure_encoder_input(self, work_dir: Path) -> Path:  # noqa: ARG002 - interface requirement
+        return self._path
+
+    def load_source_points(self) -> np.ndarray:
+        return load_xyz(self._path)
+
+    def on_consumed(self) -> None:
+        self._watcher.mark_consumed(self._path)
+
+    def on_aborted(self) -> None:
+        # Files remain available for future runs, no action needed.
+        return
+
+
+class SharedMemoryFrameHandle:
+    """Convert shared-memory published frames into encoder-compatible artifacts."""
+
+    def __init__(self, descriptor: SharedMemoryDescriptor):
+        self._descriptor = descriptor
+        stem = Path(descriptor.frame).stem or descriptor.frame
+        self.name = stem
+        self._cached_points: np.ndarray | None = None
+        self._temp_path: Path | None = None
+
+    def _materialize_points(self) -> np.ndarray:
+        if self._cached_points is not None:
+            return self._cached_points
+        if not self._descriptor.shm or self._descriptor.size <= 0:
+            shape = self._descriptor.shape or (0, 3)
+            self._cached_points = np.empty(shape, dtype=np.float32)
+            return self._cached_points
+        shm = shared_memory.SharedMemory(name=self._descriptor.shm)
+        try:
+            dtype = np.dtype(self._descriptor.dtype)
+            arr = np.ndarray(self._descriptor.shape, dtype=dtype, buffer=shm.buf)
+            self._cached_points = np.asarray(arr, dtype=np.float32).copy()
+        finally:
+            shm.close()
+            shm.unlink()
+        return self._cached_points
+
+    def ensure_encoder_input(self, work_dir: Path) -> Path:
+        if self._temp_path is None:
+            self._temp_path = work_dir / f"{self.name}.ply"
+            save_xyz(self._temp_path, self._materialize_points())
+        return self._temp_path
+
+    def load_source_points(self) -> np.ndarray:
+        return self._materialize_points()
+
+    def _remove_temp(self) -> None:
+        if self._temp_path is None:
+            return
+        with contextlib.suppress(FileNotFoundError):
+            self._temp_path.unlink()
+        self._temp_path = None
+
+    def on_consumed(self) -> None:
+        self._remove_temp()
+
+    def on_aborted(self) -> None:
+        self._remove_temp()
+
+
+class FilesystemFrameSupplier:
+    def __init__(self, watcher: "SpoolWatcher") -> None:
+        self._watcher = watcher
+
+    def drain_initial(self) -> list[FrameHandle]:
+        return [FilesystemFrameHandle(self._watcher, path) for path in self._watcher.drain_initial()]
+
+    def wait_for_new(self, timeout: float) -> list[FrameHandle]:
+        paths = self._watcher.wait_for_new(timeout)
+        return [FilesystemFrameHandle(self._watcher, path) for path in paths]
+
+
+class SharedMemoryFrameSupplier:
+    def __init__(self, receiver: SharedMemoryReceiver) -> None:
+        self._receiver = receiver
+
+    def drain_initial(self) -> list[FrameHandle]:
+        return []
+
+    def wait_for_new(self, timeout: float) -> list[FrameHandle]:
+        descriptors = self._receiver.get_batch(timeout)
+        return [SharedMemoryFrameHandle(desc) for desc in descriptors]
 
 
 try:  # NOTE: Prefer inotify when available to honor event-driven spool monitoring.
@@ -219,7 +337,14 @@ class SpoolWatcher:
 
 
 
-def launch_bag_to_ply(args: argparse.Namespace, ply_dir: Path) -> subprocess.Popen:
+def launch_bag_to_ply(
+    args: argparse.Namespace,
+    ply_dir: Path,
+    *,
+    shared_memory_host: str | None = None,
+    shared_memory_port: int | None = None,
+    shared_memory_only: bool = False,
+) -> subprocess.Popen:
     cmd = [sys.executable, '-m', 'draco_roundtrip.io.bag_recorder',
            '--topic', args.topic,
            '--out', str(ply_dir),
@@ -229,6 +354,17 @@ def launch_bag_to_ply(args: argparse.Namespace, ply_dir: Path) -> subprocess.Pop
         cmd.append('--best-effort')
     if args.max_frames:
         cmd += ['--max-frames', str(args.max_frames)]
+    if shared_memory_host and shared_memory_port:
+        cmd += [
+            '--shared-memory-host',
+            shared_memory_host,
+            '--shared-memory-port',
+            str(shared_memory_port),
+        ]
+        if shared_memory_only:
+            cmd.append('--shared-memory-only')
+    elif shared_memory_only:
+        raise ValueError('shared_memory_only requires shared memory host/port')
     return subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
 
 
@@ -267,12 +403,22 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Override QoS profile file. Defaults to layout profile or package configs')
     ap.add_argument('--socket-timeout', type=float, default=15.0,
                     help='Timeout (seconds) for socket operations; 0 disables the safeguard')
+    protocol_help = available_protocols()
+    ap.add_argument('--protocol',
+                    choices=sorted(protocol_help.keys()),
+                    default='binary',
+                    help='Framing protocol to use (default: %(default)s). Options: '
+                    + ', '.join(f"{name}={desc}" for name, desc in protocol_help.items()))
     ap.add_argument('--max-inflight', type=int, default=1,
                     help='Maximum number of frames to pipeline before waiting for replies')
     ap.add_argument('--tcp-nodelay', action='store_true',
                     help='Disable Nagle aggregation to reduce latency for interactive playback')
     ap.add_argument('--socket-buffer-kb', type=int, default=0,
                     help='Resize socket send/receive buffers (KiB) to better saturate fast links')
+    ap.add_argument('--capture-transport',
+                    choices=('filesystem', 'shared-memory'),
+                    default='shared-memory',
+                    help='Frame capture backend: filesystem spool (legacy) or shared-memory zero copy')
     return ap
 
 
@@ -309,7 +455,7 @@ def main(argv: Iterable[str] | None = None) -> None:
     else:
         print('[CLIENT] WARN: QoS override file not found, falling back to recorded QoS', file=sys.stderr)
     bag_process = subprocess.Popen(bag_cmd)
-    saver_proc = launch_bag_to_ply(args, ply_dir)
+    saver_proc: subprocess.Popen | None = None
 
     to_play: queue.Queue = queue.Queue()
     playback_thread = start_playback_thread(to_play, args.play_frame_id, args.play_topic_prefix, args.play_hz)
@@ -318,6 +464,9 @@ def main(argv: Iterable[str] | None = None) -> None:
     start_time = time.monotonic()
     bytes_sent = 0
     bytes_received = 0
+    pending: Deque[FrameHandle] = deque()
+    inflight: Dict[str, FrameContext] = {}
+    shared_receiver: SharedMemoryReceiver | None = None
 
     try:
         with socket.create_connection(
@@ -335,60 +484,85 @@ def main(argv: Iterable[str] | None = None) -> None:
                 for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
                     with contextlib.suppress(OSError):
                         sock.setsockopt(socket.SOL_SOCKET, opt, buf_size)
-            print(f"[CLIENT] Connected to {args.server_host}:{args.server_port}")
-            with SpoolWatcher(ply_dir, args.prefix) as watcher:
-                pending: Deque[Path] = deque(watcher.drain_initial())
-                inflight: Dict[str, FrameContext] = {}
+            protocol = resolve_protocol(args.protocol)
+            print(
+                f"[CLIENT] Connected to {args.server_host}:{args.server_port} using {protocol.name} protocol"
+            )
+            with contextlib.ExitStack() as stack:
+                frame_supplier: FilesystemFrameSupplier | SharedMemoryFrameSupplier
+                if args.capture_transport == "filesystem":
+                    watcher = stack.enter_context(SpoolWatcher(ply_dir, args.prefix))
+                    frame_supplier = FilesystemFrameSupplier(watcher)
+                elif args.capture_transport == "shared-memory":
+                    shared_receiver = SharedMemoryReceiver()
+                    shared_receiver.start()
+                    stack.callback(shared_receiver.stop)
+                    frame_supplier = SharedMemoryFrameSupplier(shared_receiver)
+                else:
+                    raise ValueError(f"unknown capture transport '{args.capture_transport}'")
+
+                pending = deque(frame_supplier.drain_initial())
                 eof_sent = False
                 shutdown_ack = False
                 stop_event = threading.Event()
                 reply_queue: "queue.Queue[ReplyEvent]" = queue.Queue()
-                pump = ReplyPump(sock, reply_queue, stop_event)
+                pump = ReplyPump(sock, reply_queue, stop_event, protocol)
                 pump.start()
+                shared_host = shared_receiver.host if shared_receiver else None
+                shared_port = shared_receiver.port if shared_receiver else None
+                saver_proc = launch_bag_to_ply(
+                    args,
+                    ply_dir,
+                    shared_memory_host=shared_host,
+                    shared_memory_port=shared_port,
+                    shared_memory_only=(args.capture_transport == "shared-memory"),
+                )
                 try:
                     while True:
                         max_inflight = max(1, args.max_inflight)
                         progress_made = False
 
                         while pending and len(inflight) < max_inflight and not eof_sent:
-                            ply_path = pending.popleft()
-                            if not ply_path.exists():
-                                continue
+                            handle = pending.popleft()
                             try:
+                                encoder_input = handle.ensure_encoder_input(work_dir)
                                 result = encode_frame(
-                                    ply_path,
+                                    encoder_input,
                                     work_dir,
                                     encoder_options,
                                     encoder_hint=encoder_path,
                                     skip_existing=False,
                                 )
                                 drc_bytes = result.output.read_bytes()
+                                with contextlib.suppress(FileNotFoundError):
+                                    result.output.unlink()
                             except Exception as exc:
-                                print(f"[CLIENT] ENCODE FAIL {ply_path.name}: {exc}")
-                                watcher.mark_consumed(ply_path)
+                                print(f"[CLIENT] ENCODE FAIL {handle.name}: {exc}")
+                                handle.on_consumed()
                                 continue
+                            encoder_input_path = Path(encoder_input)
                             print(
                                 format_encode_log(
                                     result,
-                                    source=ply_path,
+                                    source=encoder_input_path,
                                     prefix='[CLIENT][ENCODER]'
                                 )
                             )
-                            message = Message(kind=MSG_DATA, name=ply_path.stem, payload=drc_bytes)
+                            message = Message(kind=MSG_DATA, name=handle.name, payload=drc_bytes)
                             try:
-                                send_message(sock, message)
+                                protocol.send(sock, message)
                             except socket.timeout:
-                                print(f"[CLIENT] ERROR: Timeout sending {ply_path.name}")
-                                watcher.mark_consumed(ply_path)
+                                print(f"[CLIENT] ERROR: Timeout sending {handle.name}")
+                                handle.on_consumed()
                                 eof_sent = True
                                 break
-                            inflight[ply_path.stem] = FrameContext(
-                                path=ply_path,
+                            inflight[handle.name] = FrameContext(
+                                handle=handle,
                                 sent_at=time.monotonic(),
                                 payload_size=len(drc_bytes),
                             )
                             bytes_sent += len(drc_bytes)
-                            print(f"[CLIENT] Sent {ply_path.name} ({len(drc_bytes)} bytes)")
+                            print(f"[CLIENT] Sent {encoder_input_path.name} ({len(drc_bytes)} bytes)")
                             progress_made = True
 
                         def handle_reply(event: ReplyEvent) -> None:
@@ -407,7 +581,7 @@ def main(argv: Iterable[str] | None = None) -> None:
                                         f"[CLIENT] SERVER ERROR for {stem}: {detail}"
                                     )
                                     if ctx:
-                                        watcher.mark_consumed(ctx.path)
+                                        ctx.handle.on_consumed()
                                     return
                                 stem = Path(reply.name or '').stem
                                 ctx = inflight.pop(stem, None)
@@ -421,7 +595,7 @@ def main(argv: Iterable[str] | None = None) -> None:
                                 decoded_path = decoded_dir / reply_name
                                 decoded_path.write_bytes(reply.payload)
 
-                                pts_src = load_xyz(ctx.path)
+                                pts_src = ctx.handle.load_source_points()
                                 pts_dec = load_xyz_from_bytes(reply.payload)
                                 metrics = compute_basic_metrics(pts_src, pts_dec, args.play_sample)
                                 rtt = time.monotonic() - ctx.sent_at
@@ -436,7 +610,7 @@ def main(argv: Iterable[str] | None = None) -> None:
                                     f"RTT={rtt:.3f}s throughput={throughput_mbps:.2f}Mbps"
                                 )
                                 to_play.put((frame_idx, stem, pts_src, pts_dec))
-                                watcher.mark_consumed(ctx.path)
+                                ctx.handle.on_consumed()
                                 frame_idx += 1
                                 return
                             if event.kind == "error" and event.error:
@@ -470,13 +644,13 @@ def main(argv: Iterable[str] | None = None) -> None:
                             break
 
                         if not eof_sent:
-                            new_paths = watcher.wait_for_new(timeout=0.2)
-                            if new_paths:
-                                pending.extend(new_paths)
+                            new_handles = frame_supplier.wait_for_new(timeout=0.2)
+                            if new_handles:
+                                pending.extend(new_handles)
                                 progress_made = True
 
                         bag_done = bag_process.poll() is not None
-                        saver_done = saver_proc.poll() is not None
+                        saver_done = saver_proc is None or saver_proc.poll() is not None
                         if (
                             bag_done
                             and saver_done
@@ -486,7 +660,7 @@ def main(argv: Iterable[str] | None = None) -> None:
                         ):
                             eof_message = Message(kind=MSG_EOF, name='', payload=b'')
                             try:
-                                send_message(sock, eof_message)
+                                protocol.send(sock, eof_message)
                             except socket.timeout:
                                 print('[CLIENT] Timeout while sending EOF marker')
                                 break
@@ -524,9 +698,9 @@ def main(argv: Iterable[str] | None = None) -> None:
                                 if shutdown_ack:
                                     break
                             elif not eof_sent:
-                                new_paths = watcher.wait_for_new(timeout=0.5)
-                                if new_paths:
-                                    pending.extend(new_paths)
+                                new_handles = frame_supplier.wait_for_new(timeout=0.5)
+                                if new_handles:
+                                    pending.extend(new_handles)
                                     progress_made = True
 
                         if shutdown_ack:
@@ -543,11 +717,19 @@ def main(argv: Iterable[str] | None = None) -> None:
                     if pump.is_alive():
                         pump.join(timeout=1.0)
     finally:
+        for ctx in inflight.values():
+            with contextlib.suppress(Exception):
+                ctx.handle.on_aborted()
+        while pending:
+            handle = pending.popleft()
+            with contextlib.suppress(Exception):
+                handle.on_aborted()
         to_play.put(None)
         if playback_thread.is_alive():
             playback_thread.join(timeout=1.0)
         _terminate_process(bag_process, 'ros2 bag')
-        _terminate_process(saver_proc, 'bag_to_ply')
+        if saver_proc is not None:
+            _terminate_process(saver_proc, 'bag_to_ply')
         elapsed = max(time.monotonic() - start_time, 1e-6)
         print('[CLIENT] ---- Transfer summary ----')
         print(f"  elapsed: {elapsed:.2f} s")
@@ -559,6 +741,6 @@ if __name__ == '__main__':
     main()
 
 # 변경 요약:
-# - 소켓 타임아웃과 송수신 예외 처리를 추가해 서버 응답 지연 시 무한 대기를 방지했습니다.
-# - 종료 시 하위 프로세스를 확실히 정리하도록 보조 함수를 도입했습니다.
-# - 네트워크 파이프라인(최대 동시 전송 수)과 TCP 버퍼 튜닝 옵션을 추가해 처리량과 지연을 조절할 수 있게 했습니다.
+# - 공유 메모리 기반 캡처 백엔드를 추가해 디스크 스풀 없이 프레임을 공급할 수 있도록 했습니다.
+# - 프레임 핸들 추상화로 파일/공유 메모리 경로를 통합 관리하고 전송 실패 시에도 자원을 정리합니다.
+# - 인코더 산출물과 응답 처리 흐름을 보강해 임시 파일을 자동 삭제하고 기존 메트릭 파이프라인과 연계했습니다.

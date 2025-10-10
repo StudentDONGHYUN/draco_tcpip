@@ -7,131 +7,44 @@ ROS2 PointCloud2 -> PLY 저장 노드 (Open3D 우선 + plyfile 폴백)
 - PointCloud2 → (N,3) float32 변환 경로를 견고하게 수정(read_points_numpy 우선)
 """
 
+from __future__ import annotations
+
 import argparse
 import csv
-import re
 import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import PointCloud2
-from sensor_msgs_py import point_cloud2 as pc2
 
-# Open3D는 선택적. 없으면 plyfile로 저장
-from plyfile import PlyData, PlyElement
-
-try:
-    import open3d as o3d  # type: ignore
-    _HAVE_O3D = True
-except Exception:
-    _HAVE_O3D = False
+from draco_roundtrip.io.ply_codec import (
+    points_from_pointcloud2,
+    save_xyz,
+    voxel_downsample,
+)
+from draco_roundtrip.shared_memory import SharedMemoryPublisher
 
 PAD = 10  # 파일명 인덱스 0패딩
 
 
-def eprint(*a, **k):
-    print(*a, file=sys.stderr, **k)
-    sys.stderr.flush()
-
-
-def to_xyz_array_from_pc2(msg: PointCloud2) -> np.ndarray:
-    """
-    PointCloud2 -> (N,3) float32
-    1) read_points_numpy 우선 사용 (ROS2에서 제공)
-    2) 실패 시 read_points로 받아 tuple 또는 구조화 void에서 x,y,z만 추출
-    """
-    # 1) numpy 경로
-    try:
-        arr = pc2.read_points_numpy(msg, field_names=['x', 'y', 'z'], skip_nans=True)
-        # 일부 환경에서 (3,) 이나 (N,4) 등으로 나올 수 있어 가드
-        arr = np.asarray(arr, dtype=np.float32)
-        if arr.ndim == 1:
-            if arr.size == 0:
-                return np.empty((0, 3), dtype=np.float32)
-            arr = arr.reshape((-1, 3))
-        elif arr.shape[1] > 3:
-            arr = arr[:, :3]
-        return arr
-    except Exception:
-        pass
-
-    # 2) generator 경로 (명시적으로 x,y,z를 추출)
-    xyz_list = []
-    for p in pc2.read_points(msg, field_names=('x', 'y', 'z'), skip_nans=True):
-        # p가 tuple/리스트/np.void(구조화) 무엇이든 안전하게 뽑기
-        try:
-            x, y, z = float(p[0]), float(p[1]), float(p[2])
-        except Exception:
-            # 구조화일 가능성
-            x = float(p['x'])
-            y = float(p['y'])
-            z = float(p['z'])
-        xyz_list.append((x, y, z))
-    if not xyz_list:
-        return np.empty((0, 3), dtype=np.float32)
-    return np.asarray(xyz_list, dtype=np.float32)
-
-
-def voxel_downsample(xyz: np.ndarray, voxel_size: float) -> np.ndarray:
-    if voxel_size <= 0.0 or xyz.size == 0:
-        return xyz
-    if _HAVE_O3D:
-        pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(xyz.astype(np.float64)))
-        ds = pcd.voxel_down_sample(voxel_size)
-        return np.asarray(ds.points, dtype=np.float32)
-    scaled = np.floor(xyz / voxel_size)
-    structured = np.core.records.fromarrays(scaled.T, names='x,y,z', formats='i8,i8,i8')
-    _, idx = np.unique(structured, return_index=True)
-    return xyz[idx]
-
-
-def save_ply_plyfile(path: Path, xyz_f32: np.ndarray) -> None:
-    """plyfile로 float32 보장 저장"""
-    verts = np.zeros(xyz_f32.shape[0], dtype=[('x', '<f4'), ('y', '<f4'), ('z', '<f4')])
-    verts['x'] = xyz_f32[:, 0]
-    verts['y'] = xyz_f32[:, 1]
-    verts['z'] = xyz_f32[:, 2]
-    el = PlyElement.describe(verts, 'vertex')
-    PlyData([el], text=False).write(str(path))
-
-
-def save_ply_o3d_then_verify(path: Path, xyz_f32: np.ndarray) -> None:
-    """
-    Open3D(Tensor)로 저장 시도 → 헤더 float 확인 → 실패 시 plyfile 폴백
-    """
-    if not _HAVE_O3D:
-        save_ply_plyfile(path, xyz_f32)
-        return
-
-    ok = False
-    try:
-        pcd = o3d.t.geometry.PointCloud()
-        pcd.point["positions"] = o3d.core.Tensor(xyz_f32.astype(np.float32),
-                                                 dtype=o3d.core.Dtype.Float32)
-        o3d.t.io.write_point_cloud(str(path), pcd, write_ascii=False)
-        # 헤더 검증
-        with open(path, "rb") as f:
-            head = f.read(512).decode("utf-8", "ignore")
-        if re.search(r"property\s+float\s+x", head) and \
-           re.search(r"property\s+float\s+y", head) and \
-           re.search(r"property\s+float\s+z", head):
-            ok = True
-    except Exception:
-        ok = False
-
-    if not ok:
-        save_ply_plyfile(path, xyz_f32)
-
-
 class PcdSaver(Node):
-    def __init__(self, topic: str, out_dir: Path, prefix: str,
-                 every: int, qos_reliable: bool, max_frames: int,
-                 idle_timeout_sec: float, log_csv: Path | None,
-                 voxel_size: float):
+    def __init__(
+        self,
+        topic: str,
+        out_dir: Path,
+        prefix: str,
+        every: int,
+        qos_reliable: bool,
+        max_frames: int,
+        idle_timeout_sec: float,
+        log_csv: Path | None,
+        voxel_size: float,
+        shared_publisher: SharedMemoryPublisher | None = None,
+        shared_memory_only: bool = False,
+    ) -> None:
         super().__init__('ply_saver')
 
         self.topic = topic
@@ -141,6 +54,10 @@ class PcdSaver(Node):
         self.max_frames = max_frames  # 0이면 무제한
         self.idle_timeout_sec = float(idle_timeout_sec)
         self.voxel_size = float(max(0.0, voxel_size))
+        self._shared_publisher = shared_publisher
+        self._shared_only = bool(shared_memory_only)
+        if self._shared_only and self._shared_publisher is None:
+            raise ValueError('shared_memory_only requires an active SharedMemoryPublisher')
 
         self.out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -177,13 +94,18 @@ class PcdSaver(Node):
                 self.get_logger().info("No messages for idle-timeout. Shutting down (bag finished?).")
                 rclpy.shutdown()
 
-    def close_log(self) -> None:
+    def close_resources(self) -> None:
         if self._log_fp:
             try:
                 self._log_fp.close()
             except Exception:
                 pass
             self._log_fp = None
+        if self._shared_publisher is not None:
+            try:
+                self._shared_publisher.close()
+            except Exception:
+                pass
 
     def cb(self, msg: PointCloud2):
         self.last_msg_time = time.monotonic()
@@ -192,7 +114,7 @@ class PcdSaver(Node):
             return
 
         t0 = time.perf_counter()
-        xyz = to_xyz_array_from_pc2(msg)
+        xyz = points_from_pointcloud2(msg)
         if xyz.size == 0:
             return
 
@@ -201,15 +123,35 @@ class PcdSaver(Node):
             if xyz.size == 0:
                 return
 
-        name = f"{self.prefix}_{self.idx:0{PAD}d}.ply"
-        path = self.out_dir / name
+        stem = f"{self.prefix}_{self.idx:0{PAD}d}"
+        published = False
+        if self._shared_publisher is not None:
+            try:
+                self._shared_publisher.publish(stem, xyz)
+                published = True
+            except Exception as exc:
+                self.get_logger().error(f"Shared memory publish failed for {stem}: {exc}")
+                if self._shared_only:
+                    return
 
-        save_ply_o3d_then_verify(path, xyz)
+        name = f"{stem}.ply"
+        path = self.out_dir / name
+        if not self._shared_only:
+            save_xyz(path, xyz)
 
         dt_ms = (time.perf_counter() - t0) * 1000.0
         self.saved += 1
         self.idx += 1
-        self.get_logger().info(f"Saved {path} ({xyz.shape[0]} pts) in {dt_ms:.1f} ms")
+        if self._shared_only:
+            self.get_logger().info(
+                f"Published {stem} via shared memory ({xyz.shape[0]} pts) in {dt_ms:.1f} ms"
+            )
+        elif published:
+            self.get_logger().info(
+                f"Saved {path} and published shared memory copy ({xyz.shape[0]} pts) in {dt_ms:.1f} ms"
+            )
+        else:
+            self.get_logger().info(f"Saved {path} ({xyz.shape[0]} pts) in {dt_ms:.1f} ms")
 
         if self._log_writer and self._log_fp:
             try:
@@ -238,10 +180,36 @@ def main():
     ap.add_argument("--voxel-size", type=float, default=0.0,
                     help=">0이면 저장 전 voxel downsample 적용 (m)")
     ap.add_argument("--log-csv", default=None, help="프레임 저장 시간 로그 CSV")
+    ap.add_argument(
+        "--shared-memory-host",
+        default=None,
+        help="Shared memory 메타데이터 수신 호스트 (지정 시 공유 메모리 게시 활성화)",
+    )
+    ap.add_argument(
+        "--shared-memory-port",
+        type=int,
+        default=0,
+        help="Shared memory 메타데이터 포트",
+    )
+    ap.add_argument(
+        "--shared-memory-only",
+        action="store_true",
+        help="디스크 저장 없이 공유 메모리 게시만 수행",
+    )
     args = ap.parse_args()
 
     out_dir = Path(args.out).expanduser().resolve()
     log_csv = Path(args.log_csv).expanduser().resolve() if args.log_csv else None
+
+    publisher: SharedMemoryPublisher | None = None
+    if args.shared_memory_host and args.shared_memory_port > 0:
+        try:
+            publisher = SharedMemoryPublisher(args.shared_memory_host, int(args.shared_memory_port))
+        except Exception as exc:
+            print(f"[bag_recorder] WARN: Shared memory publisher unavailable: {exc}", file=sys.stderr)
+            publisher = None
+    elif args.shared_memory_only:
+        raise SystemExit("--shared-memory-only requires --shared-memory-host/--shared-memory-port")
 
     rclpy.init(args=None)
     node = PcdSaver(
@@ -254,12 +222,14 @@ def main():
         idle_timeout_sec=args.idle_timeout_sec,
         log_csv=log_csv,
         voxel_size=float(args.voxel_size),
+        shared_publisher=publisher,
+        shared_memory_only=bool(args.shared_memory_only),
     )
     try:
         rclpy.spin(node)
     finally:
         try:
-            node.close_log()
+            node.close_resources()
         except Exception:
             pass
         try:
@@ -270,3 +240,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# 변경 요약:
+# - PointCloud2 프레임을 공유 메모리로 게시할 수 있는 옵션을 추가했습니다.
+# - 공유 메모리 전용 모드와 디스크+공유 메모리 병행 모드에서 모두 동작하도록 CLI와 로깅을 조정했습니다.
+# - 종료 시 로그 파일과 공유 메모리 소켓이 안전하게 닫히도록 자원 정리 경로를 통합했습니다.

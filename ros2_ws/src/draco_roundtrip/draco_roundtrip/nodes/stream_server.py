@@ -17,8 +17,8 @@ from draco_roundtrip.utils.protocol import (
     MSG_DATA,
     MSG_EOF,
     MSG_ERROR,
-    recv_message,
-    send_message,
+    available_protocols,
+    resolve_protocol,
 )
 
 
@@ -72,6 +72,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Disable Nagle aggregation on accepted sockets for lower latency')
     ap.add_argument('--socket-buffer-kb', type=int, default=0,
                     help='Resize socket send/receive buffers (KiB) for high-throughput links')
+    protocol_help = available_protocols()
+    ap.add_argument('--protocol',
+                    choices=sorted(protocol_help.keys()),
+                    default='binary',
+                    help='Framing protocol expected from clients (default: %(default)s). Options: '
+                    + ', '.join(f"{name}={desc}" for name, desc in protocol_help.items()))
     return ap
 
 
@@ -105,14 +111,16 @@ def main(argv: list[str] | None = None) -> None:
                 for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
                     with suppress(OSError):
                         conn.setsockopt(socket.SOL_SOCKET, opt, buf_size)
+            protocol = resolve_protocol(args.protocol)
+            print(f"[SERVER] Using {protocol.name} protocol for framing")
             while True:
-                msg = recv_message(conn)
+                msg = protocol.recv(conn)
                 if msg is None:
                     print("[SERVER] End of stream")
                     break
                 if msg.kind == MSG_EOF:
                     print("[SERVER] Received EOF marker from client")
-                    send_message(conn, Message(kind=MSG_EOF, name="", payload=b""))
+                    protocol.send(conn, Message(kind=MSG_EOF, name="", payload=b""))
                     break
                 if msg.kind != MSG_DATA:
                     print(f"[SERVER] Ignoring unexpected message kind: {msg.kind}")
@@ -130,11 +138,11 @@ def main(argv: list[str] | None = None) -> None:
                     )
                 except Exception as exc:
                     error_msg = Message(kind=MSG_ERROR, name=stem, payload=str(exc).encode())
-                    send_message(conn, error_msg)
+                    protocol.send(conn, error_msg)
                     print(f"[SERVER] ERROR decoding {stem}: {exc}")
                     continue
                 reply = Message(kind=MSG_DATA, name=f"{stem}.decoded", payload=ply_bytes)
-                send_message(conn, reply)
+                protocol.send(conn, reply)
                 bytes_out += len(ply_bytes)
                 print(f"[SERVER] Sent {reply.name} ({len(ply_bytes)} bytes)")
 
