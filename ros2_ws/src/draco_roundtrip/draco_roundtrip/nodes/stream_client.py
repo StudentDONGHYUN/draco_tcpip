@@ -14,8 +14,14 @@ from typing import Iterable, Set
 
 import numpy as np
 
+from draco_tools.core.encoder import (
+    add_encoder_arguments,
+    encode_frame,
+    find_draco_encoder,
+    format_encode_log,
+    resolve_encoder_options,
+)
 from draco_roundtrip.analysis.metrics import compute_basic_metrics
-from draco_roundtrip.draco.encoder import EncoderOptions, encode_frame, find_draco_encoder
 from draco_roundtrip.io.ply_codec import load_xyz, load_xyz_from_bytes
 from draco_roundtrip.utils import ensure_directory, resolve_qos_override
 from draco_roundtrip.net.protocol import (
@@ -49,11 +55,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--topic', required=True)
     ap.add_argument('--prefix', required=True)
     ap.add_argument('--ply-dir', default='data/ply_stream')
-    ap.add_argument('--encoder', default=None)
-    ap.add_argument('--cl', type=int, default=8)
-    ap.add_argument('--qp', type=int, default=12)
-    ap.add_argument('--qg', type=int, default=10)
-    ap.add_argument('--encoder-extra', nargs='*', default=[])
+    add_encoder_arguments(
+        ap,
+        hint_option='--encoder',
+        hint_dest='encoder',
+        extra_option='--encoder-extra',
+        extra_dest='encoder_extra',
+    )
     ap.add_argument('--idle-timeout', type=float, default=10.0)
     ap.add_argument('--max-frames', type=int, default=0)
     ap.add_argument('--best-effort', action='store_true')
@@ -71,13 +79,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def main(argv: Iterable[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
 
-    encoder_path = find_draco_encoder(args.encoder)
-    encoder_options = EncoderOptions(
-        compress_level=args.cl,
-        position_quantization_bits=args.qp,
-        generic_quantization_bits=args.qg,
-        extra_args=tuple(args.encoder_extra),
-    )
+    encoder_hint, encoder_options, _ = resolve_encoder_options(args)
+    encoder_path = find_draco_encoder(encoder_hint)
 
     ply_dir = ensure_directory(Path(args.ply_dir).resolve())
     work_dir = ensure_directory(Path(args.work_dir).resolve())
@@ -118,6 +121,7 @@ def main(argv: Iterable[str] | None = None) -> None:
                             print(f"[CLIENT] ENCODE FAIL {ply_path.name}: {exc}")
                             processed.add(ply_path)
                             continue
+                        print(format_encode_log(result, source=ply_path, prefix='[CLIENT][ENCODER]'))
                         message = Message(kind=MSG_DATA, name=ply_path.stem, payload=drc_bytes)
                         send_message(sock, message)
                         bytes_sent += len(drc_bytes)

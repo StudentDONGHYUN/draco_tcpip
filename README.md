@@ -86,6 +86,7 @@ ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
 ## 추가 자료
 - `docs/HOWTO.md`: 세부 운영 시나리오와 환경 설정 가이드
 - `docs/3d_slam_setup.md`: SLAM 연동 구성 절차
+- `docs/encoder_cli.md`: Draco 인코더 CLI 헬퍼와 통합 로그 포맷 가이드
 - `docs/results_template.md`: 실험 결과 정리 템플릿
 - `refac.md`: 현재 진행 중인 리팩토링 제안 및 단계별 목표
 
