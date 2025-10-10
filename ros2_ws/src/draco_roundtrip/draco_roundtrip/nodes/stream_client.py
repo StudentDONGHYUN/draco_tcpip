@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import contextlib
+import itertools
+import json
 import queue
 import socket
 import subprocess
@@ -12,7 +15,7 @@ import sys
 import threading
 import time
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_field
 from multiprocessing import shared_memory
 from pathlib import Path
 from typing import Deque, Dict, Iterable, Optional, Protocol
@@ -47,6 +50,32 @@ from draco_roundtrip.shared_memory import SharedMemoryReceiver, SharedMemoryDesc
 from draco_roundtrip.ros.playback import start_playback_thread
 
 
+_capture_seq = itertools.count()
+_CAPTURE_SENTINEL = object()
+_ENCODE_SENTINEL = object()
+
+
+async def _put_with_retry(queue: asyncio.Queue, item: object) -> None:
+    """Insert an item even if the queue is temporarily full (backpressure friendly)."""
+
+    while True:
+        try:
+            queue.put_nowait(item)
+            return
+        except asyncio.QueueFull:
+            await asyncio.sleep(0.05)
+
+
+async def _signal_capture_stop(queue: "asyncio.PriorityQueue", count: int) -> None:
+    for _ in range(count):
+        await _put_with_retry(queue, (float("inf"), next(_capture_seq), None))
+
+
+def _safe_unlink(path: Path) -> None:
+    with contextlib.suppress(FileNotFoundError):
+        path.unlink()
+
+
 def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: float = 5.0) -> None:
     """Best-effort shutdown helper that avoids leaving child processes around."""
 
@@ -67,9 +96,11 @@ def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: flo
 
 @dataclass(slots=True)
 class FrameContext:
-    """Track inflight frames so replies can be matched without stalling the sender."""
+    """Track inflight frames with timing metadata for RTT calculations."""
 
-    handle: FrameHandle
+    handle: "FrameHandle"
+    captured_at: float
+    encoded_at: float
     sent_at: float
     payload_size: int
 
@@ -81,21 +112,99 @@ class ReplyEvent:
     error: BaseException | None = None
 
 
+@dataclass(slots=True)
+class CapturePayload:
+    """Represent a frame awaiting encoding with capture timing info."""
+
+    handle: "FrameHandle"
+    captured_at: float
+
+
+@dataclass(slots=True)
+class EncodedFrame:
+    """Encoded payload ready to be sent across the network."""
+
+    handle: "FrameHandle"
+    payload: bytes
+    captured_at: float
+    encoded_at: float
+
+
+@dataclass(slots=True)
+class StageStats:
+    """Aggregate simple timing statistics for a pipeline stage."""
+
+    count: int = 0
+    total: float = 0.0
+    maximum: float = 0.0
+
+    def record(self, value: float) -> None:
+        self.count += 1
+        self.total += value
+        if value > self.maximum:
+            self.maximum = value
+
+    def summary(self) -> str:
+        if self.count == 0:
+            return "n/a"
+        avg = self.total / self.count
+        return f"avg={avg*1000:.2f} ms max={self.maximum*1000:.2f} ms ({self.count} samples)"
+
+    def as_dict(self) -> dict[str, float | int]:
+        if self.count == 0:
+            return {"count": 0, "avg_ms": 0.0, "max_ms": 0.0}
+        avg = self.total / self.count
+        return {"count": self.count, "avg_ms": avg * 1000.0, "max_ms": self.maximum * 1000.0}
+
+
+@dataclass(slots=True)
+class PipelineStats:
+    """Collect pipeline timing data for diagnostics."""
+
+    capture_to_encode: StageStats = dataclass_field(default_factory=StageStats)
+    encode_time: StageStats = dataclass_field(default_factory=StageStats)
+    encode_to_send: StageStats = dataclass_field(default_factory=StageStats)
+    round_trip: StageStats = dataclass_field(default_factory=StageStats)
+
+    def reset(self) -> None:
+        self.capture_to_encode = StageStats()
+        self.encode_time = StageStats()
+        self.encode_to_send = StageStats()
+        self.round_trip = StageStats()
+
+
+@dataclass(slots=True)
+class TrafficStats:
+    """Track aggregate byte counters for the session."""
+
+    sent: int = 0
+    received: int = 0
+
+
 class ReplyPump(threading.Thread):
     """Background thread that continuously drains replies from the server."""
 
     def __init__(
         self,
         sock: socket.socket,
-        queue: "queue.Queue[ReplyEvent]",
+        queue: "asyncio.Queue[ReplyEvent]",
         stop_event: threading.Event,
         protocol: ProtocolHandler,
+        loop: asyncio.AbstractEventLoop,
     ) -> None:
         super().__init__(daemon=True)
         self._sock = sock
         self._queue = queue
         self._stop_event = stop_event
         self._protocol = protocol
+        self._loop = loop
+
+    def _submit(self, event: ReplyEvent) -> None:
+        try:
+            self._loop.call_soon_threadsafe(self._queue.put_nowait, event)
+        except RuntimeError:
+            # Event loop might be closed already during shutdown; drop the event.
+            pass
 
     def run(self) -> None:  # pragma: no cover - threading behaviour is timing sensitive.
         while not self._stop_event.is_set():
@@ -104,12 +213,12 @@ class ReplyPump(threading.Thread):
             except socket.timeout:
                 continue
             except Exception as exc:  # noqa: BLE001 - bubble up to the producer loop.
-                self._queue.put(ReplyEvent(kind="error", error=exc))
+                self._submit(ReplyEvent(kind="error", error=exc))
                 return
             if message is None:
-                self._queue.put(ReplyEvent(kind="closed"))
+                self._submit(ReplyEvent(kind="closed"))
                 return
-            self._queue.put(ReplyEvent(kind="message", message=message))
+            self._submit(ReplyEvent(kind="message", message=message))
             if message.kind == MSG_EOF:
                 return
 
@@ -121,6 +230,9 @@ class FrameHandle(Protocol):
         ...
 
     def load_source_points(self) -> np.ndarray:
+        ...
+
+    def priority_hint(self) -> float:
         ...
 
     def on_consumed(self) -> None:
@@ -137,12 +249,19 @@ class FilesystemFrameHandle:
         self._watcher = watcher
         self._path = path
         self.name = path.stem
+        try:
+            self._priority = path.stat().st_mtime
+        except FileNotFoundError:
+            self._priority = time.time()
 
     def ensure_encoder_input(self, work_dir: Path) -> Path:  # noqa: ARG002 - interface requirement
         return self._path
 
     def load_source_points(self) -> np.ndarray:
         return load_xyz(self._path)
+
+    def priority_hint(self) -> float:
+        return self._priority
 
     def on_consumed(self) -> None:
         self._watcher.mark_consumed(self._path)
@@ -161,6 +280,7 @@ class SharedMemoryFrameHandle:
         self.name = stem
         self._cached_points: np.ndarray | None = None
         self._temp_path: Path | None = None
+        self._priority = descriptor.timestamp or time.time()
 
     def _materialize_points(self) -> np.ndarray:
         if self._cached_points is not None:
@@ -187,6 +307,9 @@ class SharedMemoryFrameHandle:
 
     def load_source_points(self) -> np.ndarray:
         return self._materialize_points()
+
+    def priority_hint(self) -> float:
+        return self._priority
 
     def _remove_temp(self) -> None:
         if self._temp_path is None:
@@ -225,6 +348,265 @@ class SharedMemoryFrameSupplier:
         descriptors = self._receiver.get_batch(timeout)
         return [SharedMemoryFrameHandle(desc) for desc in descriptors]
 
+
+async def capture_stage(
+    frame_supplier: FilesystemFrameSupplier | SharedMemoryFrameSupplier,
+    capture_queue: "asyncio.PriorityQueue[tuple[float, int, CapturePayload | None]]",
+    *,
+    stop_event: asyncio.Event,
+    bag_done: asyncio.Event,
+    saver_done: asyncio.Event,
+    encode_workers: int,
+    idle_rounds: int = 5,
+) -> None:
+    """Monitor the capture source and enqueue frames for encoding."""
+
+    try:
+        initial = frame_supplier.drain_initial()
+        for handle in initial:
+            payload = CapturePayload(handle=handle, captured_at=time.monotonic())
+            await capture_queue.put((handle.priority_hint(), next(_capture_seq), payload))
+        empty_rounds = 0
+        while not stop_event.is_set():
+            handles = await asyncio.to_thread(frame_supplier.wait_for_new, 0.2)
+            if handles:
+                empty_rounds = 0
+                for handle in handles:
+                    payload = CapturePayload(handle=handle, captured_at=time.monotonic())
+                    await capture_queue.put((handle.priority_hint(), next(_capture_seq), payload))
+            else:
+                empty_rounds += 1
+            if (
+                bag_done.is_set()
+                and saver_done.is_set()
+                and not handles
+                and empty_rounds >= idle_rounds
+            ):
+                break
+    except asyncio.CancelledError:
+        stop_event.set()
+        raise
+    finally:
+        await _signal_capture_stop(capture_queue, encode_workers)
+
+
+async def encode_worker(
+    worker_id: int,
+    capture_queue: "asyncio.PriorityQueue[tuple[float, int, CapturePayload | None]]",
+    network_queue: "asyncio.Queue[Optional[EncodedFrame]]",
+    *,
+    encoder_options,
+    encoder_path: Path,
+    work_dir: Path,
+    stats: PipelineStats,
+    stop_event: asyncio.Event,
+) -> None:
+    """Encode frames pulled from the capture queue and forward them."""
+
+    while not stop_event.is_set():
+        priority, _, payload = await capture_queue.get()
+        if payload is None:
+            capture_queue.task_done()
+            await _put_with_retry(network_queue, None)
+            break
+        handle = payload.handle
+        captured_at = payload.captured_at
+        encode_start = time.monotonic()
+        try:
+            encoder_input = await asyncio.to_thread(handle.ensure_encoder_input, work_dir)
+            result = await asyncio.to_thread(
+                encode_frame,
+                encoder_input,
+                work_dir,
+                encoder_options,
+                encoder_path,
+                False,
+            )
+            drc_bytes = await asyncio.to_thread(result.output.read_bytes)
+            await asyncio.to_thread(_safe_unlink, result.output)
+            encoded_at = time.monotonic()
+            stats.capture_to_encode.record(encode_start - captured_at)
+            stats.encode_time.record(encoded_at - encode_start)
+            print(
+                format_encode_log(
+                    result,
+                    source=Path(encoder_input),
+                    prefix=f"[CLIENT][ENCODER:{worker_id}]",
+                )
+            )
+            encoded = EncodedFrame(
+                handle=handle,
+                payload=drc_bytes,
+                captured_at=captured_at,
+                encoded_at=encoded_at,
+            )
+            await network_queue.put(encoded)
+        except asyncio.CancelledError:
+            stop_event.set()
+            raise
+        except Exception as exc:
+            print(f"[CLIENT] ENCODE FAIL {handle.name}: {exc}")
+            with contextlib.suppress(Exception):
+                handle.on_consumed()
+        finally:
+            capture_queue.task_done()
+
+
+async def network_sender(
+    sock: socket.socket,
+    protocol: ProtocolHandler,
+    network_queue: "asyncio.Queue[Optional[EncodedFrame]]",
+    inflight: Dict[str, FrameContext],
+    *,
+    stats: PipelineStats,
+    traffic: TrafficStats,
+    stop_event: asyncio.Event,
+    inflight_condition: asyncio.Condition,
+    encode_workers: int,
+    max_inflight: int,
+) -> None:
+    """Send encoded frames while respecting inflight limits."""
+
+    encode_finished = 0
+    eof_sent = False
+    while not stop_event.is_set():
+        item = await network_queue.get()
+        if item is None:
+            encode_finished += 1
+            network_queue.task_done()
+            if encode_finished >= encode_workers and not eof_sent:
+                async with inflight_condition:
+                    while inflight and not stop_event.is_set():
+                        await inflight_condition.wait()
+                if not inflight and not stop_event.is_set():
+                    message = Message(kind=MSG_EOF, name="", payload=b"")
+                    try:
+                        await asyncio.to_thread(protocol.send, sock, message)
+                        print("[CLIENT] Sent EOF marker to server")
+                        eof_sent = True
+                    except Exception as exc:
+                        print(f"[CLIENT] ERROR sending EOF marker: {exc}")
+                        stop_event.set()
+                        break
+            if eof_sent:
+                break
+            continue
+
+        encoded = item
+        async with inflight_condition:
+            while len(inflight) >= max_inflight and not stop_event.is_set():
+                await inflight_condition.wait()
+        message = Message(kind=MSG_DATA, name=encoded.handle.name, payload=encoded.payload)
+        try:
+            await asyncio.to_thread(protocol.send, sock, message)
+        except Exception as exc:
+            print(f"[CLIENT] ERROR sending {encoded.handle.name}: {exc}")
+            stop_event.set()
+            with contextlib.suppress(Exception):
+                encoded.handle.on_aborted()
+            async with inflight_condition:
+                inflight_condition.notify_all()
+            network_queue.task_done()
+            break
+        sent_at = time.monotonic()
+        stats.encode_to_send.record(sent_at - encoded.encoded_at)
+        inflight[encoded.handle.name] = FrameContext(
+            handle=encoded.handle,
+            captured_at=encoded.captured_at,
+            encoded_at=encoded.encoded_at,
+            sent_at=sent_at,
+            payload_size=len(encoded.payload),
+        )
+        traffic.sent += len(encoded.payload)
+        print(f"[CLIENT] Sent {encoded.handle.name} ({len(encoded.payload)} bytes)")
+        network_queue.task_done()
+
+
+async def reply_consumer(
+    reply_queue: "asyncio.Queue[ReplyEvent]",
+    inflight: Dict[str, FrameContext],
+    *,
+    stats: PipelineStats,
+    traffic: TrafficStats,
+    stop_event: asyncio.Event,
+    inflight_condition: asyncio.Condition,
+    decoded_dir: Path,
+    to_play: "queue.Queue",
+    play_sample: int,
+    frame_counter: itertools.count,
+) -> None:
+    """Process replies from the server and release inflight slots."""
+
+    while not stop_event.is_set():
+        event = await reply_queue.get()
+        if event.kind == "error" and event.error:
+            print(f"[CLIENT] ERROR from reply pump: {event.error}")
+            stop_event.set()
+            reply_queue.task_done()
+            break
+        if event.kind == "closed":
+            print("[CLIENT] Connection closed by server")
+            stop_event.set()
+            reply_queue.task_done()
+            break
+        if event.kind != "message" or event.message is None:
+            reply_queue.task_done()
+            continue
+        message = event.message
+        if message.kind == MSG_EOF:
+            print("[CLIENT] EOF handshake complete")
+            stop_event.set()
+            reply_queue.task_done()
+            break
+        stem = Path(message.name or "").stem
+        async with inflight_condition:
+            ctx = inflight.pop(stem, None)
+            inflight_condition.notify_all()
+        if ctx is None:
+            print(f"[CLIENT] WARN: Received reply for unknown frame {message.name}")
+            reply_queue.task_done()
+            continue
+        if message.kind == MSG_ERROR:
+            detail = message.payload.decode(errors="ignore")
+            print(f"[CLIENT] SERVER ERROR for {message.name or stem}: {detail}")
+            with contextlib.suppress(Exception):
+                ctx.handle.on_consumed()
+            reply_queue.task_done()
+            continue
+        traffic.received += len(message.payload)
+        decoded_name = message.name or f"{stem}.decoded"
+        if not decoded_name.endswith(".ply"):
+            decoded_name = f"{decoded_name}.ply"
+        decoded_path = decoded_dir / decoded_name
+        await asyncio.to_thread(decoded_path.write_bytes, message.payload)
+        pts_src = await asyncio.to_thread(ctx.handle.load_source_points)
+        pts_dec = await asyncio.to_thread(load_xyz_from_bytes, message.payload)
+        metrics = await asyncio.to_thread(compute_basic_metrics, pts_src, pts_dec, play_sample)
+        stats.round_trip.record(time.monotonic() - ctx.sent_at)
+        frame_idx = next(frame_counter)
+        to_play.put((frame_idx, decoded_name, pts_src, pts_dec))
+        print(f"[CLIENT] Metrics {decoded_name}: {metrics}")
+        with contextlib.suppress(Exception):
+            ctx.handle.on_consumed()
+        reply_queue.task_done()
+
+
+async def monitor_process(
+    proc: subprocess.Popen | None,
+    event: asyncio.Event,
+    name: str,
+    stop_event: asyncio.Event,
+) -> None:
+    """Set an event once the given process completes."""
+
+    if proc is None:
+        event.set()
+        return
+    try:
+        while proc.poll() is None and not stop_event.is_set():
+            await asyncio.sleep(0.5)
+    finally:
+        event.set()
 
 try:  # NOTE: Prefer inotify when available to honor event-driven spool monitoring.
     from inotify_simple import INotify, flags as inotify_flags
@@ -411,6 +793,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     + ', '.join(f"{name}={desc}" for name, desc in protocol_help.items()))
     ap.add_argument('--max-inflight', type=int, default=1,
                     help='Maximum number of frames to pipeline before waiting for replies')
+    ap.add_argument('--capture-queue', type=int, default=4,
+                    help='Maximum capture queue depth before applying backpressure')
+    ap.add_argument('--encode-workers', type=int, default=2,
+                    help='Number of concurrent encoder workers for the async pipeline')
     ap.add_argument('--tcp-nodelay', action='store_true',
                     help='Disable Nagle aggregation to reduce latency for interactive playback')
     ap.add_argument('--socket-buffer-kb', type=int, default=0,
@@ -419,12 +805,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     choices=('filesystem', 'shared-memory'),
                     default='shared-memory',
                     help='Frame capture backend: filesystem spool (legacy) or shared-memory zero copy')
+    ap.add_argument('--metrics-out', default=None,
+                    help='Optional path to write pipeline timing/throughput metrics as JSON')
     return ap
 
 
-def main(argv: Iterable[str] | None = None) -> None:
-    args = build_arg_parser().parse_args(argv)
 
+async def run_client(args: argparse.Namespace) -> None:
     layout = resolve_data_layout(
         {
             'ply_dir': 'ply_stream',
@@ -454,19 +841,23 @@ def main(argv: Iterable[str] | None = None) -> None:
         bag_cmd += ['--qos-profile-overrides-path', str(qos_override)]
     else:
         print('[CLIENT] WARN: QoS override file not found, falling back to recorded QoS', file=sys.stderr)
+
     bag_process = subprocess.Popen(bag_cmd)
     saver_proc: subprocess.Popen | None = None
+    shared_receiver: SharedMemoryReceiver | None = None
 
     to_play: queue.Queue = queue.Queue()
     playback_thread = start_playback_thread(to_play, args.play_frame_id, args.play_topic_prefix, args.play_hz)
 
-    frame_idx = 0
-    start_time = time.monotonic()
-    bytes_sent = 0
-    bytes_received = 0
-    pending: Deque[FrameHandle] = deque()
+    stop_event = asyncio.Event()
+    bag_done = asyncio.Event()
+    saver_done = asyncio.Event()
+
+    traffic = TrafficStats()
+    pipeline_stats = PipelineStats()
+    frame_counter = itertools.count()
     inflight: Dict[str, FrameContext] = {}
-    shared_receiver: SharedMemoryReceiver | None = None
+    start_time = time.monotonic()
 
     try:
         with socket.create_connection(
@@ -474,7 +865,6 @@ def main(argv: Iterable[str] | None = None) -> None:
             timeout=args.socket_timeout if args.socket_timeout > 0 else None,
         ) as sock:
             if args.socket_timeout > 0:
-                # NOTE: Guard against stalled reads when the server crashes mid-transfer.
                 sock.settimeout(args.socket_timeout)
             if args.tcp_nodelay:
                 with contextlib.suppress(OSError):
@@ -488,12 +878,18 @@ def main(argv: Iterable[str] | None = None) -> None:
             print(
                 f"[CLIENT] Connected to {args.server_host}:{args.server_port} using {protocol.name} protocol"
             )
+
+            loop = asyncio.get_running_loop()
+            reply_queue: "asyncio.Queue[ReplyEvent]" = asyncio.Queue()
+            pump_stop = threading.Event()
+            pump = ReplyPump(sock, reply_queue, pump_stop, protocol, loop)
+
             with contextlib.ExitStack() as stack:
                 frame_supplier: FilesystemFrameSupplier | SharedMemoryFrameSupplier
-                if args.capture_transport == "filesystem":
+                if args.capture_transport == 'filesystem':
                     watcher = stack.enter_context(SpoolWatcher(ply_dir, args.prefix))
                     frame_supplier = FilesystemFrameSupplier(watcher)
-                elif args.capture_transport == "shared-memory":
+                elif args.capture_transport == 'shared-memory':
                     shared_receiver = SharedMemoryReceiver()
                     shared_receiver.start()
                     stack.callback(shared_receiver.stop)
@@ -501,13 +897,6 @@ def main(argv: Iterable[str] | None = None) -> None:
                 else:
                     raise ValueError(f"unknown capture transport '{args.capture_transport}'")
 
-                pending = deque(frame_supplier.drain_initial())
-                eof_sent = False
-                shutdown_ack = False
-                stop_event = threading.Event()
-                reply_queue: "queue.Queue[ReplyEvent]" = queue.Queue()
-                pump = ReplyPump(sock, reply_queue, stop_event, protocol)
-                pump.start()
                 shared_host = shared_receiver.host if shared_receiver else None
                 shared_port = shared_receiver.port if shared_receiver else None
                 saver_proc = launch_bag_to_ply(
@@ -515,232 +904,163 @@ def main(argv: Iterable[str] | None = None) -> None:
                     ply_dir,
                     shared_memory_host=shared_host,
                     shared_memory_port=shared_port,
-                    shared_memory_only=(args.capture_transport == "shared-memory"),
+                    shared_memory_only=(args.capture_transport == 'shared-memory'),
                 )
+
+                if args.encode_workers <= 0:
+                    raise ValueError('encode_workers must be positive')
+
+                capture_queue: "asyncio.PriorityQueue[tuple[float, int, CapturePayload | None]]" = (
+                    asyncio.PriorityQueue(maxsize=max(1, args.capture_queue))
+                )
+                network_queue: "asyncio.Queue[Optional[EncodedFrame]]" = asyncio.Queue(
+                    maxsize=max(1, args.max_inflight)
+                )
+                inflight_condition = asyncio.Condition()
+
+                tasks: list[asyncio.Task[None]] = []
+                tasks.append(
+                    asyncio.create_task(
+                        capture_stage(
+                            frame_supplier,
+                            capture_queue,
+                            stop_event=stop_event,
+                            bag_done=bag_done,
+                            saver_done=saver_done,
+                            encode_workers=args.encode_workers,
+                        )
+                    )
+                )
+                for worker_id in range(args.encode_workers):
+                    tasks.append(
+                        asyncio.create_task(
+                            encode_worker(
+                                worker_id,
+                                capture_queue,
+                                network_queue,
+                                encoder_options=encoder_options,
+                                encoder_path=encoder_path,
+                                work_dir=work_dir,
+                                stats=pipeline_stats,
+                                stop_event=stop_event,
+                            )
+                        )
+                    )
+                tasks.append(
+                    asyncio.create_task(
+                        network_sender(
+                            sock,
+                            protocol,
+                            network_queue,
+                            inflight,
+                            stats=pipeline_stats,
+                            traffic=traffic,
+                            stop_event=stop_event,
+                            inflight_condition=inflight_condition,
+                            encode_workers=args.encode_workers,
+                            max_inflight=max(1, args.max_inflight),
+                        )
+                    )
+                )
+                tasks.append(
+                    asyncio.create_task(
+                        reply_consumer(
+                            reply_queue,
+                            inflight,
+                            stats=pipeline_stats,
+                            traffic=traffic,
+                            stop_event=stop_event,
+                            inflight_condition=inflight_condition,
+                            decoded_dir=decoded_dir,
+                            to_play=to_play,
+                            play_sample=args.play_sample,
+                            frame_counter=frame_counter,
+                        )
+                    )
+                )
+                tasks.append(
+                    asyncio.create_task(
+                        monitor_process(bag_process, bag_done, 'ros2 bag', stop_event)
+                    )
+                )
+                if saver_proc is not None:
+                    tasks.append(
+                        asyncio.create_task(
+                            monitor_process(saver_proc, saver_done, 'bag_to_ply', stop_event)
+                        )
+                    )
+                else:
+                    saver_done.set()
+
+                pump.start()
                 try:
-                    while True:
-                        max_inflight = max(1, args.max_inflight)
-                        progress_made = False
-
-                        while pending and len(inflight) < max_inflight and not eof_sent:
-                            handle = pending.popleft()
-                            try:
-                                encoder_input = handle.ensure_encoder_input(work_dir)
-                                result = encode_frame(
-                                    encoder_input,
-                                    work_dir,
-                                    encoder_options,
-                                    encoder_hint=encoder_path,
-                                    skip_existing=False,
-                                )
-                                drc_bytes = result.output.read_bytes()
-                                with contextlib.suppress(FileNotFoundError):
-                                    result.output.unlink()
-                            except Exception as exc:
-                                print(f"[CLIENT] ENCODE FAIL {handle.name}: {exc}")
-                                handle.on_consumed()
-                                continue
-                            encoder_input_path = Path(encoder_input)
-                            print(
-                                format_encode_log(
-                                    result,
-                                    source=encoder_input_path,
-                                    prefix='[CLIENT][ENCODER]'
-                                )
-                            )
-                            message = Message(kind=MSG_DATA, name=handle.name, payload=drc_bytes)
-                            try:
-                                protocol.send(sock, message)
-                            except socket.timeout:
-                                print(f"[CLIENT] ERROR: Timeout sending {handle.name}")
-                                handle.on_consumed()
-                                eof_sent = True
-                                break
-                            inflight[handle.name] = FrameContext(
-                                handle=handle,
-                                sent_at=time.monotonic(),
-                                payload_size=len(drc_bytes),
-                            )
-                            bytes_sent += len(drc_bytes)
-                            print(f"[CLIENT] Sent {encoder_input_path.name} ({len(drc_bytes)} bytes)")
-                            progress_made = True
-
-                        def handle_reply(event: ReplyEvent) -> None:
-                            nonlocal frame_idx, bytes_received, eof_sent, shutdown_ack
-                            if event.kind == "message" and event.message:
-                                reply = event.message
-                                if reply.kind == MSG_EOF:
-                                    print('[CLIENT] EOF handshake complete')
-                                    shutdown_ack = True
-                                    return
-                                if reply.kind == MSG_ERROR:
-                                    detail = reply.payload.decode(errors='ignore')
-                                    stem = reply.name or 'frame'
-                                    ctx = inflight.pop(Path(stem).stem, None)
-                                    print(
-                                        f"[CLIENT] SERVER ERROR for {stem}: {detail}"
-                                    )
-                                    if ctx:
-                                        ctx.handle.on_consumed()
-                                    return
-                                stem = Path(reply.name or '').stem
-                                ctx = inflight.pop(stem, None)
-                                if ctx is None:
-                                    print(f"[CLIENT] WARN: Received reply for unknown frame {reply.name}")
-                                    return
-                                bytes_received += len(reply.payload)
-                                reply_name = reply.name or f"{stem}.decoded"
-                                if not reply_name.endswith('.ply'):
-                                    reply_name = f"{reply_name}.ply"
-                                decoded_path = decoded_dir / reply_name
-                                decoded_path.write_bytes(reply.payload)
-
-                                pts_src = ctx.handle.load_source_points()
-                                pts_dec = load_xyz_from_bytes(reply.payload)
-                                metrics = compute_basic_metrics(pts_src, pts_dec, args.play_sample)
-                                rtt = time.monotonic() - ctx.sent_at
-                                throughput_mbps = (
-                                    ctx.payload_size * 8 / max(rtt, 1e-6) / 1e6
-                                )
-                                print(
-                                    f"[CLIENT] Frame {frame_idx:05d} metrics — "
-                                    f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "
-                                    f"bboxΔ=({metrics['bbox_delta'][0]:+.3f},{metrics['bbox_delta'][1]:+.3f},{metrics['bbox_delta'][2]:+.3f}) "
-                                    f"Chamfer(mean/max)={metrics['chamfer_mean']}/{metrics['chamfer_max']} "
-                                    f"RTT={rtt:.3f}s throughput={throughput_mbps:.2f}Mbps"
-                                )
-                                to_play.put((frame_idx, stem, pts_src, pts_dec))
-                                ctx.handle.on_consumed()
-                                frame_idx += 1
-                                return
-                            if event.kind == "error" and event.error:
-                                raise event.error
-                            if event.kind == "closed":
-                                raise ConnectionClosed("server closed")
-
-                        def drain_replies(block: bool, timeout: float | None = None) -> bool:
-                            drained = False
-                            if block:
-                                try:
-                                    event = reply_queue.get(timeout=timeout)
-                                except queue.Empty:
-                                    return False
-                                handle_reply(event)
-                                drained = True
-                            while True:
-                                try:
-                                    event = reply_queue.get_nowait()
-                                except queue.Empty:
-                                    break
-                                handle_reply(event)
-                                drained = True
-                            return drained
-
-                        while drain_replies(block=False):
-                            progress_made = True
-                            if shutdown_ack:
-                                break
-                        if shutdown_ack:
-                            break
-
-                        if not eof_sent:
-                            new_handles = frame_supplier.wait_for_new(timeout=0.2)
-                            if new_handles:
-                                pending.extend(new_handles)
-                                progress_made = True
-
-                        bag_done = bag_process.poll() is not None
-                        saver_done = saver_proc is None or saver_proc.poll() is not None
-                        if (
-                            bag_done
-                            and saver_done
-                            and not pending
-                            and not inflight
-                            and not eof_sent
-                        ):
-                            eof_message = Message(kind=MSG_EOF, name='', payload=b'')
-                            try:
-                                protocol.send(sock, eof_message)
-                            except socket.timeout:
-                                print('[CLIENT] Timeout while sending EOF marker')
-                                break
-                            print('[CLIENT] Sent EOF marker to server')
-                            eof_sent = True
-                            progress_made = True
-
-                        if shutdown_ack:
-                            break
-
-                        if inflight and (len(inflight) >= max_inflight or not pending):
-                            progress_made = drain_replies(
-                                block=True,
-                                timeout=args.socket_timeout if args.socket_timeout > 0 else None,
-                            ) or progress_made
-                            if shutdown_ack:
-                                break
-
-                        if not pending and not inflight and eof_sent:
-                            if shutdown_ack:
-                                break
-                            progress_made = drain_replies(
-                                block=True,
-                                timeout=args.socket_timeout if args.socket_timeout > 0 else None,
-                            ) or progress_made
-                            if shutdown_ack:
-                                break
-
-                        if not progress_made:
-                            if inflight:
-                                progress_made = drain_replies(
-                                    block=True,
-                                    timeout=args.socket_timeout if args.socket_timeout > 0 else None,
-                                )
-                                if shutdown_ack:
-                                    break
-                            elif not eof_sent:
-                                new_handles = frame_supplier.wait_for_new(timeout=0.5)
-                                if new_handles:
-                                    pending.extend(new_handles)
-                                    progress_made = True
-
-                        if shutdown_ack:
-                            break
-
-                        if not progress_made and not pending and not inflight and eof_sent:
-                            break
-                except ConnectionClosed:
-                    print('[CLIENT] Connection closed, stopping loop')
-                except socket.timeout:
-                    print('[CLIENT] Socket timeout encountered, shutting down connection')
-                finally:
+                    await asyncio.gather(*tasks)
+                except Exception:
                     stop_event.set()
+                    for task in tasks:
+                        task.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
+                    raise
+                finally:
+                    pump_stop.set()
                     if pump.is_alive():
                         pump.join(timeout=1.0)
     finally:
-        for ctx in inflight.values():
+        stop_event.set()
+        for ctx in list(inflight.values()):
             with contextlib.suppress(Exception):
                 ctx.handle.on_aborted()
-        while pending:
-            handle = pending.popleft()
-            with contextlib.suppress(Exception):
-                handle.on_aborted()
         to_play.put(None)
         if playback_thread.is_alive():
             playback_thread.join(timeout=1.0)
         _terminate_process(bag_process, 'ros2 bag')
         if saver_proc is not None:
             _terminate_process(saver_proc, 'bag_to_ply')
-        elapsed = max(time.monotonic() - start_time, 1e-6)
-        print('[CLIENT] ---- Transfer summary ----')
-        print(f"  elapsed: {elapsed:.2f} s")
-        print(f"  sent: {bytes_sent} bytes ({bytes_sent * 8 / elapsed / 1e6:.3f} Mbps)")
-        print(f"  received: {bytes_received} bytes ({bytes_received * 8 / elapsed / 1e6:.3f} Mbps)")
+
+    elapsed = max(time.monotonic() - start_time, 1e-6)
+    frames_processed = pipeline_stats.round_trip.count
+    print('[CLIENT] ---- Transfer summary ----')
+    print(f"  elapsed: {elapsed:.2f} s")
+    print(f"  frames: {frames_processed}")
+    print(f"  sent: {traffic.sent} bytes ({traffic.sent * 8 / elapsed / 1e6:.3f} Mbps)")
+    print(
+        f"  received: {traffic.received} bytes"
+        f" ({traffic.received * 8 / elapsed / 1e6:.3f} Mbps)"
+    )
+    print('  stage metrics:')
+    print(f"    capture→encode: {pipeline_stats.capture_to_encode.summary()}")
+    print(f"    encode latency: {pipeline_stats.encode_time.summary()}")
+    print(f"    encode→send: {pipeline_stats.encode_to_send.summary()}")
+    print(f"    round-trip: {pipeline_stats.round_trip.summary()}")
+
+    metrics_out_path = Path(args.metrics_out).expanduser() if args.metrics_out else work_dir / 'pipeline_metrics.json'
+    metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        metrics_payload = {
+            'elapsed_sec': elapsed,
+            'frames': frames_processed,
+            'bytes_sent': traffic.sent,
+            'bytes_received': traffic.received,
+            'capture_to_encode': pipeline_stats.capture_to_encode.as_dict(),
+            'encode_latency': pipeline_stats.encode_time.as_dict(),
+            'encode_to_send': pipeline_stats.encode_to_send.as_dict(),
+            'round_trip': pipeline_stats.round_trip.as_dict(),
+        }
+        metrics_out_path.write_text(json.dumps(metrics_payload, indent=2), encoding='utf-8')
+        print(f"[CLIENT] Wrote pipeline metrics to {metrics_out_path}")
+    except Exception as exc:
+        print(f"[CLIENT] WARN: Failed to write metrics file: {exc}")
+
+
+def main(argv: Iterable[str] | None = None) -> None:
+    args = build_arg_parser().parse_args(argv)
+    asyncio.run(run_client(args))
 
 
 if __name__ == '__main__':
     main()
 
 # 변경 요약:
-# - 공유 메모리 기반 캡처 백엔드를 추가해 디스크 스풀 없이 프레임을 공급할 수 있도록 했습니다.
-# - 프레임 핸들 추상화로 파일/공유 메모리 경로를 통합 관리하고 전송 실패 시에도 자원을 정리합니다.
-# - 인코더 산출물과 응답 처리 흐름을 보강해 임시 파일을 자동 삭제하고 기존 메트릭 파이프라인과 연계했습니다.
+# - 비동기 큐 기반 파이프라인으로 캡처→인코딩→전송 단계를 병렬화하고 역압을 구현했습니다.
+# - 인플라이트 제어와 우선순위 캡처를 통해 설계 문서의 흐름 제어 전략을 코드에 반영했습니다.
+# - 파이프라인 계측치를 로그 및 JSON 파일로 기록해 왕복 지연 최적화 실험을 지원합니다.

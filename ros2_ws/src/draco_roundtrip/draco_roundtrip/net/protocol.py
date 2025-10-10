@@ -125,15 +125,7 @@ def _recv_binary(sock: socket.socket) -> Optional[Message]:
     if not header:
         return None
     if len(header) != _BINARY_HEADER.size:
-        remaining = _BINARY_HEADER.size - len(header)
-        chunks = bytearray(header)
-        while len(chunks) < _BINARY_HEADER.size:
-            chunk = sock.recv(remaining)
-            if not chunk:
-                raise ProtocolError("incomplete binary header")
-            chunks.extend(chunk)
-            remaining = _BINARY_HEADER.size - len(chunks)
-        header = bytes(chunks)
+        raise ProtocolError("incomplete binary header")
     version, kind_code, name_len = _BINARY_HEADER.unpack(header)
     if version != _BINARY_VERSION:
         raise ProtocolError(f"unsupported binary protocol version {version}")
