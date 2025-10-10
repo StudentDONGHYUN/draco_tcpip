@@ -67,7 +67,14 @@ class Message:
         if _SEPARATOR in meta:
             kind, name = meta.split(_SEPARATOR, 1)
         else:
-            kind, name = MSG_DATA, meta
+            # NOTE: Legacy text framing omitted the kind for data messages, but
+            # control frames (EOF/ERROR) can appear without a name.  Preserve the
+            # behaviour where an unknown token is treated as the frame name for a
+            # data message while ensuring well-known kinds round-trip correctly.
+            if meta in {MSG_DATA, MSG_ERROR, MSG_EOF}:
+                kind, name = meta, ""
+            else:
+                kind, name = MSG_DATA, meta
         return cls(kind=kind or MSG_DATA, name=name, payload=payload)
 
 

@@ -45,3 +45,33 @@ def test_binary_protocol_round_trip():
     finally:
         lhs.close()
         rhs.close()
+
+
+def test_text_protocol_handles_control_frames():
+    handler = core_protocol.resolve_protocol("text")
+    lhs, rhs = socket.socketpair()
+    try:
+        data_message = core_protocol.Message(
+            kind=core_protocol.MSG_DATA,
+            name="frame_2",
+            payload=b"payload",
+        )
+        eof_message = core_protocol.Message(
+            kind=core_protocol.MSG_EOF,
+            name="",
+            payload=b"",
+        )
+
+        handler.send(lhs, data_message)
+        handler.send(lhs, eof_message)
+
+        received_data = handler.recv(rhs)
+        received_eof = handler.recv(rhs)
+
+        assert received_data == data_message
+        assert received_eof.kind == core_protocol.MSG_EOF
+        assert received_eof.name == ""
+        assert received_eof.payload == b""
+    finally:
+        lhs.close()
+        rhs.close()
