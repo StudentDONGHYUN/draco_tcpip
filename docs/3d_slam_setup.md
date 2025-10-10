@@ -22,25 +22,26 @@ sudo apt install ros-humble-hdl-graph-slam
 
 ```bash
 source /opt/ros/humble/setup.bash
-cd ~/draco-ros2-roundtrip-git/draco-ros2-roundtrip
-ros2 launch draco-ros2-roundtrip hdl_graph_slam_stream.launch.py
+cd /path/to/draco_tcpip/ros2_ws
+source install/setup.bash  # `colcon build --symlink-install` 이후 한 번만 필요
+ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
 ```
 
 만약 다른 파라미터 파일을 사용하고 싶다면 `params_file` 인자를 덮어쓰면 됩니다.
 
 ```bash
-ros2 launch draco-ros2-roundtrip hdl_graph_slam_stream.launch.py \
+ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py \
   params_file:=/path/to/custom.yaml
 ```
 
 ## 4. 포인트클라우드 공급
 
-이미 사용 중인 `scripts/stream_client_live.py`에서 `/stream_pair/decoded` 토픽으로 복원된 포인트클라우드를 퍼블리시하고 있습니다. rosbag 테스트 시 QoS를 `BEST_EFFORT`로 맞춰 주세요 (`qos_override.yaml`).
+`draco_roundtrip` 패키지의 스트리밍 서버/클라이언트를 사용하면 `/stream_pair/decoded` 토픽으로 복원된 포인트클라우드를 퍼블리시합니다. rosbag 테스트 시 QoS를 `BEST_EFFORT`로 맞춰 주세요 (`configs/qos_override.yaml`).
 
 실행 순서 예시:
 
-1. 서버 실행 `scripts/stream_server.py`
-2. 클라이언트 실행 `scripts/stream_client_live.py` (또는 rosbag 재생)
+1. 스트리밍 서버 실행 `ros2 run draco_roundtrip stream_server`
+2. 스트리밍 클라이언트 실행 `ros2 run draco_roundtrip stream_client --bag <rosbag_dir> --topic <cloud_topic>` (또는 라이브 토픽 사용)
 3. SLAM Launch 실행 (위 명령)
 
 ## 5. RViz 확인
@@ -61,7 +62,7 @@ ros2 service call /hdl_graph_slam/save_map hdl_graph_slam/srv/SaveMap "{filename
 
 ## 7. 팁
 
-- 포인트 수가 많아 SLAM이 느리면 `configs/hdl_graph_slam_stream.yaml`의 `voxel_leaf_size` 값을 키우거나 `stream_client_live.py`에서 `--play-sample` 값을 낮춰 입력 포인트를 줄이세요.
+- 포인트 수가 많아 SLAM이 느리면 `configs/hdl_graph_slam_stream.yaml`의 `voxel_leaf_size` 값을 키우거나 `ros2 run draco_roundtrip stream_client` 실행 시 `--play-sample` 값을 낮춰 입력 포인트를 줄이세요.
 - IMU/ODOM 등의 센서가 있을 경우 파라미터 파일에서 해당 토픽을 지정하면 정합 성능이 좋아집니다.
 
 ## 8. RTAB-Map 기반 LiDAR SLAM
@@ -86,8 +87,9 @@ sudo apt install ros-humble-rtabmap-ros ros-humble-rtabmap-launch ros-humble-rta
 
 ```bash
 source /opt/ros/humble/setup.bash
-cd ~/draco-ros2-roundtrip-git/draco-ros2-roundtrip
-ros2 launch draco-ros2-roundtrip rtabmap_stream.launch.py
+cd /path/to/draco_tcpip/ros2_ws
+source install/setup.bash
+ros2 launch slam_stream_bridge rtabmap_stream.launch.py
 ```
 
 주요 런치 인자:

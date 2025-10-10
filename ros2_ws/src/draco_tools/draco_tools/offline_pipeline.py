@@ -20,6 +20,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from draco_roundtrip.utils.config import resolve_data_layout
+
 # ---------- 유틸 ----------
 
 def _print(*a, **k):
@@ -168,6 +170,10 @@ def main():
     # saver
     ap.add_argument("--topic", required=True)
     ap.add_argument("--prefix", required=True)
+    ap.add_argument("--layout-profile", default=None,
+                    help="Name or path of a layout profile for directories")
+    ap.add_argument("--data-root", default=None,
+                    help="Base directory for generated artifacts (overrides profile/data root)")
     ap.add_argument("--max-frames", type=int, default=0, dest="frames",
                     help="0=무제한 (bag 끝날 때까지)")
     ap.add_argument("--best-effort", action="store_true")
@@ -185,10 +191,14 @@ def main():
     ap.add_argument("--decoder", default="draco_decoder")
 
     # 디렉토리
-    ap.add_argument("--ply-dir", default="data/ply_raw")
-    ap.add_argument("--drc-dir", default="data/draco_out")
-    ap.add_argument("--decoded-dir", default="data/tmp_decoded_ply")
-    ap.add_argument("--results-dir", default="data/results")
+    ap.add_argument("--ply-dir", default=None,
+                    help="Override raw PLY output directory")
+    ap.add_argument("--drc-dir", default=None,
+                    help="Override Draco output directory")
+    ap.add_argument("--decoded-dir", default=None,
+                    help="Override decoded temporary directory")
+    ap.add_argument("--results-dir", default=None,
+                    help="Override aggregated results directory")
 
     ap.add_argument("--ros-domain-id", type=int, default=None,
                     help="하위 프로세스에 전달할 ROS_DOMAIN_ID 덮어쓰기")
@@ -212,6 +222,24 @@ def main():
 
     args = ap.parse_args()
 
+    layout = resolve_data_layout(
+        {
+            "ply_dir": "ply_raw",
+            "drc_dir": "draco_out",
+            "decoded_dir": "decoded_tmp",
+            "results_dir": "results",
+        },
+        profile=args.layout_profile,
+        overrides={
+            "ply_dir": args.ply_dir,
+            "drc_dir": args.drc_dir,
+            "decoded_dir": args.decoded_dir,
+            "results_dir": args.results_dir,
+        },
+        base=args.data_root,
+        ensure=True,
+    )
+
     # VSCode 터미널 등에서 ROS 환경이 누락될 때 대비해 선택적으로 덮어쓰기
     if args.ros_domain_id is not None:
         os.environ["ROS_DOMAIN_ID"] = str(args.ros_domain_id)
@@ -220,13 +248,10 @@ def main():
     if args.ros_localhost_only is not None:
         os.environ["ROS_LOCALHOST_ONLY"] = args.ros_localhost_only
 
-    root = Path.cwd()
-    ply_dir = (root / args.ply_dir).resolve()
-    drc_dir = (root / args.drc_dir).resolve()
-    dec_dir = (root / args.decoded_dir).resolve()
-    res_dir = (root / args.results_dir).resolve()
-    for d in [ply_dir, drc_dir, dec_dir, res_dir]:
-        d.mkdir(parents=True, exist_ok=True)
+    ply_dir = layout["ply_dir"]
+    drc_dir = layout["drc_dir"]
+    dec_dir = layout["decoded_dir"]
+    res_dir = layout["results_dir"]
 
     extra_tokens = []
     for chunk in args.encoder_extra:
@@ -250,7 +275,7 @@ def main():
     # 1) rosbag play
     bag_proc = None
     if args.bag:
-        bag_abs = (root / args.bag).resolve()
+        bag_abs = Path(args.bag).expanduser().resolve()
         bag_cmd = ["ros2", "bag", "play", str(bag_abs)]
         if args.bag_rate and args.bag_rate != 1.0:
             bag_cmd += ["--rate", str(args.bag_rate)]
