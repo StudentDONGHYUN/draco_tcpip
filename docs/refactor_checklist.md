@@ -8,7 +8,7 @@
 - [ ] `draco_roundtrip/utils/config.py`가 QoS override, 출력 디렉터리, 프로필 파일을 단일 소스로 관리하도록 확장한다. → `offline_pipeline`, `stream_client`, 쉘 스크립트에서 해당 헬퍼를 사용하도록 수정하고 회귀 테스트.
 
 ## 2. 테스트 및 품질 보증 체계
-- [ ] `ros2_ws/src/draco_roundtrip/tests/` 디렉터리를 생성하고 TCP 프로토콜, PLY 로딩, metric 계산에 대한 단위 테스트를 추가한다. → `colcon test` 통과 여부를 CI에 등록.
+- [x] `ros2_ws/src/draco_roundtrip/tests/` 디렉터리를 생성하고 TCP 프로토콜, PLY 로딩, metric 계산에 대한 단위 테스트를 추가한다. → `colcon test` 통과 여부를 CI에 등록. (테스트 파일: `test_utils_protocol.py`, `test_utils_ply_io.py`, `test_utils_metrics.py`, `pytest.ini`)
 - [ ] 최소 1회 왕복을 수행하는 엔드투엔드 스크립트(`tests/e2e_roundtrip.sh` 또는 pytest 기반)를 추가하고, 로컬/CI에서 실행 가능한 의존성 조건을 정리한다. → 실행 로그를 `docs/results_template.md`와 연계.
 - [ ] GitHub Actions 등 자동화 파이프라인에 `colcon build` + `colcon test` + 품질 스크립트를 추가해 리팩토링 후 회귀 검증을 자동화한다.
 
