@@ -1,1 +1,32 @@
-# draco-ros2-roundtrip/configs/netem.profiles.yaml
+{
+  "profiles": {
+    "loopback": {
+      "description": "No shaping; use when benchmarking raw throughput"
+    },
+    "wifi_dense": {
+      "description": "Congested Wi-Fi with modest packet loss",
+      "delay": "45ms",
+      "jitter": "15ms",
+      "loss": "0.5%",
+      "rate": "35mbit"
+    },
+    "lte_nominal": {
+      "description": "Nominal LTE uplink",
+      "delay": "60ms",
+      "jitter": "20ms",
+      "loss": "0.2%",
+      "rate": "18mbit"
+    },
+    "satellite_demo": {
+      "description": "High-latency satellite hop used for stress testing",
+      "delay": "550ms",
+      "jitter": "120ms",
+      "loss": "1.2%",
+      "rate": "8mbit"
+    },
+    "clear": {
+      "description": "Remove existing qdisc entries",
+      "clear": true
+    }
+  }
+}

@@ -11,7 +11,7 @@ sudo apt install ros-humble-hdl-graph-slam
 
 ## 2. 구성 파일 확인
 
-- 파라미터 파일: `configs/hdl_graph_slam_stream.yaml`
+- 파라미터 파일: `configs/hdl_graph_slam_stream.yaml` (세부 설명은 `docs/config_reference.md` 참고)
   - 입력 토픽은 `/stream_pair/decoded`
   - 프레임 이름: `lidar_link` (스트리밍 클라이언트 실행시 `--play-frame-id` 옵션과 맞춰야 합니다.)
   - 다운샘플링이나 NDT 설정은 환경에 따라 조절 가능합니다.
@@ -43,6 +43,18 @@ ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py \
 1. 스트리밍 서버 실행 `ros2 run draco_roundtrip stream_server`
 2. 스트리밍 클라이언트 실행 `ros2 run draco_roundtrip stream_client --bag <rosbag_dir> --topic <cloud_topic>` (또는 라이브 토픽 사용)
 3. SLAM Launch 실행 (위 명령)
+
+통합 bringup을 사용해 스트리밍과 SLAM을 한 번에 띄울 수도 있습니다.
+
+```bash
+ros2 launch slam_stream_bridge bringup.launch.py \
+  bag:=/data/bags/sample.bag \
+  topic:=/sensing/lidar/top/pointcloud \
+  slam:=hdl \
+  netem_profile:=wifi_dense
+```
+- bringup 런치는 `stream_server`, `stream_client`, 선택된 SLAM 노드, 그리고 필요 시 `stream_netem`을 순차적으로 호출합니다.
+- `netem_profile`은 dry-run 모드가 기본이므로, 실제로 `tc`를 적용하려면 `netem_dry_run:=false`와 관리자 권한이 필요합니다.
 
 ## 5. RViz 확인
 

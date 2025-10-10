@@ -28,10 +28,12 @@ needed:
 | `decoded_tmp`         | `tmp_decoded_ply/`    |
 | `results`             | `results/`            |
 | `server_work`         | `server_tmp/`         |
+| `ros_logs`            | `logs/ros/`           |
 
 `stream_client` consumes the `ply_stream`, `client_work`, and
 `decoded_from_server` keys, while `offline_pipeline` uses `ply_raw`,
-`draco_out`, `decoded_tmp`, and `results`.
+`draco_out`, `decoded_tmp`, and `results`. The `ros_logs` alias is reserved for
+실험 로그 수집(`stream_collect_logs`) 시 ROS 2 로그 스냅샷을 보관하는 위치를 가리킵니다.
 
 ## Layout profiles
 

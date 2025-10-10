@@ -19,7 +19,15 @@
    ```bash
    ros2 run draco_roundtrip stream_server --port 5000
    ```
-2. 다른 터미널에서 클라이언트를 실행합니다.
+2. 필요 시 네트워크 조건을 설정합니다.
+   ```bash
+   # 명령만 확인하고자 할 때 (dry-run)
+   ros2 run draco_roundtrip stream_netem wifi_dense --iface lo --dry-run
+
+   # 실제 적용 예시 (sudo 필요)
+   sudo ros2 run draco_roundtrip stream_netem wifi_dense --iface eno1 --clear
+   ```
+3. 다른 터미널에서 클라이언트를 실행합니다.
    ```bash
    ros2 run draco_roundtrip stream_client \
        --bag /path/to/bag \
@@ -47,19 +55,39 @@
    ```
    - `offline_pipeline`은 bag 재생부터 metrics 계산까지 한 번에 실행하며, 스트리밍과 동일한 레이아웃 헬퍼를 공유합니다.
 
-## 5. SLAM 연동
-- `slam_stream_bridge` 패키지의 런치 파일을 사용해 SLAM 노드를 동시에 기동할 수 있습니다.
+## 5. 통합 Bringup과 SLAM 연동
+- `slam_stream_bridge/launch/bringup.launch.py`는 스트리밍 서버/클라이언트와 SLAM 파이프라인을 한 번에 기동합니다.
   ```bash
-  ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
+  ros2 launch slam_stream_bridge bringup.launch.py \
+      bag:=/path/to/bag \
+      topic:=/sensing/lidar/top/pointcloud \
+      layout_profile:=client.profile.yaml \
+      slam:=rtabmap \
+      netem_profile:=wifi_dense
   ```
-- 세부 설정과 RTAB-Map 구성은 `docs/3d_slam_setup.md`를 참고하세요.
+- `slam` 인자로 `rtabmap` 또는 `hdl`을 선택하고, 필요 시 `slam_params`로 파라미터 파일을 덮어씁니다. 프리셋은 `configs/rtabmap_stream.yaml`, `configs/hdl_graph_slam_stream.yaml`에 있습니다.
+- `netem_profile`은 `configs/netem.profiles.yaml`을 기반으로 하며, `netem_dry_run:=false`로 설정하면 실제 `tc` 명령이 실행됩니다.
+- 개별 SLAM 런치 파일(`hdl_graph_slam_stream.launch.py`, `rtabmap_stream.launch.py`)도 기존과 동일하게 사용 가능합니다. 상세 설정은 `docs/3d_slam_setup.md`를 참고하세요.
 
 ## 6. 엔드투엔드 회귀 테스트
 - `ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh` 스크립트는 pytest 기반 스텁 인코더/디코더를 사용해 회귀 테스트를 수행합니다.
 - GitHub Actions CI 역시 동일 스크립트를 호출하여 numpy가 설치된 환경에서 왕복 경로를 검증합니다.
 - 테스트 결과는 `docs/results_template.md`에 맞춰 기록하는 것을 권장합니다.
 
-## 7. 레거시 경고
+## 7. 로그 수집 및 결과 정리
+- 실험 종료 후에는 `stream_collect_logs` CLI로 결과 디렉터리를 구조화하세요.
+  ```bash
+  ros2 run draco_roundtrip stream_collect_logs run_20240315 \
+      --layout-profile client.profile.yaml \
+      --data-root ./data \
+      --metadata bag=sample.bag --metadata netem=wifi_dense --metadata slam=rtabmap \
+      --ros-log ~/.ros/log/latest \
+      --notes "Baseline roundtrip"
+  ```
+- 생성된 `manifest.json`과 디렉터리 구조는 `docs/logging_guidelines.md`에 설명되어 있습니다.
+- 수동으로 프로파일과 디렉터리 구조를 확인하려면 `docs/config_reference.md`를 참조하세요.
+
+## 8. 레거시 경고
 - 기존 `draco-ros2-roundtrip/scripts/*.py` 실행 파일은 제거되었습니다. 모든 워크플로는 `ros2 run` 또는 `ros2 launch` 명령으로 교체해야 합니다.
 - 레거시 자동화 스크립트를 유지해야 한다면, 새 CLI를 import하여 thin wrapper를 구현하거나 본 문서의 명령을 그대로 호출하세요.
 

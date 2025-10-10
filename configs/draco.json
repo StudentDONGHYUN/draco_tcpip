@@ -1,1 +1,16 @@
-// draco-ros2-roundtrip/configs/draco.json
+{
+  "encoder": {
+    "compression_level": 7,
+    "quantization_bits": {
+      "position": 14,
+      "normal": 10,
+      "color": 10
+    },
+    "speed": {
+      "encoding": 5,
+      "decoding": 5
+    },
+    "keep_attributes": ["POSITION", "NORMAL", "COLOR"]
+  },
+  "notes": "Values mirror the defaults used by draco_tools.core.encoder.resolve_encoder_options"
+}

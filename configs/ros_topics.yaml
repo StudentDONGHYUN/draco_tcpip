@@ -1,1 +1,11 @@
-# draco-ros2-roundtrip/configs/ros_topics.yaml
+{
+  "stream": {
+    "source_pointcloud": "/stream_pair/source",
+    "decoded_pointcloud": "/stream_pair/decoded",
+    "metrics": "/stream_pair/metrics"
+  },
+  "monitor": {
+    "rviz_frame": "lidar_link",
+    "playback_topic": "/stream_pair/replay"
+  }
+}

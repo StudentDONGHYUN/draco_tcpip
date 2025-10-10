@@ -37,6 +37,7 @@ DEFAULT_DATA_SUBDIRS: Mapping[str, str] = {
     "decoded_tmp": "tmp_decoded_ply",
     "results": "results",
     "server_work": "server_tmp",
+    "ros_logs": "logs/ros",
 }
 
 

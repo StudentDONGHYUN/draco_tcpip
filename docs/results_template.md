@@ -25,4 +25,4 @@ $ ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh -vv
 - <!-- [CLIENT] Frame 00000 metrics — Δpts=0 centroid_norm=0.000 ... -->
 - <!-- 테스트는 stub encoder/decoder로 수행. 실제 바이너리 회귀 필요. -->
 
-부가 로그는 `logs/` 하위 폴더에 보관하고, 필요 시 여기서 링크하거나 경로를 남깁니다.
+부가 로그는 `logs/` 하위 폴더에 보관하고, 필요 시 여기서 링크하거나 경로를 남깁니다. `stream_collect_logs` CLI를 사용했다면 `manifest.json`과 `artifacts/`, `ros_logs/` 경로를 함께 기록하세요.

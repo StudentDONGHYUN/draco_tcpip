@@ -24,6 +24,8 @@ setup(
             'stream_server = draco_roundtrip.nodes.stream_server:main',
             'stream_monitor = draco_roundtrip.tools.monitor:main',
             'stream_replay = draco_roundtrip.tools.replay:main',
+            'stream_netem = draco_roundtrip.tools.netem:main',
+            'stream_collect_logs = draco_roundtrip.tools.log_collection:main',
         ],
     },
 )
