@@ -223,15 +223,26 @@ def _default_data_root(profile: ProfileConfig | None) -> Path:
         if candidate.exists():
             return candidate
     here = Path(__file__).resolve()
-    for candidate in (
-        here.parents[5] / "data",
-        here.parents[4] / "data",
-        Path.cwd() / "data",
-    ):
-        candidate = candidate.resolve()
+    cwd_candidate = (Path.cwd() / "data").resolve()
+    package_candidates = [
+        (here.parents[5] / "data").resolve(),
+        (here.parents[4] / "data").resolve(),
+    ]
+
+    if cwd_candidate.exists():
+        return cwd_candidate
+
+    try:
+        cwd_candidate.mkdir(parents=True, exist_ok=True)
+        return cwd_candidate
+    except OSError:
+        pass
+
+    for candidate in package_candidates:
         if candidate.exists():
             return candidate
-    return (here.parents[5] / "data").resolve()
+
+    return package_candidates[0]
 
 
 def _resolve_data_root(
@@ -310,6 +321,9 @@ def _resolve_config_path(
         path = root / candidate
         if path.exists():
             return path
+    cwd_candidate = (Path.cwd() / candidate).resolve()
+    if cwd_candidate.exists():
+        return cwd_candidate
     if profile and profile.path:
         relative = (profile.path.parent / candidate).resolve()
         if relative.exists():
