@@ -9,10 +9,12 @@ import queue
 import socket
 import subprocess
 import sys
+import threading
 import time
 from collections import deque
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Deque, Iterable, Optional
+from typing import Deque, Dict, Iterable, Optional
 
 import numpy as np
 
@@ -39,6 +41,71 @@ from draco_roundtrip.utils.protocol import (
     send_message,
 )
 from draco_roundtrip.ros.playback import start_playback_thread
+
+
+def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: float = 5.0) -> None:
+    """Best-effort shutdown helper that avoids leaving child processes around."""
+
+    if proc is None:
+        return
+    if proc.poll() is not None:
+        return
+    # NOTE: Terminate first to let ROS2/bag gracefully stop before resorting to kill.
+    proc.terminate()
+    try:
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        print(f"[CLIENT] WARN: {name} did not exit after terminate, killing")
+        proc.kill()
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.wait(timeout=timeout)
+
+
+@dataclass(slots=True)
+class FrameContext:
+    """Track inflight frames so replies can be matched without stalling the sender."""
+
+    path: Path
+    sent_at: float
+    payload_size: int
+
+
+@dataclass(slots=True)
+class ReplyEvent:
+    kind: str
+    message: Message | None = None
+    error: BaseException | None = None
+
+
+class ReplyPump(threading.Thread):
+    """Background thread that continuously drains replies from the server."""
+
+    def __init__(
+        self,
+        sock: socket.socket,
+        queue: "queue.Queue[ReplyEvent]",
+        stop_event: threading.Event,
+    ) -> None:
+        super().__init__(daemon=True)
+        self._sock = sock
+        self._queue = queue
+        self._stop_event = stop_event
+
+    def run(self) -> None:  # pragma: no cover - threading behaviour is timing sensitive.
+        while not self._stop_event.is_set():
+            try:
+                message = recv_message(self._sock)
+            except socket.timeout:
+                continue
+            except Exception as exc:  # noqa: BLE001 - bubble up to the producer loop.
+                self._queue.put(ReplyEvent(kind="error", error=exc))
+                return
+            if message is None:
+                self._queue.put(ReplyEvent(kind="closed"))
+                return
+            self._queue.put(ReplyEvent(kind="message", message=message))
+            if message.kind == MSG_EOF:
+                return
 
 
 try:  # NOTE: Prefer inotify when available to honor event-driven spool monitoring.
@@ -198,6 +265,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--play-sample', type=int, default=50000)
     ap.add_argument('--qos-override', default=None,
                     help='Override QoS profile file. Defaults to layout profile or package configs')
+    ap.add_argument('--socket-timeout', type=float, default=15.0,
+                    help='Timeout (seconds) for socket operations; 0 disables the safeguard')
+    ap.add_argument('--max-inflight', type=int, default=1,
+                    help='Maximum number of frames to pipeline before waiting for replies')
+    ap.add_argument('--tcp-nodelay', action='store_true',
+                    help='Disable Nagle aggregation to reduce latency for interactive playback')
+    ap.add_argument('--socket-buffer-kb', type=int, default=0,
+                    help='Resize socket send/receive buffers (KiB) to better saturate fast links')
     return ap
 
 
@@ -245,14 +320,37 @@ def main(argv: Iterable[str] | None = None) -> None:
     bytes_received = 0
 
     try:
-        with socket.create_connection((args.server_host, args.server_port)) as sock:
+        with socket.create_connection(
+            (args.server_host, args.server_port),
+            timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+        ) as sock:
+            if args.socket_timeout > 0:
+                # NOTE: Guard against stalled reads when the server crashes mid-transfer.
+                sock.settimeout(args.socket_timeout)
+            if args.tcp_nodelay:
+                with contextlib.suppress(OSError):
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            if args.socket_buffer_kb > 0:
+                buf_size = args.socket_buffer_kb * 1024
+                for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
+                    with contextlib.suppress(OSError):
+                        sock.setsockopt(socket.SOL_SOCKET, opt, buf_size)
             print(f"[CLIENT] Connected to {args.server_host}:{args.server_port}")
             with SpoolWatcher(ply_dir, args.prefix) as watcher:
                 pending: Deque[Path] = deque(watcher.drain_initial())
+                inflight: Dict[str, FrameContext] = {}
                 eof_sent = False
+                shutdown_ack = False
+                stop_event = threading.Event()
+                reply_queue: "queue.Queue[ReplyEvent]" = queue.Queue()
+                pump = ReplyPump(sock, reply_queue, stop_event)
+                pump.start()
                 try:
                     while True:
-                        while pending:
+                        max_inflight = max(1, args.max_inflight)
+                        progress_made = False
+
+                        while pending and len(inflight) < max_inflight and not eof_sent:
                             ply_path = pending.popleft()
                             if not ply_path.exists():
                                 continue
@@ -277,78 +375,179 @@ def main(argv: Iterable[str] | None = None) -> None:
                                 )
                             )
                             message = Message(kind=MSG_DATA, name=ply_path.stem, payload=drc_bytes)
-                            send_message(sock, message)
-                            bytes_sent += len(drc_bytes)
-                            print(f"[CLIENT] Sent {ply_path.name} ({len(drc_bytes)} bytes)")
-
-                            reply = recv_message(sock)
-                            if reply is None:
-                                print("[CLIENT] Server closed connection")
-                                raise ConnectionClosed("server closed")
-                            if reply.kind == MSG_EOF:
-                                print('[CLIENT] Received unexpected EOF while frames pending')
+                            try:
+                                send_message(sock, message)
+                            except socket.timeout:
+                                print(f"[CLIENT] ERROR: Timeout sending {ply_path.name}")
+                                watcher.mark_consumed(ply_path)
                                 eof_sent = True
                                 break
-                            if reply.kind == MSG_ERROR:
-                                detail = reply.payload.decode(errors='ignore')
-                                print(
-                                    f"[CLIENT] SERVER ERROR for {ply_path.name}: {reply.name} -> {detail}"
-                                )
-                                watcher.mark_consumed(ply_path)
-                                continue
-                            bytes_received += len(reply.payload)
-
-                            reply_name = reply.name or f"{ply_path.stem}.decoded"
-                            if not reply_name.endswith('.ply'):
-                                reply_name = f"{reply_name}.ply"
-                            decoded_path = decoded_dir / reply_name
-                            decoded_path.write_bytes(reply.payload)
-
-                            pts_src = load_xyz(ply_path)
-                            pts_dec = load_xyz_from_bytes(reply.payload)
-                            metrics = compute_basic_metrics(pts_src, pts_dec, args.play_sample)
-                            print(
-                                f"[CLIENT] Frame {frame_idx:05d} metrics — "
-                                f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "
-                                f"bboxΔ=({metrics['bbox_delta'][0]:+.3f},{metrics['bbox_delta'][1]:+.3f},{metrics['bbox_delta'][2]:+.3f}) "
-                                f"Chamfer(mean/max)={metrics['chamfer_mean']}/{metrics['chamfer_max']}"
+                            inflight[ply_path.stem] = FrameContext(
+                                path=ply_path,
+                                sent_at=time.monotonic(),
+                                payload_size=len(drc_bytes),
                             )
-                            to_play.put((frame_idx, ply_path.stem, pts_src, pts_dec))
-                            watcher.mark_consumed(ply_path)
-                            frame_idx += 1
+                            bytes_sent += len(drc_bytes)
+                            print(f"[CLIENT] Sent {ply_path.name} ({len(drc_bytes)} bytes)")
+                            progress_made = True
 
-                        if eof_sent:
-                            reply = recv_message(sock)
-                            if reply is None:
-                                print('[CLIENT] Server closed connection after EOF notification')
-                                break
-                            if reply.kind == MSG_EOF:
-                                print('[CLIENT] EOF handshake complete')
-                                break
-                            print(f"[CLIENT] Ignoring post-EOF message of kind {reply.kind}")
-                            continue
+                        def handle_reply(event: ReplyEvent) -> None:
+                            nonlocal frame_idx, bytes_received, eof_sent, shutdown_ack
+                            if event.kind == "message" and event.message:
+                                reply = event.message
+                                if reply.kind == MSG_EOF:
+                                    print('[CLIENT] EOF handshake complete')
+                                    shutdown_ack = True
+                                    return
+                                if reply.kind == MSG_ERROR:
+                                    detail = reply.payload.decode(errors='ignore')
+                                    stem = reply.name or 'frame'
+                                    ctx = inflight.pop(Path(stem).stem, None)
+                                    print(
+                                        f"[CLIENT] SERVER ERROR for {stem}: {detail}"
+                                    )
+                                    if ctx:
+                                        watcher.mark_consumed(ctx.path)
+                                    return
+                                stem = Path(reply.name or '').stem
+                                ctx = inflight.pop(stem, None)
+                                if ctx is None:
+                                    print(f"[CLIENT] WARN: Received reply for unknown frame {reply.name}")
+                                    return
+                                bytes_received += len(reply.payload)
+                                reply_name = reply.name or f"{stem}.decoded"
+                                if not reply_name.endswith('.ply'):
+                                    reply_name = f"{reply_name}.ply"
+                                decoded_path = decoded_dir / reply_name
+                                decoded_path.write_bytes(reply.payload)
 
-                        new_paths = watcher.wait_for_new(timeout=0.5)
-                        if new_paths:
-                            pending.extend(new_paths)
-                            continue
+                                pts_src = load_xyz(ctx.path)
+                                pts_dec = load_xyz_from_bytes(reply.payload)
+                                metrics = compute_basic_metrics(pts_src, pts_dec, args.play_sample)
+                                rtt = time.monotonic() - ctx.sent_at
+                                throughput_mbps = (
+                                    ctx.payload_size * 8 / max(rtt, 1e-6) / 1e6
+                                )
+                                print(
+                                    f"[CLIENT] Frame {frame_idx:05d} metrics — "
+                                    f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "
+                                    f"bboxΔ=({metrics['bbox_delta'][0]:+.3f},{metrics['bbox_delta'][1]:+.3f},{metrics['bbox_delta'][2]:+.3f}) "
+                                    f"Chamfer(mean/max)={metrics['chamfer_mean']}/{metrics['chamfer_max']} "
+                                    f"RTT={rtt:.3f}s throughput={throughput_mbps:.2f}Mbps"
+                                )
+                                to_play.put((frame_idx, stem, pts_src, pts_dec))
+                                watcher.mark_consumed(ctx.path)
+                                frame_idx += 1
+                                return
+                            if event.kind == "error" and event.error:
+                                raise event.error
+                            if event.kind == "closed":
+                                raise ConnectionClosed("server closed")
+
+                        def drain_replies(block: bool, timeout: float | None = None) -> bool:
+                            drained = False
+                            if block:
+                                try:
+                                    event = reply_queue.get(timeout=timeout)
+                                except queue.Empty:
+                                    return False
+                                handle_reply(event)
+                                drained = True
+                            while True:
+                                try:
+                                    event = reply_queue.get_nowait()
+                                except queue.Empty:
+                                    break
+                                handle_reply(event)
+                                drained = True
+                            return drained
+
+                        while drain_replies(block=False):
+                            progress_made = True
+                            if shutdown_ack:
+                                break
+                        if shutdown_ack:
+                            break
+
+                        if not eof_sent:
+                            new_paths = watcher.wait_for_new(timeout=0.2)
+                            if new_paths:
+                                pending.extend(new_paths)
+                                progress_made = True
 
                         bag_done = bag_process.poll() is not None
                         saver_done = saver_proc.poll() is not None
-                        if bag_done and saver_done and not pending and not eof_sent:
+                        if (
+                            bag_done
+                            and saver_done
+                            and not pending
+                            and not inflight
+                            and not eof_sent
+                        ):
                             eof_message = Message(kind=MSG_EOF, name='', payload=b'')
-                            send_message(sock, eof_message)
+                            try:
+                                send_message(sock, eof_message)
+                            except socket.timeout:
+                                print('[CLIENT] Timeout while sending EOF marker')
+                                break
                             print('[CLIENT] Sent EOF marker to server')
                             eof_sent = True
+                            progress_made = True
+
+                        if shutdown_ack:
+                            break
+
+                        if inflight and (len(inflight) >= max_inflight or not pending):
+                            progress_made = drain_replies(
+                                block=True,
+                                timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+                            ) or progress_made
+                            if shutdown_ack:
+                                break
+
+                        if not pending and not inflight and eof_sent:
+                            if shutdown_ack:
+                                break
+                            progress_made = drain_replies(
+                                block=True,
+                                timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+                            ) or progress_made
+                            if shutdown_ack:
+                                break
+
+                        if not progress_made:
+                            if inflight:
+                                progress_made = drain_replies(
+                                    block=True,
+                                    timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+                                )
+                                if shutdown_ack:
+                                    break
+                            elif not eof_sent:
+                                new_paths = watcher.wait_for_new(timeout=0.5)
+                                if new_paths:
+                                    pending.extend(new_paths)
+                                    progress_made = True
+
+                        if shutdown_ack:
+                            break
+
+                        if not progress_made and not pending and not inflight and eof_sent:
+                            break
                 except ConnectionClosed:
                     print('[CLIENT] Connection closed, stopping loop')
+                except socket.timeout:
+                    print('[CLIENT] Socket timeout encountered, shutting down connection')
+                finally:
+                    stop_event.set()
+                    if pump.is_alive():
+                        pump.join(timeout=1.0)
     finally:
         to_play.put(None)
         if playback_thread.is_alive():
             playback_thread.join(timeout=1.0)
-        for proc, name in ((bag_process, 'ros2 bag'), (saver_proc, 'bag_to_ply')):
-            if proc and proc.poll() is None:
-                proc.terminate()
+        _terminate_process(bag_process, 'ros2 bag')
+        _terminate_process(saver_proc, 'bag_to_ply')
         elapsed = max(time.monotonic() - start_time, 1e-6)
         print('[CLIENT] ---- Transfer summary ----')
         print(f"  elapsed: {elapsed:.2f} s")
@@ -358,3 +557,8 @@ def main(argv: Iterable[str] | None = None) -> None:
 
 if __name__ == '__main__':
     main()
+
+# 변경 요약:
+# - 소켓 타임아웃과 송수신 예외 처리를 추가해 서버 응답 지연 시 무한 대기를 방지했습니다.
+# - 종료 시 하위 프로세스를 확실히 정리하도록 보조 함수를 도입했습니다.
+# - 네트워크 파이프라인(최대 동시 전송 수)과 TCP 버퍼 튜닝 옵션을 추가해 처리량과 지연을 조절할 수 있게 했습니다.
