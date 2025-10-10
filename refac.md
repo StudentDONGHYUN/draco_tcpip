@@ -38,7 +38,7 @@
 - `scripts/*.sh`, `logs/`, `tmp_ply/`는 실험 운영용 도구로 유지되나, Python 로직은 `ros2_ws/src` 패키지를 그대로 호출하도록 단순화 필요.
 
 ## E. 최상위 설정/문서
-- `configs/*.yaml`, `README.md`, `docs/3d_slam_setup.md`: 사용자 가이드 및 실험 설정이 산재; 일관된 참조 경로와 예제 업데이트가 필요.
+- `configs/*.yaml`, `README.md`, `docs/guides/3d_slam_setup.md`: 사용자 가이드 및 실험 설정이 산재; 일관된 참조 경로와 예제 업데이트가 필요.
 - `ros2_ws/install/...` 이하 symlink-install 환경, `ros2_ws/build`/`log`는 빌드 산출물. refactor 시 `colcon build --symlink-install`을 기본 가정으로 유지.
 
 # 단계 3 — 중복·공통화 포인트 (현재 코드 기준)
@@ -95,4 +95,4 @@ ros2_ws/src/
 - **엔드투엔드 샘플 파이프라인**: `tests/e2e_roundtrip.sh` 또는 `pytest` 기반 스크립트를 추가해 bag→stream_client→stream_server→monitor 작업이 1~2 프레임이라도 성공하는지 확인. GitHub Actions/CI에서 headless로 실행할 수 있도록 환경 변수를 문서화.
 - **성능 프로파일링 일원화**: `configs/draco.json` 또는 profile yaml을 `utils/config.py`가 읽어 `stream_client`, `encode_ply_to_draco`, `offline_pipeline`이 동일 파라미터 세트를 공유하도록 개선.
 - **SLAM 번들 런치 통합**: `slam_stream_bridge`에 `bringup.launch.py`를 추가해 stream_server → stream_client → SLAM → RViz가 한 명령으로 실행되도록 하고, QoS/Topic remap 인자는 launch argument로 노출.
-- **문서/README 동기화**: refactor 완료 후 `README.md`, `docs/3d_slam_setup.md`, `docs/HOWTO.md`에 새 CLI 경로, 테스트 방법, 데이터 디렉터리 구조를 반영하고, 루트 README와 패키지 README가 중복 없이 링크 공유하도록 정리.
+- **문서/README 동기화**: refactor 완료 후 `README.md`, `docs/guides/3d_slam_setup.md`, `docs/guides/HOWTO.md`에 새 CLI 경로, 테스트 방법, 데이터 디렉터리 구조를 반영하고, 루트 README와 패키지 README가 중복 없이 링크 공유하도록 정리.

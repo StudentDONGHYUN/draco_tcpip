@@ -1,13 +1,13 @@
 # Hybrid Streaming Architecture Progress Checklist
 
-본 체크리스트는 `async_pipeline_design.md`, `network_latency_reduction_plan.md`, 그리고 기존 멀티프로세스 파이프라인 설계를 통합한 하이브리드 아키텍처 작업 현황을 추적하기 위해 작성했습니다. 단계별 완료 기준(DoD)을 명확히 하여 미완료 항목을 후속 작업으로 이어갈 수 있도록 합니다.
+본 체크리스트는 `../designs/async_pipeline_design.md`, `../plans/network_latency_reduction_plan.md`, 그리고 기존 멀티프로세스 파이프라인 설계를 통합한 하이브리드 아키텍처 작업 현황을 추적하기 위해 작성했습니다. 단계별 완료 기준(DoD)을 명확히 하여 미완료 항목을 후속 작업으로 이어갈 수 있도록 합니다.
 
 ## Phase 0 — Stability & Determinism
 - [x] MSG_EOF 핸드셰이크를 클라이언트↔서버 전 구간에 전파하여 종료 시점의 큐 드레인과 순차 퍼블리시를 보장한다. (DoD: 로그에 `EOF sent/received` 출력, `pending=0` 요약)
 - [x] 캡처→인코드→송신→수신→디코드 사이 모든 경계에 유한 큐를 적용하고, 송신 측에는 고정 `max_inflight` 윈도우를 둔다. (DoD: `asyncio.Queue(maxsize=…)`/`PriorityQueue(maxsize=…)` 확인)
 - [x] TX/RX를 분리된 루프/스레드로 구성하여 블로킹을 제거하고, 작업자 풀이 에러 시 stop 이벤트로 전파되도록 한다. (DoD: `ReplyPump` 스레드 + `stop_event` 경로)
 - [x] 서버 포트 바인딩 시 `reuse_port=True` 시도 후 실패 시 경고 로그와 함께 폴백한다.
-- [x] `utils/config.py`의 경로 탐색이 얕은 설치에서도 IndexError 없이 동작하도록 가드 로직을 추가한다.
+- [x] `draco_roundtrip/utils/config.py`의 경로 탐색이 얕은 설치에서도 IndexError 없이 동작하도록 가드 로직을 추가한다.
 - [x] 디코드 임시 산출물은 기본적으로 삭제하고, `--keep-artifacts` 플래그로만 유지한다.
 - [x] 스테이지별 텔레메트리(큐 길이, 처리 지연, RTT 등)와 종료 요약(p50/p95/p99, 대역폭, pending)을 수집한다.
 
