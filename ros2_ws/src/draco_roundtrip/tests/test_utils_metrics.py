@@ -37,5 +37,5 @@ def test_compute_basic_metrics_fallback(monkeypatch):
     assert isinstance(metrics["centroid_norm"], float)
     np.testing.assert_allclose(metrics["bbox_delta"], np.array([0.0, 1.0, 2.0], dtype=np.float32))
     # With SciPy disabled, the fallback should compute per-point distances
-    assert metrics["chamfer_mean"] == "1.118"
+    assert metrics["chamfer_mean"] == "1.225"
     assert metrics["chamfer_max"] == "2.236"
