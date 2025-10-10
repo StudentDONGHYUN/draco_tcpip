@@ -75,3 +75,12 @@ def test_text_protocol_handles_control_frames():
     finally:
         lhs.close()
         rhs.close()
+
+
+@pytest.mark.parametrize("token", [core_protocol.MSG_ERROR, core_protocol.MSG_EOF, core_protocol.MSG_DATA])
+def test_from_meta_preserves_legacy_token_names(token: str):
+    payload = b"payload"
+    message = core_protocol.Message.from_meta(token, payload)
+    assert message.kind == core_protocol.MSG_DATA
+    assert message.name == token
+    assert message.payload == payload

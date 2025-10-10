@@ -71,8 +71,10 @@ class Message:
             # control frames (EOF/ERROR) can appear without a name.  Preserve the
             # behaviour where an unknown token is treated as the frame name for a
             # data message while ensuring well-known kinds round-trip correctly.
-            if meta in {MSG_DATA, MSG_ERROR, MSG_EOF}:
+            if meta in {MSG_ERROR, MSG_EOF} and not payload:
                 kind, name = meta, ""
+            elif meta == MSG_DATA and not payload:
+                kind, name = MSG_DATA, ""
             else:
                 kind, name = MSG_DATA, meta
         return cls(kind=kind or MSG_DATA, name=name, payload=payload)
