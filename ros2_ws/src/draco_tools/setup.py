@@ -16,7 +16,7 @@ setup(
     maintainer_email='ppakdone@gmail.com',
     description='Support utilities for Draco roundtrip experiments.',
     license='TODO',
-    tests_require=['pytest'],
+    tests_require=['pytest', 'ament-pytest'],
     entry_points={
         'console_scripts': [
             'bag_to_ply = draco_tools.bag_to_ply:main',

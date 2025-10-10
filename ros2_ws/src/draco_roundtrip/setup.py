@@ -17,7 +17,7 @@ setup(
     maintainer_email='ppakdone@gmail.com',
     description='ROS 2 client/server nodes for Draco point cloud roundtrip experiments.',
     license='TODO',
-    tests_require=['pytest'],
+    tests_require=['pytest', 'ament-pytest'],
     entry_points={
         'console_scripts': [
             'stream_client = draco_roundtrip.nodes.stream_client:main',
