@@ -12,11 +12,11 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=False,
-    maintainer='GodokSa',
-    maintainer_email='ppakdone@gmail.com',
+    maintainer='DONGHYUN',
+    maintainer_email='agfee104@outlook.kr',
     description='Support utilities for Draco roundtrip experiments.',
     license='TODO',
-    tests_require=['pytest'],
+    tests_require=['pytest', 'ament-pytest'],
     entry_points={
         'console_scripts': [
             'bag_to_ply = draco_tools.bag_to_ply:main',
