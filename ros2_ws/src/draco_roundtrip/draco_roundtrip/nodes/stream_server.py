@@ -22,20 +22,36 @@ from draco_roundtrip.utils.protocol import (
 )
 
 
-def decode_drc(decoder: Path, drc_bytes: bytes, out_dir: Path, stem: str) -> bytes:
+def decode_drc(
+    decoder: Path,
+    drc_bytes: bytes,
+    out_dir: Path,
+    stem: str,
+    *,
+    timeout: float | None = None,
+) -> bytes:
     ensure_directory(out_dir)
     drc_path = out_dir / f"{stem}.drc"
     ply_path = out_dir / f"{stem}.decoded.ply"
     drc_path.write_bytes(drc_bytes)
     cmd = [str(decoder), "-i", str(drc_path), "-o", str(ply_path)]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout if timeout and timeout > 0 else None,
+        )
         if proc.returncode != 0:
             raise RuntimeError(
                 f"draco_decoder failed (rc={proc.returncode}):\n"
                 f"STDOUT: {proc.stdout.strip()}\nSTDERR: {proc.stderr.strip()}"
             )
         return ply_path.read_bytes()
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"draco_decoder timed out after {exc.timeout:.1f}s"
+        ) from exc
     finally:
         # NOTE: Clean up intermediate artifacts to keep long-lived servers tidy.
         with suppress(FileNotFoundError):
@@ -50,6 +66,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--port', type=int, default=5000)
     ap.add_argument('--decoder', default=None, help="Path to draco_decoder")
     ap.add_argument('--work-dir', default='data/server_tmp')
+    ap.add_argument('--decode-timeout', type=float, default=30.0,
+                    help='Fail decoding if the external tool exceeds this timeout (seconds)')
     return ap
 
 
@@ -91,7 +109,13 @@ def main(argv: list[str] | None = None) -> None:
                 bytes_in += len(msg.payload)
                 print(f"[SERVER] Received {stem} ({len(msg.payload)} bytes)")
                 try:
-                    ply_bytes = decode_drc(decoder, msg.payload, work_dir, stem)
+                    ply_bytes = decode_drc(
+                        decoder,
+                        msg.payload,
+                        work_dir,
+                        stem,
+                        timeout=args.decode_timeout,
+                    )
                 except Exception as exc:
                     error_msg = Message(kind=MSG_ERROR, name=stem, payload=str(exc).encode())
                     send_message(conn, error_msg)
@@ -116,3 +140,6 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         sys.exit(0)
+
+# 변경 요약:
+# - 외부 draco_decoder 실행에 타임아웃을 적용하고, CLI 옵션으로 조정 가능하도록 했습니다.

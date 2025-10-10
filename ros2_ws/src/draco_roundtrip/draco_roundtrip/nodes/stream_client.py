@@ -41,6 +41,24 @@ from draco_roundtrip.utils.protocol import (
 from draco_roundtrip.ros.playback import start_playback_thread
 
 
+def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: float = 5.0) -> None:
+    """Best-effort shutdown helper that avoids leaving child processes around."""
+
+    if proc is None:
+        return
+    if proc.poll() is not None:
+        return
+    # NOTE: Terminate first to let ROS2/bag gracefully stop before resorting to kill.
+    proc.terminate()
+    try:
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        print(f"[CLIENT] WARN: {name} did not exit after terminate, killing")
+        proc.kill()
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.wait(timeout=timeout)
+
+
 try:  # NOTE: Prefer inotify when available to honor event-driven spool monitoring.
     from inotify_simple import INotify, flags as inotify_flags
 except Exception:  # pragma: no cover - fall back to portable polling when missing.
@@ -198,6 +216,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--play-sample', type=int, default=50000)
     ap.add_argument('--qos-override', default=None,
                     help='Override QoS profile file. Defaults to layout profile or package configs')
+    ap.add_argument('--socket-timeout', type=float, default=15.0,
+                    help='Timeout (seconds) for socket operations; 0 disables the safeguard')
     return ap
 
 
@@ -245,7 +265,13 @@ def main(argv: Iterable[str] | None = None) -> None:
     bytes_received = 0
 
     try:
-        with socket.create_connection((args.server_host, args.server_port)) as sock:
+        with socket.create_connection(
+            (args.server_host, args.server_port),
+            timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+        ) as sock:
+            if args.socket_timeout > 0:
+                # NOTE: Guard against stalled reads when the server crashes mid-transfer.
+                sock.settimeout(args.socket_timeout)
             print(f"[CLIENT] Connected to {args.server_host}:{args.server_port}")
             with SpoolWatcher(ply_dir, args.prefix) as watcher:
                 pending: Deque[Path] = deque(watcher.drain_initial())
@@ -277,11 +303,23 @@ def main(argv: Iterable[str] | None = None) -> None:
                                 )
                             )
                             message = Message(kind=MSG_DATA, name=ply_path.stem, payload=drc_bytes)
-                            send_message(sock, message)
+                            try:
+                                send_message(sock, message)
+                            except socket.timeout:
+                                print(f"[CLIENT] ERROR: Timeout sending {ply_path.name}")
+                                watcher.mark_consumed(ply_path)
+                                eof_sent = True
+                                break
                             bytes_sent += len(drc_bytes)
                             print(f"[CLIENT] Sent {ply_path.name} ({len(drc_bytes)} bytes)")
 
-                            reply = recv_message(sock)
+                            try:
+                                reply = recv_message(sock)
+                            except socket.timeout:
+                                print(f"[CLIENT] ERROR: Timeout waiting for reply to {ply_path.name}")
+                                watcher.mark_consumed(ply_path)
+                                eof_sent = True
+                                break
                             if reply is None:
                                 print("[CLIENT] Server closed connection")
                                 raise ConnectionClosed("server closed")
@@ -318,7 +356,11 @@ def main(argv: Iterable[str] | None = None) -> None:
                             frame_idx += 1
 
                         if eof_sent:
-                            reply = recv_message(sock)
+                            try:
+                                reply = recv_message(sock)
+                            except socket.timeout:
+                                print('[CLIENT] Timeout while awaiting EOF acknowledgement')
+                                break
                             if reply is None:
                                 print('[CLIENT] Server closed connection after EOF notification')
                                 break
@@ -337,18 +379,23 @@ def main(argv: Iterable[str] | None = None) -> None:
                         saver_done = saver_proc.poll() is not None
                         if bag_done and saver_done and not pending and not eof_sent:
                             eof_message = Message(kind=MSG_EOF, name='', payload=b'')
-                            send_message(sock, eof_message)
+                            try:
+                                send_message(sock, eof_message)
+                            except socket.timeout:
+                                print('[CLIENT] Timeout while sending EOF marker')
+                                break
                             print('[CLIENT] Sent EOF marker to server')
                             eof_sent = True
                 except ConnectionClosed:
                     print('[CLIENT] Connection closed, stopping loop')
+                except socket.timeout:
+                    print('[CLIENT] Socket timeout encountered, shutting down connection')
     finally:
         to_play.put(None)
         if playback_thread.is_alive():
             playback_thread.join(timeout=1.0)
-        for proc, name in ((bag_process, 'ros2 bag'), (saver_proc, 'bag_to_ply')):
-            if proc and proc.poll() is None:
-                proc.terminate()
+        _terminate_process(bag_process, 'ros2 bag')
+        _terminate_process(saver_proc, 'bag_to_ply')
         elapsed = max(time.monotonic() - start_time, 1e-6)
         print('[CLIENT] ---- Transfer summary ----')
         print(f"  elapsed: {elapsed:.2f} s")
@@ -358,3 +405,7 @@ def main(argv: Iterable[str] | None = None) -> None:
 
 if __name__ == '__main__':
     main()
+
+# 변경 요약:
+# - 소켓 타임아웃과 송수신 예외 처리를 추가해 서버 응답 지연 시 무한 대기를 방지했습니다.
+# - 종료 시 하위 프로세스를 확실히 정리하도록 보조 함수를 도입했습니다.
