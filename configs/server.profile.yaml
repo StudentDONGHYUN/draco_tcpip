@@ -1,1 +1,11 @@
-# draco-ros2-roundtrip/configs/server.profile.yaml
+{
+  "name": "default-server",
+  "description": "Loopback decoder workspace for roundtrip experiments",
+  "data_root": "./data",
+  "directories": {
+    "server_work": "server_tmp",
+    "decoded_from_server": "decoded_from_server",
+    "results": "results",
+    "ros_logs": "logs/ros"
+  }
+}

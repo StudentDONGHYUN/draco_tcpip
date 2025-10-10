@@ -14,7 +14,10 @@ from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 from std_msgs.msg import Header
 
-from draco_roundtrip.io.ply_codec import collect_matching_pairs, load_xyz
+from draco_roundtrip.utils.ply_io import (
+    collect_matching_pairs,
+    load_points as load_xyz,
+)
 
 
 class PairReplay(Node):

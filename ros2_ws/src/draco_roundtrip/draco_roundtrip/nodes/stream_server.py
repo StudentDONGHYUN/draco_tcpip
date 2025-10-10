@@ -10,14 +10,14 @@ import sys
 import time
 from pathlib import Path
 
-from draco_roundtrip.net.protocol import (
+from draco_roundtrip.utils import ensure_directory, resolve_executable
+from draco_roundtrip.utils.protocol import (
     Message,
     MSG_DATA,
     MSG_ERROR,
     recv_message,
     send_message,
 )
-from draco_roundtrip.utils import ensure_directory, resolve_executable
 
 
 def decode_drc(decoder: Path, drc_bytes: bytes, out_dir: Path, stem: str) -> bytes:

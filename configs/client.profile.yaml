@@ -1,1 +1,16 @@
-# draco-ros2-roundtrip/configs/client.profile.yaml
+{
+  "name": "default-client",
+  "description": "Local rosbag playback with loopback TCP server",
+  "data_root": "./data",
+  "directories": {
+    "ply_stream": "ply_stream",
+    "client_work": "client_tmp",
+    "decoded_from_server": "decoded_from_server",
+    "results": "results",
+    "ros_logs": "logs/ros"
+  },
+  "qos_override": "qos_override.yaml",
+  "rosbag": {
+    "topic": "/sensing/lidar/top/pointcloud"
+  }
+}
