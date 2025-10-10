@@ -3,7 +3,7 @@
   <name>slam_stream_bridge</name>
   <version>0.1.0</version>
   <description>Launch files bridging SLAM pipelines with Draco streaming utilities.</description>
-  <maintainer email="ppakdone@gmail.com">GodokSa</maintainer>
+  <maintainer email="agfee104@outlook.kr">DONGHYUN</maintainer>
   <license>TODO</license>
 
   <buildtool_depend>ament_python</buildtool_depend>
