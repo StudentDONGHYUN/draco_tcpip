@@ -29,8 +29,9 @@ jobs:
         run: |
           set -euxo pipefail
           sudo apt-get update
+          sudo apt-get install -y ros-${ROS_DISTRO}-ament-python ros-${ROS_DISTRO}-ament-pytest
           rosdep update
-          rosdep install --from-paths ros2_ws/src --rosdistro ${ROS_DISTRO} --ignore-src -y
+          rosdep install --from-paths ros2_ws/src --rosdistro ${ROS_DISTRO} --ignore-src -y --skip-keys "ament_python ament_pytest"
 
       - name: Build workspace
         shell: bash
