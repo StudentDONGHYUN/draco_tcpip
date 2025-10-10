@@ -14,11 +14,20 @@ from typing import Iterable, Set
 
 import numpy as np
 
-from draco_roundtrip.analysis.metrics import compute_basic_metrics
-from draco_roundtrip.draco.encoder import EncoderOptions, encode_frame, find_draco_encoder
-from draco_roundtrip.io.ply_codec import load_xyz, load_xyz_from_bytes
-from draco_roundtrip.utils import ensure_directory, resolve_qos_override
-from draco_roundtrip.net.protocol import (
+from draco_tools.core.encoder import (
+    add_encoder_arguments,
+    encode_frame,
+    find_draco_encoder,
+    format_encode_log,
+    resolve_encoder_options,
+)
+from draco_roundtrip.utils.config import resolve_data_layout, resolve_qos_override
+from draco_roundtrip.utils.metrics import compute_basic_metrics
+from draco_roundtrip.utils.ply_io import (
+    load_points as load_xyz,
+    load_points_from_bytes as load_xyz_from_bytes,
+)
+from draco_roundtrip.utils.protocol import (
     ConnectionClosed,
     Message,
     MSG_DATA,
@@ -30,10 +39,10 @@ from draco_roundtrip.ros.playback import start_playback_thread
 
 
 
-def launch_bag_to_ply(args: argparse.Namespace) -> subprocess.Popen:
+def launch_bag_to_ply(args: argparse.Namespace, ply_dir: Path) -> subprocess.Popen:
     cmd = [sys.executable, '-m', 'draco_roundtrip.io.bag_recorder',
            '--topic', args.topic,
-           '--out', str(Path(args.ply_dir).resolve()),
+           '--out', str(ply_dir),
            '--prefix', args.prefix,
            '--idle-timeout-sec', str(args.idle_timeout)]
     if args.best_effort:
@@ -48,49 +57,71 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--bag', required=True)
     ap.add_argument('--topic', required=True)
     ap.add_argument('--prefix', required=True)
-    ap.add_argument('--ply-dir', default='data/ply_stream')
-    ap.add_argument('--encoder', default=None)
-    ap.add_argument('--cl', type=int, default=8)
-    ap.add_argument('--qp', type=int, default=12)
-    ap.add_argument('--qg', type=int, default=10)
-    ap.add_argument('--encoder-extra', nargs='*', default=[])
+    ap.add_argument('--layout-profile', default=None,
+                    help='Name or path of a layout profile (configs/*.profile.{yaml,json})')
+    ap.add_argument('--data-root', default=None,
+                    help='Base directory for generated artifacts (overrides profile/data root)')
+    ap.add_argument('--ply-dir', default=None,
+                    help='Override the spool directory for captured PLY frames')
+    add_encoder_arguments(
+        ap,
+        hint_option='--encoder',
+        hint_dest='encoder',
+        extra_option='--encoder-extra',
+        extra_dest='encoder_extra',
+    )
     ap.add_argument('--idle-timeout', type=float, default=10.0)
     ap.add_argument('--max-frames', type=int, default=0)
     ap.add_argument('--best-effort', action='store_true')
-    ap.add_argument('--work-dir', default='data/client_tmp')
-    ap.add_argument('--decoded-dir', default='data/decoded_from_server')
+    ap.add_argument('--work-dir', default=None,
+                    help='Override temporary directory for encoder scratch data')
+    ap.add_argument('--decoded-dir', default=None,
+                    help='Override directory where decoded frames from the server are stored')
     ap.add_argument('--server-host', default='127.0.0.1')
     ap.add_argument('--server-port', type=int, default=5000)
     ap.add_argument('--play-frame-id', default='lidar_link')
     ap.add_argument('--play-topic-prefix', default='stream_pair')
     ap.add_argument('--play-hz', type=float, default=10.0)
     ap.add_argument('--play-sample', type=int, default=50000)
+    ap.add_argument('--qos-override', default=None,
+                    help='Override QoS profile file. Defaults to layout profile or package configs')
     return ap
 
 
 def main(argv: Iterable[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
 
-    encoder_path = find_draco_encoder(args.encoder)
-    encoder_options = EncoderOptions(
-        compress_level=args.cl,
-        position_quantization_bits=args.qp,
-        generic_quantization_bits=args.qg,
-        extra_args=tuple(args.encoder_extra),
+    layout = resolve_data_layout(
+        {
+            'ply_dir': 'ply_stream',
+            'work_dir': 'client_work',
+            'decoded_dir': 'decoded_from_server',
+        },
+        profile=args.layout_profile,
+        overrides={
+            'ply_dir': args.ply_dir,
+            'work_dir': args.work_dir,
+            'decoded_dir': args.decoded_dir,
+        },
+        base=args.data_root,
+        ensure=True,
     )
 
-    ply_dir = ensure_directory(Path(args.ply_dir).resolve())
-    work_dir = ensure_directory(Path(args.work_dir).resolve())
-    decoded_dir = ensure_directory(Path(args.decoded_dir).resolve())
+    encoder_hint, encoder_options, _ = resolve_encoder_options(args)
+    encoder_path = find_draco_encoder(encoder_hint)
 
-    bag_cmd = ['ros2', 'bag', 'play', str(Path(args.bag).resolve())]
-    qos_override = resolve_qos_override()
+    ply_dir = layout['ply_dir']
+    work_dir = layout['work_dir']
+    decoded_dir = layout['decoded_dir']
+
+    bag_cmd = ['ros2', 'bag', 'play', str(Path(args.bag).expanduser().resolve())]
+    qos_override = resolve_qos_override(args.qos_override, profile=layout.profile)
     if qos_override is not None:
         bag_cmd += ['--qos-profile-overrides-path', str(qos_override)]
     else:
         print('[CLIENT] WARN: QoS override file not found, falling back to recorded QoS', file=sys.stderr)
     bag_process = subprocess.Popen(bag_cmd)
-    saver_proc = launch_bag_to_ply(args)
+    saver_proc = launch_bag_to_ply(args, ply_dir)
 
     to_play: queue.Queue = queue.Queue()
     playback_thread = start_playback_thread(to_play, args.play_frame_id, args.play_topic_prefix, args.play_hz)
@@ -118,6 +149,7 @@ def main(argv: Iterable[str] | None = None) -> None:
                             print(f"[CLIENT] ENCODE FAIL {ply_path.name}: {exc}")
                             processed.add(ply_path)
                             continue
+                        print(format_encode_log(result, source=ply_path, prefix='[CLIENT][ENCODER]'))
                         message = Message(kind=MSG_DATA, name=ply_path.stem, payload=drc_bytes)
                         send_message(sock, message)
                         bytes_sent += len(drc_bytes)
