@@ -4,13 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import queue
 import socket
 import subprocess
 import sys
 import time
+from collections import deque
 from pathlib import Path
-from typing import Iterable, Set
+from typing import Deque, Iterable, Optional
 
 import numpy as np
 
@@ -31,11 +33,122 @@ from draco_roundtrip.utils.protocol import (
     ConnectionClosed,
     Message,
     MSG_DATA,
+    MSG_EOF,
     MSG_ERROR,
     recv_message,
     send_message,
 )
 from draco_roundtrip.ros.playback import start_playback_thread
+
+
+try:  # NOTE: Prefer inotify when available to honor event-driven spool monitoring.
+    from inotify_simple import INotify, flags as inotify_flags
+except Exception:  # pragma: no cover - fall back to portable polling when missing.
+    INotify = None  # type: ignore
+    inotify_flags = None  # type: ignore
+
+
+class SpoolWatcher:
+    """Track new PLY frames using filesystem events when possible."""
+
+    # NOTE: Bounded history prevents the previous unbounded processed set growth.
+    _history_limit = 65536
+
+    def __init__(self, directory: Path, prefix: str):
+        self.directory = directory
+        self.prefix = prefix
+        self._inotify: Optional[INotify] = None
+        self._watch_descriptor: Optional[int] = None
+        self._known: set[str] = set()
+        self._retired: Deque[str] = deque(maxlen=self._history_limit)
+        self._retired_set: set[str] = set()
+
+    def __enter__(self) -> "SpoolWatcher":
+        if INotify is not None:
+            self._inotify = INotify()
+            # NOTE: CLOSE_WRITE/MOVED_TO ensure we only process fully-written files.
+            mask = (
+                inotify_flags.CLOSE_WRITE
+                | inotify_flags.MOVED_TO
+                | inotify_flags.CREATE
+            )
+            self._watch_descriptor = self._inotify.add_watch(
+                str(self.directory), mask
+            )
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if self._inotify is not None and self._watch_descriptor is not None:
+            with contextlib.suppress(Exception):
+                self._inotify.rm_watch(self._watch_descriptor)
+        if self._inotify is not None:
+            with contextlib.suppress(Exception):
+                self._inotify.close()
+
+    def _remember(self, name: str) -> bool:
+        if name in self._retired_set:
+            return False
+        if name in self._known:
+            return False
+        self._known.add(name)
+        return True
+
+    def _discover_existing(self) -> list[Path]:
+        paths = sorted(self.directory.glob(f"{self.prefix}_*.ply"))
+        fresh: list[Path] = []
+        for path in paths:
+            if self._remember(path.name):
+                fresh.append(path)
+        return fresh
+
+    def drain_initial(self) -> list[Path]:
+        """Return any files created before the watcher started."""
+
+        return self._discover_existing()
+
+    def wait_for_new(self, timeout: float = 1.0) -> list[Path]:
+        """Block until new files arrive (event-driven when supported)."""
+
+        if self._inotify is None:
+            # NOTE: Maintain compatibility on systems lacking inotify by pausing
+            # briefly before re-scanning.
+            time.sleep(timeout)
+            return self._discover_existing()
+
+        try:
+            events = self._inotify.read(timeout=int(timeout * 1000))
+        except TimeoutError:
+            return self._discover_existing()
+
+        fresh: list[Path] = []
+        for event in events:
+            if not event.name:
+                continue
+            name = event.name
+            if not name.startswith(f"{self.prefix}_") or not name.endswith(".ply"):
+                continue
+            if not self._remember(name):
+                continue
+            candidate = self.directory / name
+            if candidate.exists():
+                fresh.append(candidate)
+
+        if not fresh:
+            return self._discover_existing()
+        return sorted(fresh)
+
+    def mark_consumed(self, path: Path) -> None:
+        """Release memory for processed files while avoiding re-processing."""
+
+        name = path.name
+        self._known.discard(name)
+        if name in self._retired_set:
+            return
+        if len(self._retired) == self._retired.maxlen:
+            oldest = self._retired.popleft()
+            self._retired_set.discard(oldest)
+        self._retired.append(name)
+        self._retired_set.add(name)
 
 
 
@@ -126,7 +239,6 @@ def main(argv: Iterable[str] | None = None) -> None:
     to_play: queue.Queue = queue.Queue()
     playback_thread = start_playback_thread(to_play, args.play_frame_id, args.play_topic_prefix, args.play_hz)
 
-    processed: Set[Path] = set()
     frame_idx = 0
     start_time = time.monotonic()
     bytes_sent = 0
@@ -135,58 +247,101 @@ def main(argv: Iterable[str] | None = None) -> None:
     try:
         with socket.create_connection((args.server_host, args.server_port)) as sock:
             print(f"[CLIENT] Connected to {args.server_host}:{args.server_port}")
-            try:
-                while True:
-                    new_files = sorted(ply_dir.glob(f"{args.prefix}_*.ply"))
-                    for ply_path in new_files:
-                        if ply_path in processed:
-                            continue
-                        try:
-                            result = encode_frame(ply_path, work_dir, encoder_options,
-                                                   encoder_hint=encoder_path, skip_existing=False)
-                            drc_bytes = result.output.read_bytes()
-                        except Exception as exc:
-                            print(f"[CLIENT] ENCODE FAIL {ply_path.name}: {exc}")
-                            processed.add(ply_path)
-                            continue
-                        print(format_encode_log(result, source=ply_path, prefix='[CLIENT][ENCODER]'))
-                        message = Message(kind=MSG_DATA, name=ply_path.stem, payload=drc_bytes)
-                        send_message(sock, message)
-                        bytes_sent += len(drc_bytes)
-                        print(f"[CLIENT] Sent {ply_path.name} ({len(drc_bytes)} bytes)")
+            with SpoolWatcher(ply_dir, args.prefix) as watcher:
+                pending: Deque[Path] = deque(watcher.drain_initial())
+                eof_sent = False
+                try:
+                    while True:
+                        while pending:
+                            ply_path = pending.popleft()
+                            if not ply_path.exists():
+                                continue
+                            try:
+                                result = encode_frame(
+                                    ply_path,
+                                    work_dir,
+                                    encoder_options,
+                                    encoder_hint=encoder_path,
+                                    skip_existing=False,
+                                )
+                                drc_bytes = result.output.read_bytes()
+                            except Exception as exc:
+                                print(f"[CLIENT] ENCODE FAIL {ply_path.name}: {exc}")
+                                watcher.mark_consumed(ply_path)
+                                continue
+                            print(
+                                format_encode_log(
+                                    result,
+                                    source=ply_path,
+                                    prefix='[CLIENT][ENCODER]'
+                                )
+                            )
+                            message = Message(kind=MSG_DATA, name=ply_path.stem, payload=drc_bytes)
+                            send_message(sock, message)
+                            bytes_sent += len(drc_bytes)
+                            print(f"[CLIENT] Sent {ply_path.name} ({len(drc_bytes)} bytes)")
 
-                        reply = recv_message(sock)
-                        if reply is None:
-                            print("[CLIENT] Server closed connection")
-                            raise ConnectionClosed("server closed")
-                        if reply.kind == MSG_ERROR:
-                            detail = reply.payload.decode(errors='ignore')
-                            print(f"[CLIENT] SERVER ERROR for {ply_path.name}: {reply.name} -> {detail}")
-                            processed.add(ply_path)
+                            reply = recv_message(sock)
+                            if reply is None:
+                                print("[CLIENT] Server closed connection")
+                                raise ConnectionClosed("server closed")
+                            if reply.kind == MSG_EOF:
+                                print('[CLIENT] Received unexpected EOF while frames pending')
+                                eof_sent = True
+                                break
+                            if reply.kind == MSG_ERROR:
+                                detail = reply.payload.decode(errors='ignore')
+                                print(
+                                    f"[CLIENT] SERVER ERROR for {ply_path.name}: {reply.name} -> {detail}"
+                                )
+                                watcher.mark_consumed(ply_path)
+                                continue
+                            bytes_received += len(reply.payload)
+
+                            reply_name = reply.name or f"{ply_path.stem}.decoded"
+                            if not reply_name.endswith('.ply'):
+                                reply_name = f"{reply_name}.ply"
+                            decoded_path = decoded_dir / reply_name
+                            decoded_path.write_bytes(reply.payload)
+
+                            pts_src = load_xyz(ply_path)
+                            pts_dec = load_xyz_from_bytes(reply.payload)
+                            metrics = compute_basic_metrics(pts_src, pts_dec, args.play_sample)
+                            print(
+                                f"[CLIENT] Frame {frame_idx:05d} metrics — "
+                                f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "
+                                f"bboxΔ=({metrics['bbox_delta'][0]:+.3f},{metrics['bbox_delta'][1]:+.3f},{metrics['bbox_delta'][2]:+.3f}) "
+                                f"Chamfer(mean/max)={metrics['chamfer_mean']}/{metrics['chamfer_max']}"
+                            )
+                            to_play.put((frame_idx, ply_path.stem, pts_src, pts_dec))
+                            watcher.mark_consumed(ply_path)
+                            frame_idx += 1
+
+                        if eof_sent:
+                            reply = recv_message(sock)
+                            if reply is None:
+                                print('[CLIENT] Server closed connection after EOF notification')
+                                break
+                            if reply.kind == MSG_EOF:
+                                print('[CLIENT] EOF handshake complete')
+                                break
+                            print(f"[CLIENT] Ignoring post-EOF message of kind {reply.kind}")
                             continue
-                        bytes_received += len(reply.payload)
 
-                        reply_name = reply.name or f"{ply_path.stem}.decoded"
-                        if not reply_name.endswith('.ply'):
-                            reply_name = f"{reply_name}.ply"
-                        decoded_path = decoded_dir / reply_name
-                        decoded_path.write_bytes(reply.payload)
+                        new_paths = watcher.wait_for_new(timeout=0.5)
+                        if new_paths:
+                            pending.extend(new_paths)
+                            continue
 
-                        pts_src = load_xyz(ply_path)
-                        pts_dec = load_xyz_from_bytes(reply.payload)
-                        metrics = compute_basic_metrics(pts_src, pts_dec, args.play_sample)
-                        print(
-                            f"[CLIENT] Frame {frame_idx:05d} metrics — "
-                            f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "
-                            f"bboxΔ=({metrics['bbox_delta'][0]:+.3f},{metrics['bbox_delta'][1]:+.3f},{metrics['bbox_delta'][2]:+.3f}) "
-                            f"Chamfer(mean/max)={metrics['chamfer_mean']}/{metrics['chamfer_max']}"
-                        )
-                        to_play.put((frame_idx, ply_path.stem, pts_src, pts_dec))
-                        processed.add(ply_path)
-                        frame_idx += 1
-                    time.sleep(0.1)
-            except ConnectionClosed:
-                print('[CLIENT] Connection closed, stopping loop')
+                        bag_done = bag_process.poll() is not None
+                        saver_done = saver_proc.poll() is not None
+                        if bag_done and saver_done and not pending and not eof_sent:
+                            eof_message = Message(kind=MSG_EOF, name='', payload=b'')
+                            send_message(sock, eof_message)
+                            print('[CLIENT] Sent EOF marker to server')
+                            eof_sent = True
+                except ConnectionClosed:
+                    print('[CLIENT] Connection closed, stopping loop')
     finally:
         to_play.put(None)
         if playback_thread.is_alive():
