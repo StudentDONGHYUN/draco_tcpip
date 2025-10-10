@@ -1,6 +1,6 @@
 # Draco TCP/IP Roundtrip 리팩토링 요약 보고서
 
-본 문서는 `refac.md`에 정리된 목표를 완료한 뒤, 핵심 변경 사항과 운영 전환 지침을 요약한 보고서입니다.
+본 문서는 `refac.md`에 정리된 목표를 완료한 뒤, 핵심 변경 사항과 운영 전환 지침을 요약한 보고서입니다. 세부 경로와 추가 문서는 `../references/codebase_overview.md`에서 빠르게 찾을 수 있습니다.
 
 ## 타임라인 하이라이트
 
@@ -18,15 +18,15 @@
 ## 핵심 산출물
 
 - **문서화**
-  - `docs/config_reference.md`: `configs/*.yaml`, `draco.json` 사용법과 예시를 집대성.
-  - `docs/logging_guidelines.md`: 실험 결과 저장 구조와 `stream_collect_logs` 활용법.
+  - `../references/config_reference.md`: `configs/*.yaml`, `draco.json` 사용법과 예시를 집대성.
+  - `../guides/logging_guidelines.md`: 실험 결과 저장 구조와 `stream_collect_logs` 활용법.
   - README/HOWTO/SLAM 가이드 갱신으로 레거시 지침 제거 및 bringup 런치 예시 제공.
 - **운영 자동화**
   - `slam_stream_bridge/launch/bringup.launch.py`: 스트리밍 서버/클라이언트/SLAM을 단일 명령으로 기동.
   - `stream_netem` CLI: `configs/netem.profiles.yaml` 기반 네트워크 에뮬레이션 프로파일 적용.
   - `stream_collect_logs` CLI: 결과 디렉터리 생성, 로그/산출물 수집, 메타데이터 기록 자동화.
 - **구성 리소스**
-  - `client.profile.yaml`, `server.profile.yaml`, `draco.json`, `ros_topics.yaml`의 실제 기본값 제공.
+  - `client.profile.yaml`, `server.profile.yaml`, `draco.json`, `ros_topics.yaml`의 기본값 정비.
   - 네트워크/SLAM 관련 프로파일이 README 및 런치 인자와 연결되도록 구조화.
 
 ## 마이그레이션 체크리스트
@@ -55,4 +55,4 @@
 - `stream_collect_logs`와 CI 파이프라인을 연계해 자동 업로드(아티팩트 저장) 흐름 구축.
 - Open3D/NumPy 의존성 유무에 따른 테스트 매트릭스 확장.
 
-본 보고서는 refactor_checklist의 모든 항목이 충족된 시점의 상태를 반영합니다.
+본 보고서는 `../checklists/refactor_checklist.md`의 모든 항목이 충족된 시점의 상태를 반영합니다.

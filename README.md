@@ -103,14 +103,14 @@ ros2 launch slam_stream_bridge rtabmap_stream.launch.py cloud_topic:=/stream_pai
 필요한 토픽 remap 및 QoS 설정은 런치 인자 또는 `configs/*.yaml` 파일에서 조정합니다.
 
 ## 추가 자료
-- `docs/HOWTO.md`: 세부 운영 시나리오와 환경 설정 가이드
-- `docs/3d_slam_setup.md`: SLAM 연동 구성 절차
-- `docs/config_reference.md`: `configs/*.yaml` 및 프로파일 파일 설명과 활용 예시
-- `docs/logging_guidelines.md`: 결과 디렉터리 구조와 로그 수집 자동화 절차
-- `docs/encoder_cli.md`: Draco 인코더 CLI 헬퍼와 통합 로그 포맷 가이드
-- `docs/layout_profiles.md`: 디렉터리/프로필 설정 규칙과 예시
-- `docs/results_template.md`: 실험 결과 정리 템플릿
-- `docs/refactor_report.md`: 리팩토링 완료 보고서 및 마이그레이션 안내
+- `docs/guides/HOWTO.md`: 세부 운영 시나리오와 환경 설정 가이드
+- `docs/guides/3d_slam_setup.md`: SLAM 연동 구성 절차
+- `docs/references/config_reference.md`: `configs/*.yaml` 및 프로파일 파일 설명과 활용 예시
+- `docs/guides/logging_guidelines.md`: 결과 디렉터리 구조와 로그 수집 자동화 절차
+- `docs/guides/encoder_cli.md`: Draco 인코더 CLI 헬퍼와 통합 로그 포맷 가이드
+- `docs/references/layout_profiles.md`: 디렉터리/프로필 설정 규칙과 예시
+- `docs/templates/results_template.md`: 실험 결과 정리 템플릿
+- `docs/reports/refactor_report.md`: 리팩토링 완료 보고서 및 마이그레이션 안내
 - `refac.md`: 현재 진행 중인 리팩토링 제안 및 단계별 목표
 
 기여 시에는 리팩토링 로드맵과 체크리스트를 참고하여 코드 구조와 문서가 일관되도록 유지해주세요.
@@ -118,4 +118,4 @@ ros2 launch slam_stream_bridge rtabmap_stream.launch.py cloud_topic:=/stream_pai
 ## 레거시 스크립트 정리 현황
 - 과거 리포지터리 루트에 위치했던 `draco-ros2-roundtrip/scripts/*.py` 실행 파일은 모두 ROS 2 패키지 내부의 콘솔 엔트리포인트로 대체되었습니다.
 - 기존 스크립트 경로를 사용하는 자동화는 `ros2 run draco_roundtrip ...` 또는 `ros2 run draco_tools ...` 형태로 교체해 주세요.
-- 필요한 경우 `ros2 run <package> <entrypoint> --help`로 최신 인자 목록을 확인할 수 있으며, 본 README와 `docs/encoder_cli.md`에서 대표적인 사용 예시를 제공합니다.
+- 필요한 경우 `ros2 run <package> <entrypoint> --help`로 최신 인자 목록을 확인할 수 있으며, 본 README와 `docs/guides/encoder_cli.md`에서 대표적인 사용 예시를 제공합니다.

@@ -1,5 +1,7 @@
 # 비동기 프레임 파이프라인 설계
 
+이 문서는 스트리밍 클라이언트/서버가 공유하는 비동기 파이프라인의 목표와 구성 요소를 설명합니다. 실제 구현은 `draco_roundtrip/nodes/stream_client.py`와 `stream_server.py`에서 확인할 수 있으며, 전체 아키텍처 개요는 `../references/codebase_overview.md`를 참고하세요.
+
 ## 목표
 - 포인트클라우드 프레임 캡처, Draco 인코딩, 네트워크 전송, 서버 디코딩 단계를 동시에 진행해 프레임 왕복 지연을 최소화한다.
 - 역압(backpressure)을 명시적으로 처리하여 과도한 프레임 버퍼링과 ROS 2 큐 오버플로를 방지한다.
@@ -10,21 +12,17 @@
    - ROS 2 구독자가 대여 메시지(loaned message) 또는 zero-copy 공유 메모리를 이용해 프레임을 획득한다.
    - 캡처 스레드/코루틴은 `Capture → Encode` 큐에 프레임 핸들(메모리 참조 + 메타데이터)을 넣는다.
    - 큐 용량은 기본 4, 최대 16 프레임. 큐가 가득 차면 ROS 2 QoS 정책(Keep Last)과 연동해 가장 오래된 프레임을 폐기하거나 캡처를 일시 중단한다.
-
 2. **인코딩 스테이지**
-   - 비동기 작업 실행기(ThreadPool/Boost::asio strand)를 사용해 Draco 인코딩을 수행한다.
+   - 비동기 작업 실행기(ThreadPool/Boost.Asio strand)를 사용해 Draco 인코딩을 수행한다.
    - 인코딩 결과는 압축 바이트 배열과 타임스탬프, 프레임 ID를 포함한다.
    - 성공 시 `Encode → Network` 큐로 이동하고, 실패 시 오류 이벤트 채널로 전달한다.
-
 3. **네트워크 전송 스테이지**
    - `Encode → Network` 큐는 최대 인플라이트 프레임 수(`max_inflight`)에 따라 크기를 조절한다.
    - TCP 소켓은 논블로킹 모드 + 이벤트 루프로 감시하며, 준비된 프레임을 바이너리 프로토콜로 전송한다.
    - 송신 완료 후 RTT 측정을 위해 인플라이트 테이블에 `frame_id → (sent_ts, size)`를 기록한다.
-
 4. **응답 처리 스테이지**
    - 별도 I/O 루프가 서버 응답을 수신하고 인플라이트 테이블을 갱신한다.
    - 디코딩된 PLY/포인트 데이터를 ROS 2 퍼블리셔에 전달하며, 필요 시 렌더 스레드로 바로 전달할 수 있도록 zero-copy 버퍼를 사용한다.
-
 5. **역압 및 흐름 제어**
    - 인플라이트 테이블이 임계치에 도달하면 캡처 스테이지에 `PAUSE_CAPTURE` 신호를 보낸다.
    - 서버에서 오류 또는 혼잡 신호를 보내면 `max_inflight`와 인코더 비트레이트를 조정하는 적응형 컨트롤러가 동작한다.
@@ -55,3 +53,9 @@ NetworkLoop -> CaptureThread : (optional) resume_capture
 - C++ 버전: `rclcpp::executors::MultiThreadedExecutor`와 Boost.Asio `io_context`를 결합해 비동기 소켓과 작업 큐를 관리한다.
 - 공유 메모리: `ros2_shm` 또는 CycloneDDS loaned message API를 활용해 복사 없는 전달을 구현한다.
 
+## 현 구현과의 연결 고리
+- `draco_roundtrip/nodes/stream_client.py`는 위 설계를 바탕으로 `FrameSender`, `WindowController`, `TelemetryRecorder` 클래스를 구성해 인플라이트 제어와 텔레메트리를 수집한다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py†L1-L222】
+- `draco_roundtrip/nodes/stream_server.py`는 `DecodeJob`/`PipelineResult` 구조체와 `StageStats`를 사용해 디코딩 및 응답 단계를 계측한다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py†L1-L160】
+- 설계에서 제안한 로그 포맷과 큐 구조는 `../guides/HOWTO.md`와 `../guides/logging_guidelines.md`에 반영되어 있으며, 적응형 윈도우 제어 정책은 `../plans/network_latency_reduction_plan.md`와 연동됩니다.
+
+향후 C++ 포팅이나 전송 계층 실험 시 본 설계를 기준으로 변경 사항을 기록하고, 관련 체크리스트(`../checklists/hybrid_architecture_checklist.md`)를 함께 업데이트하세요.
