@@ -421,11 +421,7 @@ async def encode_worker(
         priority, _, payload = await capture_queue.get()
         if payload is None:
             capture_queue.task_done()
-            # Always push the sentinel so the network sender can exit. The
-            # worker may be stopping because ``stop_event`` is set, so avoid
-            # passing it to ``_put_with_retry`` which would otherwise bail out
-            # early and leave the sender waiting forever on ``get``.
-            await _put_with_retry(network_queue, None)
+            await _put_with_retry(network_queue, None, stop_event=stop_event)
             break
         handle = payload.handle
         captured_at = payload.captured_at
