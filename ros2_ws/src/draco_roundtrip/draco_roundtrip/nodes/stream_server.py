@@ -15,7 +15,7 @@ import socket
 import subprocess
 import sys
 import time
-from contextlib import suppress
+from contextlib import suppress, ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable
@@ -66,6 +66,12 @@ class PipelineStats:
 
 
 @dataclass(slots=True)
+class ControlChannel:
+    sock: socket.socket
+    protocol: ProtocolHandler
+
+
+@dataclass(slots=True)
 class DecodeJob:
     sequence: int | None
     name: str
@@ -101,6 +107,17 @@ def _telemetry(stage: str, frame: str, **details: object) -> None:
     extras = " ".join(f"{key}={value}" for key, value in details.items())
     suffix = f" {extras}" if extras else ""
     print(f"[SERVER][TELEM] {stage} frame={frame} ts={time.monotonic():.6f}{suffix}")
+
+
+async def _send_control_message(
+    control: ControlChannel | None,
+    fallback_protocol: ProtocolHandler,
+    fallback_sock: socket.socket,
+    message: Message,
+) -> None:
+    target = control.sock if control is not None else fallback_sock
+    protocol = control.protocol if control is not None else fallback_protocol
+    await asyncio.to_thread(protocol.send, target, message)
 
 
 def decode_drc(
@@ -167,6 +184,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Draco streaming server")
     ap.add_argument('--host', default='0.0.0.0')
     ap.add_argument('--port', type=int, default=5000)
+    ap.add_argument('--control-port', type=int, default=0,
+                    help='Optional TCP port dedicated to control-plane messages (0 disables)')
     ap.add_argument('--decoder', default=None, help="Path to draco_decoder")
     ap.add_argument('--work-dir', default='data/server_tmp')
     ap.add_argument('--decode-timeout', type=float, default=30.0,
@@ -201,6 +220,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 async def _recv_loop(
     protocol,
     conn: socket.socket,
+    control: ControlChannel | None,
     decode_queue: "asyncio.Queue[DecodeJob | None]",
     stop_event: asyncio.Event,
     producer_done: asyncio.Event,
@@ -217,8 +237,9 @@ async def _recv_loop(
                 break
             if heartbeat_interval > 0 and (time.monotonic() - last_heartbeat) >= heartbeat_interval:
                 try:
-                    await asyncio.to_thread(
-                        protocol.send,
+                    await _send_control_message(
+                        control,
+                        protocol,
                         conn,
                         Message(
                             kind=MSG_HEARTBEAT,
@@ -275,8 +296,9 @@ async def _recv_loop(
             seq=job.sequence,
         )
         try:
-            await asyncio.to_thread(
-                protocol.send,
+            await _send_control_message(
+                control,
+                protocol,
                 conn,
                 Message(
                     kind=MSG_ACK,
@@ -352,6 +374,7 @@ async def _decode_worker(
 async def _send_loop(
     protocol,
     conn: socket.socket,
+    control: ControlChannel | None,
     send_queue: "asyncio.Queue[PipelineResult | None]",
     stats: PipelineStats,
     totals: Dict[str, int],
@@ -397,7 +420,10 @@ async def _send_loop(
             )
             stage_label = "send_data"
         try:
-            await asyncio.to_thread(protocol.send, conn, message)
+            if message.kind == MSG_DATA:
+                await asyncio.to_thread(protocol.send, conn, message)
+            else:
+                await _send_control_message(control, protocol, conn, message)
         except Exception as exc:
             print(f"[SERVER] ERROR sending {message.name or result.job.name}: {exc}")
             stop_event.set()
@@ -424,8 +450,9 @@ async def _send_loop(
             send_queue.task_done()
     if not eof_sent and producer_done.is_set():
         try:
-            await asyncio.to_thread(
-                protocol.send,
+            await _send_control_message(
+                control,
+                protocol,
                 conn,
                 Message(
                     kind=MSG_EOF,
@@ -439,6 +466,9 @@ async def _send_loop(
         with suppress(OSError):
             # ``SHUT_WR`` triggers a FIN after the MSG_EOF handshake reaches the client.
             conn.shutdown(socket.SHUT_WR)
+        if control is not None:
+            with suppress(OSError):
+                control.sock.shutdown(socket.SHUT_WR)
 
 
 async def handle_connection(
@@ -449,20 +479,42 @@ async def handle_connection(
     work_dir: Path,
     stats: PipelineStats,
     totals: Dict[str, int],
+    control_conn: socket.socket | None = None,
 ) -> None:
-    with conn:
+    with ExitStack() as stack:
+        data_conn = stack.enter_context(conn)
+        control_socket = stack.enter_context(control_conn) if control_conn is not None else None
         if args.tcp_nodelay:
             with suppress(OSError):
-                conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                data_conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            if control_socket is not None:
+                with suppress(OSError):
+                    control_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         if args.socket_buffer_kb > 0:
             buf_size = args.socket_buffer_kb * 1024
             for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
                 with suppress(OSError):
-                    conn.setsockopt(socket.SOL_SOCKET, opt, buf_size)
+                    data_conn.setsockopt(socket.SOL_SOCKET, opt, buf_size)
+                if control_socket is not None:
+                    with suppress(OSError):
+                        control_socket.setsockopt(socket.SOL_SOCKET, opt, buf_size)
         if args.socket_timeout > 0:
-            conn.settimeout(args.socket_timeout)
+            data_conn.settimeout(args.socket_timeout)
+            if control_socket is not None:
+                control_socket.settimeout(args.socket_timeout)
         protocol = resolve_protocol(args.protocol)
         print(f"[SERVER] Connection from {addr} using {protocol.name} protocol")
+        control_channel: ControlChannel | None = None
+        if control_socket is not None:
+            control_protocol = resolve_protocol(args.protocol)
+            control_channel = ControlChannel(sock=control_socket, protocol=control_protocol)
+            try:
+                peer = control_socket.getpeername()
+            except OSError:
+                peer = "unknown"
+            print(
+                f"[SERVER] Control channel paired from {peer} using {control_protocol.name} protocol"
+            )
 
         max_inflight = max(1, args.max_inflight)
         if args.decode_workers <= 0:
@@ -475,7 +527,8 @@ async def handle_connection(
         recv_task = asyncio.create_task(
             _recv_loop(
                 protocol,
-                conn,
+                data_conn,
+                control_channel,
                 decode_queue,
                 stop_event,
                 producer_done,
@@ -501,7 +554,8 @@ async def handle_connection(
         send_task = asyncio.create_task(
             _send_loop(
                 protocol,
-                conn,
+                data_conn,
+                control_channel,
                 send_queue,
                 stats,
                 totals,
@@ -539,21 +593,55 @@ async def run_server(args: argparse.Namespace) -> None:
     totals: Dict[str, int] = {"bytes_in": 0, "bytes_out": 0}
     start_time = time.monotonic()
 
+    if args.control_port and args.control_port == args.port:
+        raise ValueError("control-port must differ from data port when enabled")
+
     try:
         server = socket.create_server((args.host, args.port), reuse_port=True)
     except OSError as exc:
         print(f"[SERVER] WARN: reuse_port failed ({exc}), retrying without it")
         server = socket.create_server((args.host, args.port))
 
-    with server:
+    control_server: socket.socket | None = None
+    if args.control_port > 0:
+        try:
+            control_server = socket.create_server((args.host, args.control_port), reuse_port=True)
+        except OSError as exc:
+            print(
+                f"[SERVER] WARN: control reuse_port failed ({exc}), retrying without it")
+            control_server = socket.create_server((args.host, args.control_port))
+
+    with ExitStack() as stack:
+        stack.enter_context(server)
+        if control_server is not None:
+            stack.enter_context(control_server)
         print(f"[SERVER] Listening on {args.host}:{args.port}")
+        if control_server is not None:
+            print(f"[SERVER] Control channel listening on {args.host}:{args.control_port}")
         conn, addr = await asyncio.to_thread(server.accept)
         print(f"[SERVER] Accepted connection from {addr}")
+        control_conn: socket.socket | None = None
+        control_addr = None
+        if control_server is not None:
+            control_conn, control_addr = await asyncio.to_thread(control_server.accept)
+            print(f"[SERVER] Accepted control connection from {control_addr}")
         try:
-            await handle_connection(conn, addr, args, decoder, work_dir, stats, totals)
+            await handle_connection(
+                conn,
+                addr,
+                args,
+                decoder,
+                work_dir,
+                stats,
+                totals,
+                control_conn=control_conn,
+            )
         finally:
             with suppress(Exception):
                 conn.close()
+            if control_conn is not None:
+                with suppress(Exception):
+                    control_conn.close()
 
     elapsed = max(time.monotonic() - start_time, 1e-6)
     print("[SERVER] ---- Bandwidth summary ----")
@@ -578,6 +666,10 @@ def run_server_legacy(args: argparse.Namespace) -> None:
     start_time = time.monotonic()
     bytes_in = 0
     bytes_out = 0
+    if args.control_port > 0:
+        print(
+            "[SERVER][LEGACY] WARN: control-port ignored in legacy mode; using single channel"
+        )
     try:
         server = socket.create_server((args.host, args.port), reuse_port=True)
     except OSError as exc:
