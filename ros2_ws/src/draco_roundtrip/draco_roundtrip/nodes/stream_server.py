@@ -29,6 +29,12 @@ from draco_roundtrip.utils.protocol import (
     available_protocols,
     resolve_protocol,
 )
+from draco_roundtrip.utils.stream_protocol import (
+    CONTROL_CHANNEL,
+    DATA_CHANNEL,
+    decode_frame_address,
+    encode_frame_address,
+)
 
 
 @dataclass(slots=True)
@@ -59,6 +65,7 @@ class PipelineStats:
 
 @dataclass(slots=True)
 class DecodeJob:
+    sequence: int | None
     name: str
     payload: bytes
     received_at: float
@@ -210,6 +217,7 @@ async def _recv_loop(
             print("[SERVER] Client closed connection")
             stop_event.set()
             break
+        address = decode_frame_address(message.name)
         if message.kind == MSG_EOF:
             print("[SERVER] Received EOF marker from client")
             _telemetry("recv_eof", "all")
@@ -218,11 +226,24 @@ async def _recv_loop(
         if message.kind != MSG_DATA:
             print(f"[SERVER] Ignoring unexpected message kind: {message.kind}")
             continue
-        job = DecodeJob(name=message.name or "frame", payload=message.payload, received_at=time.monotonic())
+        if address.channel != DATA_CHANNEL:
+            print(f"[SERVER] WARN: Received data on control channel: {message.name}")
+        job = DecodeJob(
+            sequence=address.sequence,
+            name=address.name or "frame",
+            payload=message.payload,
+            received_at=time.monotonic(),
+        )
         totals["bytes_in"] += len(message.payload)
         # ``asyncio.Queue`` enforces the backpressure window shared with decode/send stages.
         await decode_queue.put(job)
-        _telemetry("recv_data", job.name, size=len(job.payload), depth=decode_queue.qsize())
+        _telemetry(
+            "recv_data",
+            job.name,
+            size=len(job.payload),
+            depth=decode_queue.qsize(),
+            seq=job.sequence,
+        )
     producer_done.set()
 
 
@@ -245,8 +266,13 @@ async def _decode_worker(
             break
         decode_start = time.monotonic()
         stats.recv_to_decode.record(decode_start - job.received_at)
-        _telemetry("decode_start", job.name, worker=worker_id,
-                   wait_ms=(decode_start - job.received_at) * 1000.0)
+        _telemetry(
+            "decode_start",
+            job.name,
+            worker=worker_id,
+            seq=job.sequence,
+            wait_ms=(decode_start - job.received_at) * 1000.0,
+        )
         try:
             artifact = await asyncio.to_thread(
                 decode_drc,
@@ -260,12 +286,17 @@ async def _decode_worker(
             )
             decoded_at = time.monotonic()
             stats.decode_time.record(decoded_at - decode_start)
-            _telemetry("decode_complete", job.name, worker=worker_id,
-                       latency_ms=(decoded_at - decode_start) * 1000.0)
+            _telemetry(
+                "decode_complete",
+                job.name,
+                worker=worker_id,
+                seq=job.sequence,
+                latency_ms=(decoded_at - decode_start) * 1000.0,
+            )
             await send_queue.put(PipelineResult(job=job, decoded_at=decoded_at, artifact=artifact))
         except Exception as exc:
             print(f"[SERVER] ERROR decoding {job.name}: {exc}")
-            _telemetry("decode_error", job.name, worker=worker_id)
+            _telemetry("decode_error", job.name, worker=worker_id, seq=job.sequence)
             await send_queue.put(
                 PipelineResult(job=job, decoded_at=time.monotonic(), error=str(exc))
             )
@@ -297,12 +328,28 @@ async def _send_loop(
         send_start = time.monotonic()
         if result.artifact is None or result.error:
             payload = (result.error or "decode failed").encode()
-            message = Message(kind=MSG_ERROR, name=result.job.name, payload=payload)
+            message = Message(
+                kind=MSG_ERROR,
+                name=encode_frame_address(
+                    result.job.sequence,
+                    result.job.name,
+                    channel=CONTROL_CHANNEL,
+                ),
+                payload=payload,
+            )
             stage_label = "send_error"
         else:
             name = result.job.name
             reply_name = name if name.endswith(".decoded") else f"{name}.decoded"
-            message = Message(kind=MSG_DATA, name=reply_name, payload=result.artifact.payload)
+            message = Message(
+                kind=MSG_DATA,
+                name=encode_frame_address(
+                    result.job.sequence,
+                    reply_name,
+                    channel=DATA_CHANNEL,
+                ),
+                payload=result.artifact.payload,
+            )
             stage_label = "send_data"
         try:
             await asyncio.to_thread(protocol.send, conn, message)
@@ -313,9 +360,14 @@ async def _send_loop(
             if message.kind == MSG_DATA and result.artifact is not None:
                 totals["bytes_out"] += len(result.artifact.payload)
                 stats.decode_to_send.record(send_start - result.decoded_at)
-                _telemetry(stage_label, result.job.name, size=len(result.artifact.payload))
+                _telemetry(
+                    stage_label,
+                    result.job.name,
+                    size=len(result.artifact.payload),
+                    seq=result.job.sequence,
+                )
             else:
-                _telemetry(stage_label, result.job.name)
+                _telemetry(stage_label, result.job.name, seq=result.job.sequence)
         finally:
             if result.artifact is not None:
                 try:
@@ -327,7 +379,15 @@ async def _send_loop(
             send_queue.task_done()
     if not eof_sent and producer_done.is_set():
         try:
-            await asyncio.to_thread(protocol.send, conn, Message(kind=MSG_EOF, name="", payload=b""))
+            await asyncio.to_thread(
+                protocol.send,
+                conn,
+                Message(
+                    kind=MSG_EOF,
+                    name=encode_frame_address(None, "final", channel=CONTROL_CHANNEL),
+                    payload=b"",
+                ),
+            )
             _telemetry("send_eof", "all")
         except Exception as exc:
             print(f"[SERVER] ERROR sending EOF marker: {exc}")
@@ -490,13 +550,23 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                 msg = protocol.recv(conn)
                 if msg is None:
                     break
+                address = decode_frame_address(msg.name)
                 if msg.kind == MSG_EOF:
-                    protocol.send(conn, Message(kind=MSG_EOF, name="", payload=b""))
+                    protocol.send(
+                        conn,
+                        Message(
+                            kind=MSG_EOF,
+                            name=encode_frame_address(None, "final", channel=CONTROL_CHANNEL),
+                            payload=b"",
+                        ),
+                    )
                     eof_sent = True
                     break
                 if msg.kind != MSG_DATA:
                     continue
-                stem = msg.name or "frame"
+                if address.channel != DATA_CHANNEL:
+                    print(f"[SERVER][LEGACY] WARN: data on control channel: {msg.name}")
+                stem = address.name or "frame"
                 bytes_in += len(msg.payload)
                 try:
                     artifact = decode_drc(
@@ -509,15 +579,31 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                         zero_copy=args.zero_copy_reply,
                     )
                 except Exception as exc:
-                    error_msg = Message(kind=MSG_ERROR, name=stem, payload=str(exc).encode())
+                    error_msg = Message(
+                        kind=MSG_ERROR,
+                        name=encode_frame_address(address.sequence, stem, channel=CONTROL_CHANNEL),
+                        payload=str(exc).encode(),
+                    )
                     protocol.send(conn, error_msg)
                     continue
-                reply = Message(kind=MSG_DATA, name=f"{stem}.decoded", payload=artifact.payload)
+                reply_name = stem if stem.endswith(".decoded") else f"{stem}.decoded"
+                reply = Message(
+                    kind=MSG_DATA,
+                    name=encode_frame_address(address.sequence, reply_name, channel=DATA_CHANNEL),
+                    payload=artifact.payload,
+                )
                 protocol.send(conn, reply)
                 bytes_out += len(artifact.payload)
                 artifact.close()
             if not eof_sent:
-                protocol.send(conn, Message(kind=MSG_EOF, name="", payload=b""))
+                protocol.send(
+                    conn,
+                    Message(
+                        kind=MSG_EOF,
+                        name=encode_frame_address(None, "final", channel=CONTROL_CHANNEL),
+                        payload=b"",
+                    ),
+                )
     elapsed = max(time.monotonic() - start_time, 1e-6)
     total = bytes_in + bytes_out
     print("[SERVER][LEGACY] ---- Bandwidth summary ----")

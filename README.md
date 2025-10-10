@@ -70,6 +70,9 @@ ros2 run draco_roundtrip stream_client \
 - `--layout-profile`을 지정하면 `configs/*.profile.yaml|json`에 정의된 데이터 루트와 디렉터리 구성이 적용됩니다. `--data-root`, `--ply-dir`, `--work-dir`, `--decoded-dir`를 통해 필요한 경로만 덮어쓸 수 있습니다.
 - `--encoder`, `--decoder` 옵션으로 Draco 실행 파일 경로를 직접 지정할 수 있으며, `--cl`, `--qp`, `--qg`로 압축 품질을 조정할 수 있습니다.
 - 수신/복원된 포인트클라우드는 `stream_pair/source`, `stream_pair/decoded` 토픽으로 퍼블리시됩니다.
+- `--max-inflight/--max-pending`는 동시에 전송 중인 프레임 윈도우를 제한합니다. `--initial-inflight`로 초기 값을, `--adaptive-window`와 `--window-ema-alpha`로 RTT 기반 적응형 제어를 활성화할 수 있습니다.
+- `--print-metrics`를 지정하면 각 프레임의 복원 품질 지표와 순단계 지연 시간이 로그로 출력됩니다. 지정하지 않더라도 최종 요약에는 p50/p95/p99 지연과 대역폭, 대기열 사용량이 포함됩니다.
+- 클라이언트와 서버는 바이너리 프로토콜에서 제어 채널(`control/…`)과 데이터 채널(`data/…`)을 구분하며, EOF/오류는 제어 채널을 통해 송수신됩니다. 로그에 `EOF sent/received`가 표시되면 모든 큐가 비워지고 안전하게 종료된 것입니다.
 
 ### 3. 배치 품질 분석
 ```bash
