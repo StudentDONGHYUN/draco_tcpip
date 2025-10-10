@@ -213,25 +213,41 @@ def load_profile(
     return ProfileConfig(path=path, data=dict(data))
 
 
+def _can_use_directory(path: Path, *, allow_create: bool = False) -> bool:
+    if path.exists():
+        return True
+    if not allow_create:
+        return False
+    parent = path.parent
+    if not parent.exists():
+        return False
+    return os.access(parent, os.W_OK | os.X_OK)
+
+
 def _default_data_root(profile: ProfileConfig | None) -> Path:
     if profile and profile.path:
         parent = profile.path.parent
-        candidate = (parent / "data").resolve()
-        if candidate.exists():
-            return candidate
-        candidate = (parent.parent / "data").resolve()
-        if candidate.exists():
-            return candidate
+        for candidate in (
+            (parent / "data").resolve(),
+            (parent.parent / "data").resolve(),
+        ):
+            if candidate.exists():
+                return candidate
+
+    cwd_data = (Path.cwd() / "data").resolve()
+    if _can_use_directory(cwd_data, allow_create=True):
+        return cwd_data
+
     here = Path(__file__).resolve()
     for candidate in (
         here.parents[5] / "data",
         here.parents[4] / "data",
-        Path.cwd() / "data",
     ):
         candidate = candidate.resolve()
-        if candidate.exists():
+        if _can_use_directory(candidate, allow_create=True):
             return candidate
-    return (here.parents[5] / "data").resolve()
+
+    return cwd_data
 
 
 def _resolve_data_root(
