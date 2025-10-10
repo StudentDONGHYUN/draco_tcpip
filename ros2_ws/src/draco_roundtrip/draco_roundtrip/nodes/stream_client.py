@@ -151,6 +151,7 @@ class ReplyEvent:
     sequence: int | None = None
     detail: str | None = None
     frame: str | None = None
+    channel: str | None = None
 
 
 @dataclass(slots=True)
@@ -342,6 +343,8 @@ class ReplyPump(threading.Thread):
         stop_event: threading.Event,
         protocol: ProtocolHandler,
         loop: asyncio.AbstractEventLoop,
+        *,
+        channel: str | None = None,
     ) -> None:
         super().__init__(daemon=True)
         self._sock = sock
@@ -349,6 +352,7 @@ class ReplyPump(threading.Thread):
         self._stop_event = stop_event
         self._protocol = protocol
         self._loop = loop
+        self._channel = channel
 
     def _submit(self, event: ReplyEvent) -> None:
         try:
@@ -364,14 +368,35 @@ class ReplyPump(threading.Thread):
             except socket.timeout:
                 continue
             except Exception as exc:  # noqa: BLE001 - bubble up to the producer loop.
-                self._submit(ReplyEvent(kind="error", error=exc))
+                self._submit(ReplyEvent(kind="error", error=exc, channel=self._channel))
                 return
             if message is None:
-                self._submit(ReplyEvent(kind="closed"))
+                self._submit(ReplyEvent(kind="closed", channel=self._channel))
                 return
-            self._submit(ReplyEvent(kind="message", message=message))
+            self._submit(ReplyEvent(kind="message", message=message, channel=self._channel))
             if message.kind == MSG_EOF:
                 return
+
+
+@dataclass(slots=True)
+class ControlChannel:
+    """Optional dedicated control-plane socket used when multiplexing is enabled."""
+
+    sock: socket.socket
+    protocol: ProtocolHandler
+
+
+async def _send_control_message(
+    control: ControlChannel | None,
+    fallback_sock: socket.socket,
+    fallback_protocol: ProtocolHandler,
+    message: Message,
+) -> None:
+    """Send a control-plane message using the dedicated channel when available."""
+
+    target_sock = control.sock if control is not None else fallback_sock
+    target_protocol = control.protocol if control is not None else fallback_protocol
+    await asyncio.to_thread(target_protocol.send, target_sock, message)
 
 
 class FrameHandle(Protocol):
@@ -657,6 +682,7 @@ async def network_sender(
     inflight_condition: asyncio.Condition,
     encode_workers: int,
     window: WindowController,
+    control: ControlChannel | None = None,
 ) -> None:
     """Send encoded frames while respecting inflight limits."""
 
@@ -683,7 +709,7 @@ async def network_sender(
                         payload=b"",
                     )
                     try:
-                        await asyncio.to_thread(protocol.send, sock, message)
+                        await _send_control_message(control, sock, protocol, message)
                         print("[CLIENT] Sent EOF marker to server")
                         _telemetry("send_eof", "all")
                         eof_sent = True
@@ -842,12 +868,14 @@ async def reply_consumer(
             reply_queue.task_done()
             continue
         if event.kind == "error" and event.error:
-            print(f"[CLIENT] ERROR from reply pump: {event.error}")
+            channel = event.channel or DATA_CHANNEL
+            print(f"[CLIENT] ERROR from reply pump ({channel}): {event.error}")
             stop_event.set()
             reply_queue.task_done()
             break
         if event.kind == "closed":
-            print("[CLIENT] Connection closed by server")
+            channel = event.channel or DATA_CHANNEL
+            print(f"[CLIENT] Connection closed by server on {channel} channel")
             stop_event.set()
             reply_queue.task_done()
             break
@@ -1142,6 +1170,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Override directory where decoded frames from the server are stored')
     ap.add_argument('--server-host', default='127.0.0.1')
     ap.add_argument('--server-port', type=int, default=5000)
+    ap.add_argument('--control-port', type=int, default=0,
+                    help='Optional TCP port for a dedicated control-plane connection (0 disables)')
     ap.add_argument('--play-frame-id', default='lidar_link')
     ap.add_argument('--play-topic-prefix', default='stream_pair')
     ap.add_argument('--play-hz', type=float, default=10.0)
@@ -1246,10 +1276,13 @@ async def run_client(args: argparse.Namespace) -> None:
     start_time = time.monotonic()
 
     try:
-        with socket.create_connection(
-            (args.server_host, args.server_port),
-            timeout=args.socket_timeout if args.socket_timeout > 0 else None,
-        ) as sock:
+        with contextlib.ExitStack() as conn_stack:
+            sock = conn_stack.enter_context(
+                socket.create_connection(
+                    (args.server_host, args.server_port),
+                    timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+                )
+            )
             if args.socket_timeout > 0:
                 sock.settimeout(args.socket_timeout)
             if args.tcp_nodelay:
@@ -1265,10 +1298,53 @@ async def run_client(args: argparse.Namespace) -> None:
                 f"[CLIENT] Connected to {args.server_host}:{args.server_port} using {protocol.name} protocol"
             )
 
+            control_channel: ControlChannel | None = None
+            control_sock: socket.socket | None = None
+            if args.control_port > 0:
+                control_sock = conn_stack.enter_context(
+                    socket.create_connection(
+                        (args.server_host, args.control_port),
+                        timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+                    )
+                )
+                if args.socket_timeout > 0:
+                    control_sock.settimeout(args.socket_timeout)
+                if args.tcp_nodelay:
+                    with contextlib.suppress(OSError):
+                        control_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                if args.socket_buffer_kb > 0:
+                    buf_size = args.socket_buffer_kb * 1024
+                    for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
+                        with contextlib.suppress(OSError):
+                            control_sock.setsockopt(socket.SOL_SOCKET, opt, buf_size)
+                control_protocol = resolve_protocol(args.protocol)
+                control_channel = ControlChannel(sock=control_sock, protocol=control_protocol)
+                print(
+                    f"[CLIENT] Control channel connected to {args.server_host}:{args.control_port}"
+                    f" using {control_protocol.name} protocol"
+                )
+
             loop = asyncio.get_running_loop()
             reply_queue: "asyncio.Queue[ReplyEvent]" = asyncio.Queue()
             pump_stop = threading.Event()
-            pump = ReplyPump(sock, reply_queue, pump_stop, protocol, loop)
+            pump = ReplyPump(
+                sock,
+                reply_queue,
+                pump_stop,
+                protocol,
+                loop,
+                channel=DATA_CHANNEL,
+            )
+            control_pump: ReplyPump | None = None
+            if control_channel is not None:
+                control_pump = ReplyPump(
+                    control_channel.sock,
+                    reply_queue,
+                    pump_stop,
+                    control_channel.protocol,
+                    loop,
+                    channel=CONTROL_CHANNEL,
+                )
 
             with contextlib.ExitStack() as stack:
                 frame_supplier: FilesystemFrameSupplier | SharedMemoryFrameSupplier
@@ -1349,6 +1425,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             inflight_condition=inflight_condition,
                             encode_workers=args.encode_workers,
                             window=window_controller,
+                            control=control_channel,
                         )
                     )
                 )
@@ -1387,6 +1464,8 @@ async def run_client(args: argparse.Namespace) -> None:
                     saver_done.set()
 
                 pump.start()
+                if control_pump is not None:
+                    control_pump.start()
                 try:
                     await asyncio.gather(*tasks)
                 except Exception:
@@ -1397,8 +1476,9 @@ async def run_client(args: argparse.Namespace) -> None:
                     raise
                 finally:
                     pump_stop.set()
-                    if pump.is_alive():
-                        pump.join(timeout=1.0)
+                    for thread in (pump, control_pump):
+                        if thread is not None and thread.is_alive():
+                            thread.join(timeout=1.0)
     finally:
         stop_event.set()
         pending_inflight = len(inflight)
