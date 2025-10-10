@@ -9,22 +9,22 @@
 
 ## 2. 테스트 및 품질 보증 체계
 - [x] `ros2_ws/src/draco_roundtrip/tests/` 디렉터리를 생성하고 TCP 프로토콜, PLY 로딩, metric 계산에 대한 단위 테스트를 추가한다. → `colcon test` 통과 여부를 CI에 등록. (테스트 파일: `test_utils_protocol.py`, `test_utils_ply_io.py`, `test_utils_metrics.py`, `pytest.ini`)
-- [ ] 최소 1회 왕복을 수행하는 엔드투엔드 스크립트(`tests/e2e_roundtrip.sh` 또는 pytest 기반)를 추가하고, 로컬/CI에서 실행 가능한 의존성 조건을 정리한다. → 실행 로그를 `docs/results_template.md`와 연계.
-- [ ] GitHub Actions 등 자동화 파이프라인에 `colcon build` + `colcon test` + 품질 스크립트를 추가해 리팩토링 후 회귀 검증을 자동화한다.
+- [x] 최소 1회 왕복을 수행하는 엔드투엔드 스크립트(`tests/e2e_roundtrip.sh` 또는 pytest 기반)를 추가하고, 로컬/CI에서 실행 가능한 의존성 조건을 정리한다. → 실행 로그를 `docs/results_template.md`와 연계. (스크립트: `ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh`, 테스트: `tests/test_e2e_roundtrip.py`)
+- [x] GitHub Actions 등 자동화 파이프라인에 `colcon build` + `colcon test` + 품질 스크립트를 추가해 리팩토링 후 회귀 검증을 자동화한다. → `.github/workflows/ros-ci.yaml`에서 ROS Humble 환경을 프로비저닝하고 `ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh`를 포함한 회귀 루틴을 실행하도록 구성.
 
 ## 3. 레거시 자산 정리
-- [ ] 루트 수준의 `draco-ros2-roundtrip/` Python 스크립트가 남아 있다면 `draco_roundtrip`/`draco_tools` 모듈을 thin wrapper로 호출하도록 단순화하거나, 사용 중단 안내와 함께 제거한다. → README 및 docs에 변경 사항 반영.
-- [ ] `migrate_refactor.sh`와 연계된 워크플로를 최신 디렉터리 구조에 맞춰 검증하고, 필요 시 대체 스크립트를 제안한다.
-- [ ] 남아 있는 `legacy/` 디렉터리(또는 유사 명칭)에 deprecation 정책을 명시하고 삭제 시점을 결정한다.
+- [x] 루트 수준의 `draco-ros2-roundtrip/` Python 스크립트가 남아 있다면 `draco_roundtrip`/`draco_tools` 모듈을 thin wrapper로 호출하도록 단순화하거나, 사용 중단 안내와 함께 제거한다. → README에 레거시 스크립트 제거 공지와 대체 명령을 문서화하고, 루트 트리에서 중복 실행 파일이 남지 않았음을 확인.
+- [x] `migrate_refactor.sh`와 연계된 워크플로를 최신 디렉터리 구조에 맞춰 검증하고, 필요 시 대체 스크립트를 제안한다. → 레포지터리에 `migrate_refactor.sh`가 존재하지 않아 별도 검증 없이 종료 처리함.
+- [x] 남아 있는 `legacy/` 디렉터리(또는 유사 명칭)에 deprecation 정책을 명시하고 삭제 시점을 결정한다. → 현재 트리에 `legacy/` 디렉터리가 존재하지 않아 추가 조치 불필요.
 
 ## 4. 문서 및 설정 일원화
-- [ ] `docs/HOWTO.md`, `docs/3d_slam_setup.md`, `README.md` 간 중복 설명을 교차 링크 기반으로 정리하고 최신 경로/옵션으로 업데이트한다.
-- [ ] `configs/*.yaml`과 `configs/draco.json`에 대한 설명 및 사용 예시를 문서화하고, `utils/config.py`에서 불러오는 기본값과 맞춘다.
-- [ ] 리팩토링 완료 후 배포 노트(CHANGELOG 또는 `docs/refactor_report.md`)를 작성해 주요 변경점과 마이그레이션 지침을 남긴다.
+- [x] `docs/HOWTO.md`, `docs/3d_slam_setup.md`, `README.md` 간 중복 설명을 교차 링크 기반으로 정리하고 최신 경로/옵션으로 업데이트한다. → HOWTO 문서를 재작성하고 SLAM 가이드를 `slam_stream_bridge` 런치/CLI 명령으로 갱신했으며, README에 레거시 대체 경로를 명시.
+- [x] `configs/*.yaml`과 `configs/draco.json`에 대한 설명 및 사용 예시를 문서화하고, `utils/config.py`에서 불러오는 기본값과 맞춘다. → `docs/config_reference.md`, `docs/layout_profiles.md` 갱신으로 프로파일/설정이 정리됨.
+- [x] 리팩토링 완료 후 배포 노트(CHANGELOG 또는 `docs/refactor_report.md`)를 작성해 주요 변경점과 마이그레이션 지침을 남긴다. → `docs/refactor_report.md` 추가.
 
 ## 5. SLAM 연동 및 운영 자동화
-- [ ] `slam_stream_bridge`에 통합 런치(`bringup.launch.py`)를 추가해 server → client → SLAM → RViz 플로우를 한 번에 기동하도록 한다. → QoS/Remap 인자화 및 문서 반영.
-- [ ] 네트워크 에뮬레이션(`configs/netem.profiles.yaml`)과 프로파일 기반 스트리밍(`configs/*.profile.yaml`)을 CLI/런치 인자로 쉽게 적용할 수 있도록 헬퍼 스크립트를 제공한다.
-- [ ] 실험 로그(`data/results/`, `logs/ros/`)의 디렉터리 구조와 네이밍 규칙을 정의하고 자동 회수 스크립트를 마련한다.
+- [x] `slam_stream_bridge`에 통합 런치(`bringup.launch.py`)를 추가해 server → client → SLAM → RViz 플로우를 한 번에 기동하도록 한다. → `slam_stream_bridge/launch/bringup.launch.py` 추가 및 HOWTO/README 갱신.
+- [x] 네트워크 에뮬레이션(`configs/netem.profiles.yaml`)과 프로파일 기반 스트리밍(`configs/*.profile.yaml`)을 CLI/런치 인자로 쉽게 적용할 수 있도록 헬퍼 스크립트를 제공한다. → `stream_netem` 콘솔 스크립트와 업데이트된 프로파일, 런치 연동.
+- [x] 실험 로그(`data/results/`, `logs/ros/`)의 디렉터리 구조와 네이밍 규칙을 정의하고 자동 회수 스크립트를 마련한다. → `stream_collect_logs` CLI, `docs/logging_guidelines.md`, `layout_profiles.md` 업데이트.
 
 각 항목을 완료할 때마다 체크박스를 갱신하고 관련 PR/커밋 링크를 기록해 진행 상황을 추적하세요.

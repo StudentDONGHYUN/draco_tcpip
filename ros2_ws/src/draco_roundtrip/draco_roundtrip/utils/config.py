@@ -37,6 +37,7 @@ DEFAULT_DATA_SUBDIRS: Mapping[str, str] = {
     "decoded_tmp": "tmp_decoded_ply",
     "results": "results",
     "server_work": "server_tmp",
+    "ros_logs": "logs/ros",
 }
 
 
@@ -326,6 +327,9 @@ def _resolve_config_path(
         path = root / candidate
         if path.exists():
             return path
+    cwd_candidate = (Path.cwd() / candidate).resolve()
+    if cwd_candidate.exists():
+        return cwd_candidate
     if profile and profile.path:
         relative = (profile.path.parent / candidate).resolve()
         if relative.exists():

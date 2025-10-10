@@ -1,0 +1,66 @@
+name: ROS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  ROS_DISTRO: humble
+  ROS_VERSION: 2
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup ROS ${{ env.ROS_DISTRO }}
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ env.ROS_DISTRO }}
+
+      - name: Install workspace dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          rosdep update
+          rosdep install --from-paths ros2_ws/src --rosdistro ${ROS_DISTRO} --ignore-src -y
+
+      - name: Build workspace
+        shell: bash
+        working-directory: ros2_ws
+        run: |
+          set -euxo pipefail
+          source /opt/ros/${ROS_DISTRO}/setup.bash
+          colcon build --symlink-install
+
+      - name: Run tests
+        shell: bash
+        working-directory: ros2_ws
+        run: |
+          set -euxo pipefail
+          source /opt/ros/${ROS_DISTRO}/setup.bash
+          source install/setup.bash
+          colcon test --event-handlers console_direct+
+
+      - name: Collect test results
+        shell: bash
+        working-directory: ros2_ws
+        run: |
+          set -euxo pipefail
+          source /opt/ros/${ROS_DISTRO}/setup.bash
+          colcon test-result --verbose
+
+      - name: Run roundtrip regression harness
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source /opt/ros/${ROS_DISTRO}/setup.bash
+          source ros2_ws/install/setup.bash
+          bash ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh

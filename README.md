@@ -78,18 +78,41 @@ ros2 run draco_tools offline_pipeline --bag /path/to/rosbag_directory --config c
 ```
 위 명령은 PLY → Draco 변환 및 품질 분석 리포트를 생성합니다. `offline_pipeline`도 `--layout-profile`, `--data-root`, `--ply-dir` 등 동일한 디렉터리 헬퍼를 사용하므로 스트리밍 환경과 동일한 결과 디렉터리를 간편하게 재사용할 수 있습니다. 상세 옵션은 `--help`로 확인하세요.
 
-### 4. SLAM 연계 런치
+### 4. 통합 Bringup (스트리밍 + SLAM)
+```bash
+ros2 launch slam_stream_bridge bringup.launch.py \
+    bag:=/path/to/bag \
+    topic:=/sensing/lidar/top/pointcloud \
+    layout_profile:=client.profile.yaml \
+    slam:=rtabmap \
+    netem_profile:=wifi_dense
+```
+- `slam` 인자로 `rtabmap` 또는 `hdl`을 지정할 수 있으며, `slam_params:=<파일>`로 파라미터 파일을 덮어쓸 수 있습니다.
+- `netem_profile`은 `configs/netem.profiles.yaml`에 정의된 프리셋을 적용합니다. 기본값은 `loopback`이며, `netem_dry_run:=false`로 설정하면 실제로 `tc` 명령을 실행합니다. (필요 시 `sudo` 권한 필요)
+- bringup 런치는 `stream_server`, `stream_client`, 선택한 SLAM 노드, 그리고 필요 시 네트워크 에뮬레이션을 순차적으로 실행합니다.
+
+### 5. SLAM 단독 런치
+기존 개별 런치 파일은 여전히 사용할 수 있습니다.
 ```bash
 ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
+ros2 launch slam_stream_bridge rtabmap_stream.launch.py cloud_topic:=/stream_pair/decoded
 ```
 필요한 토픽 remap 및 QoS 설정은 런치 인자 또는 `configs/*.yaml` 파일에서 조정합니다.
 
 ## 추가 자료
 - `docs/HOWTO.md`: 세부 운영 시나리오와 환경 설정 가이드
 - `docs/3d_slam_setup.md`: SLAM 연동 구성 절차
+- `docs/config_reference.md`: `configs/*.yaml` 및 프로파일 파일 설명과 활용 예시
+- `docs/logging_guidelines.md`: 결과 디렉터리 구조와 로그 수집 자동화 절차
 - `docs/encoder_cli.md`: Draco 인코더 CLI 헬퍼와 통합 로그 포맷 가이드
 - `docs/layout_profiles.md`: 디렉터리/프로필 설정 규칙과 예시
 - `docs/results_template.md`: 실험 결과 정리 템플릿
+- `docs/refactor_report.md`: 리팩토링 완료 보고서 및 마이그레이션 안내
 - `refac.md`: 현재 진행 중인 리팩토링 제안 및 단계별 목표
 
 기여 시에는 리팩토링 로드맵과 체크리스트를 참고하여 코드 구조와 문서가 일관되도록 유지해주세요.
+
+## 레거시 스크립트 정리 현황
+- 과거 리포지터리 루트에 위치했던 `draco-ros2-roundtrip/scripts/*.py` 실행 파일은 모두 ROS 2 패키지 내부의 콘솔 엔트리포인트로 대체되었습니다.
+- 기존 스크립트 경로를 사용하는 자동화는 `ros2 run draco_roundtrip ...` 또는 `ros2 run draco_tools ...` 형태로 교체해 주세요.
+- 필요한 경우 `ros2 run <package> <entrypoint> --help`로 최신 인자 목록을 확인할 수 있으며, 본 README와 `docs/encoder_cli.md`에서 대표적인 사용 예시를 제공합니다.

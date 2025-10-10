@@ -91,7 +91,7 @@ def add_encoder_arguments(
         group.add_argument(
             extra_option,
             dest=extra_dest,
-            nargs="*",
+            nargs=argparse.REMAINDER,
             default=(),
             metavar="ARG",
             help="Additional raw arguments forwarded to draco_encoder.",
