@@ -145,6 +145,9 @@ class ReplyEvent:
     kind: str
     message: Message | None = None
     error: BaseException | None = None
+    sequence: int | None = None
+    detail: str | None = None
+    frame: str | None = None
 
 
 @dataclass(slots=True)
@@ -541,6 +544,7 @@ async def encode_worker(
     worker_id: int,
     capture_queue: "asyncio.PriorityQueue[tuple[float, int, CapturePayload | None]]",
     network_queue: "asyncio.Queue[Optional[EncodedFrame]]",
+    reply_queue: "asyncio.Queue[ReplyEvent]",
     *,
     encoder_options,
     encoder_path: Path,
@@ -615,6 +619,17 @@ async def encode_worker(
             print(f"[CLIENT] ENCODE FAIL {handle.name}: {exc}")
             with contextlib.suppress(Exception):
                 handle.on_consumed()
+            detail = f"encode failure: {exc}"
+            await _put_with_retry(
+                reply_queue,
+                ReplyEvent(
+                    kind="local_skip",
+                    sequence=sequence,
+                    detail=detail,
+                    frame=handle.name,
+                ),
+                stop_event=stop_event,
+            )
         finally:
             capture_queue.task_done()
 
@@ -776,6 +791,17 @@ async def reply_consumer(
 
     while not stop_event.is_set():
         event = await reply_queue.get()
+        if event.kind == "local_skip":
+            sequence = event.sequence
+            detail = event.detail or "local failure"
+            frame_name = event.frame or (str(sequence) if sequence is not None else "unknown")
+            if sequence is not None:
+                skipped_sequences[sequence] = detail
+            print(f"[CLIENT] Local skip seq={sequence}: {frame_name} ({detail})")
+            stats.error_frames += 1
+            await drain_ready()
+            reply_queue.task_done()
+            continue
         if event.kind == "error" and event.error:
             print(f"[CLIENT] ERROR from reply pump: {event.error}")
             stop_event.set()
@@ -1220,6 +1246,7 @@ async def run_client(args: argparse.Namespace) -> None:
                                 worker_id,
                                 capture_queue,
                                 network_queue,
+                                reply_queue,
                                 encoder_options=encoder_options,
                                 encoder_path=encoder_path,
                                 work_dir=work_dir,
