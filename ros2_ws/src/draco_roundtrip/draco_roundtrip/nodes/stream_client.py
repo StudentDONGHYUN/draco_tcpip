@@ -55,13 +55,25 @@ _CAPTURE_SENTINEL = object()
 _ENCODE_SENTINEL = object()
 
 
-async def _put_with_retry(queue: asyncio.Queue, item: object) -> None:
-    """Insert an item even if the queue is temporarily full (backpressure friendly)."""
+async def _put_with_retry(
+    queue: asyncio.Queue,
+    item: object,
+    *,
+    stop_event: asyncio.Event | None = None,
+) -> bool:
+    """Insert an item even if the queue is temporarily full (backpressure friendly).
+
+    Returns ``True`` when the item was enqueued.  If ``stop_event`` is provided and
+    becomes set while waiting for space in the queue, ``False`` is returned so the
+    caller can abort the pending operation.
+    """
 
     while True:
+        if stop_event is not None and stop_event.is_set():
+            return False
         try:
             queue.put_nowait(item)
-            return
+            return True
         except asyncio.QueueFull:
             await asyncio.sleep(0.05)
 
@@ -407,6 +419,8 @@ async def encode_worker(
         priority, _, payload = await capture_queue.get()
         if payload is None:
             capture_queue.task_done()
+            # Always deliver the sentinel so the network sender unblocks, even when
+            # shutdown has already been requested via ``stop_event``.
             await _put_with_retry(network_queue, None)
             break
         handle = payload.handle
@@ -440,7 +454,8 @@ async def encode_worker(
                 captured_at=captured_at,
                 encoded_at=encoded_at,
             )
-            await network_queue.put(encoded)
+            if not await _put_with_retry(network_queue, encoded, stop_event=stop_event):
+                break
         except asyncio.CancelledError:
             stop_event.set()
             raise

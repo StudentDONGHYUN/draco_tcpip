@@ -75,7 +75,7 @@ class SharedMemoryPublisher:
             shm=shm_name,
             size=size,
             shape=shape,
-            dtype=str(np.float32),
+            dtype=np.dtype(np.float32).name,
             timestamp=time.time(),
         )
         payload = json.dumps(
