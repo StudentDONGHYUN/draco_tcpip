@@ -57,6 +57,8 @@ source install/setup.bash
 ros2 run draco_roundtrip stream_server --port 5000
 ```
 `draco_decoder`가 PATH에 없으면 `--decoder /absolute/path/to/draco_decoder`로 직접 지정할 수 있습니다.
+- 제어 평면 하트비트와 ACK 전송 주기는 `--heartbeat-interval`로 조정할 수 있습니다. 기본 2초 간격으로 빈 구간에서도 클라이언트를 깨워
+  지연 경보를 발생시키며, `0`으로 설정하면 keepalive를 비활성화합니다.
 
 ### 2. 스트리밍 클라이언트
 다른 터미널에서 아래 명령을 실행합니다.
@@ -71,8 +73,11 @@ ros2 run draco_roundtrip stream_client \
 - `--encoder`, `--decoder` 옵션으로 Draco 실행 파일 경로를 직접 지정할 수 있으며, `--cl`, `--qp`, `--qg`로 압축 품질을 조정할 수 있습니다.
 - 수신/복원된 포인트클라우드는 `stream_pair/source`, `stream_pair/decoded` 토픽으로 퍼블리시됩니다.
 - `--max-inflight/--max-pending`는 동시에 전송 중인 프레임 윈도우를 제한합니다. `--initial-inflight`로 초기 값을, `--adaptive-window`와 `--window-ema-alpha`로 RTT 기반 적응형 제어를 활성화할 수 있습니다.
+- `--heartbeat-timeout`은 서버에서 ACK/하트비트를 받지 못했을 때 세션을 중단하는 임계 시간을 정의합니다. 기본 10초이며, 로그에는 펜딩
+  프레임 수가 함께 출력됩니다.
 - `--print-metrics`를 지정하면 각 프레임의 복원 품질 지표와 순단계 지연 시간이 로그로 출력됩니다. 지정하지 않더라도 최종 요약에는 p50/p95/p99 지연과 대역폭, 대기열 사용량이 포함됩니다.
-- 클라이언트와 서버는 바이너리 프로토콜에서 제어 채널(`control/…`)과 데이터 채널(`data/…`)을 구분하며, EOF/오류는 제어 채널을 통해 송수신됩니다. 로그에 `EOF sent/received`가 표시되면 모든 큐가 비워지고 안전하게 종료된 것입니다.
+- 클라이언트와 서버는 바이너리 프로토콜에서 제어 채널(`control/…`)과 데이터 채널(`data/…`)을 구분하며, 데이터 프레임이 도착하면 즉시 ACK를
+  돌려보내 송신 윈도우를 해제합니다. EOF/오류/하트비트 역시 제어 채널로 송수신되며, 로그에 `EOF sent/received`가 표시되면 모든 큐가 비워지고 안전하게 종료된 것입니다. 구형 서버와 연동해야 할 경우 `--protocol legacy`를 이용해 텍스트 프레이밍으로도 동일한 메시지를 주고받을 수 있습니다.
 
 ### 3. 배치 품질 분석
 ```bash

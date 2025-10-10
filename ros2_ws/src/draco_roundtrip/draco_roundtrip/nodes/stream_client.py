@@ -45,9 +45,11 @@ from draco_roundtrip.utils.ply_io import (
 from draco_roundtrip.utils.protocol import (
     ConnectionClosed,
     Message,
+    MSG_ACK,
     MSG_DATA,
     MSG_EOF,
     MSG_ERROR,
+    MSG_HEARTBEAT,
     ProtocolHandler,
     available_protocols,
     resolve_protocol,
@@ -138,6 +140,7 @@ class FrameContext:
     encoded_at: float
     sent_at: float
     payload_size: int
+    ack_at: float | None = None
 
 
 @dataclass(slots=True)
@@ -206,6 +209,7 @@ class PipelineStats:
     encode_to_send: StageStats = dataclass_field(default_factory=StageStats)
     round_trip: StageStats = dataclass_field(default_factory=StageStats)
     network_rtt: StageStats = dataclass_field(default_factory=StageStats)
+    ack_latency: StageStats = dataclass_field(default_factory=StageStats)
     round_trip_samples: list[float] = dataclass_field(default_factory=list)
     network_rtt_samples: list[float] = dataclass_field(default_factory=list)
     skipped_frames: int = 0
@@ -217,6 +221,7 @@ class PipelineStats:
         self.encode_to_send = StageStats()
         self.round_trip = StageStats()
         self.network_rtt = StageStats()
+        self.ack_latency = StageStats()
         self.round_trip_samples.clear()
         self.network_rtt_samples.clear()
         self.skipped_frames = 0
@@ -228,6 +233,11 @@ class PipelineStats:
         if rtt > 0:
             self.network_rtt.record(rtt)
             self.network_rtt_samples.append(rtt)
+
+    def record_ack(self, latency: float) -> None:
+        if latency <= 0:
+            return
+        self.ack_latency.record(latency)
 
     def percentile(self, samples: list[float], percentile: float) -> float | None:
         if not samples:
@@ -639,6 +649,7 @@ async def network_sender(
     protocol: ProtocolHandler,
     network_queue: "asyncio.Queue[Optional[EncodedFrame]]",
     inflight: Dict[int, FrameContext],
+    acks_pending: set[int],
     *,
     stats: PipelineStats,
     traffic: TrafficStats,
@@ -659,9 +670,9 @@ async def network_sender(
             if encode_finished >= encode_workers and not eof_sent:
                 async with inflight_condition:
                     # Ensure all inflight frames have been ACKed before closing the stream.
-                    while inflight and not stop_event.is_set():
+                    while (inflight or acks_pending) and not stop_event.is_set():
                         await inflight_condition.wait()
-                if not inflight and not stop_event.is_set():
+                if not inflight and not acks_pending and not stop_event.is_set():
                     message = Message(
                         kind=MSG_EOF,
                         name=encode_frame_address(
@@ -688,7 +699,7 @@ async def network_sender(
 
         encoded = item
         async with inflight_condition:
-            while len(inflight) >= window.limit() and not stop_event.is_set():
+            while len(acks_pending) >= window.limit() and not stop_event.is_set():
                 # Wait until the adaptive window controller permits another send.
                 await inflight_condition.wait()
         message = Message(
@@ -720,9 +731,12 @@ async def network_sender(
             payload_size=len(encoded.payload),
         )
         inflight[encoded.sequence] = ctx
+        acks_pending.add(encoded.sequence)
         traffic.inflight_peak = max(traffic.inflight_peak, len(inflight))
         traffic.sent += len(encoded.payload)
         print(f"[CLIENT] Sent {encoded.handle.name} ({len(encoded.payload)} bytes)")
+        async with inflight_condition:
+            inflight_condition.notify_all()
         network_queue.task_done()
 
 
@@ -735,11 +749,13 @@ async def reply_consumer(
     stop_event: asyncio.Event,
     inflight_condition: asyncio.Condition,
     window: WindowController,
+    acks_pending: set[int],
     decoded_dir: Path,
     to_play: "queue.Queue",
     play_sample: int,
     frame_counter: itertools.count,
     print_metrics: bool,
+    heartbeat_timeout: float,
 ) -> None:
     """Process replies from the server and release inflight slots."""
 
@@ -789,14 +805,37 @@ async def reply_consumer(
                     stats.skipped_frames += 1
                 skipped_sequences.clear()
 
+    heartbeat_timeout = max(1.0, heartbeat_timeout)
+    last_activity = time.monotonic()
+
     while not stop_event.is_set():
-        event = await reply_queue.get()
+        try:
+            event = await asyncio.wait_for(reply_queue.get(), timeout=heartbeat_timeout)
+        except asyncio.TimeoutError:
+            if stop_event.is_set():
+                break
+            if inflight:
+                print(
+                    "[CLIENT] WARN: No server reply within heartbeat window;"
+                    f" pending={len(inflight)} inflight"
+                )
+                if time.monotonic() - last_activity > heartbeat_timeout * 2:
+                    print("[CLIENT] ERROR: Heartbeat timeout, stopping")
+                    stop_event.set()
+                    async with inflight_condition:
+                        inflight_condition.notify_all()
+            continue
+
+        last_activity = time.monotonic()
         if event.kind == "local_skip":
             sequence = event.sequence
             detail = event.detail or "local failure"
             frame_name = event.frame or (str(sequence) if sequence is not None else "unknown")
             if sequence is not None:
                 skipped_sequences[sequence] = detail
+                async with inflight_condition:
+                    acks_pending.discard(sequence)
+                    inflight_condition.notify_all()
             print(f"[CLIENT] Local skip seq={sequence}: {frame_name} ({detail})")
             stats.error_frames += 1
             await drain_ready()
@@ -817,10 +856,40 @@ async def reply_consumer(
             continue
         message = event.message
         address = decode_frame_address(message.name)
+        if message.kind == MSG_HEARTBEAT:
+            _telemetry("recv_heartbeat", address.name or "all")
+            async with inflight_condition:
+                inflight_condition.notify_all()
+            reply_queue.task_done()
+            continue
+        if message.kind == MSG_ACK:
+            sequence = address.sequence
+            ctx: FrameContext | None = None
+            async with inflight_condition:
+                if sequence is not None:
+                    ctx = inflight.get(sequence)
+                    acks_pending.discard(sequence)
+                inflight_condition.notify_all()
+            if ctx is None:
+                print(f"[CLIENT] WARN: ACK for unknown frame {message.name}")
+            else:
+                ctx.ack_at = last_activity
+                ack_latency = max(0.0, ctx.ack_at - ctx.sent_at)
+                stats.record_ack(ack_latency)
+                window.observe_ack(ctx.payload_size, ack_latency)
+                _telemetry(
+                    "recv_ack",
+                    address.name or ctx.handle.name,
+                    seq=ctx.sequence,
+                    latency_ms=ack_latency * 1000.0,
+                )
+            reply_queue.task_done()
+            continue
         if message.kind == MSG_EOF:
             print("[CLIENT] EOF handshake complete")
             stop_event.set()
             async with inflight_condition:
+                acks_pending.clear()
                 inflight_condition.notify_all()
             _telemetry("recv_eof", "all")
             await drain_ready(force=True)
@@ -828,11 +897,16 @@ async def reply_consumer(
             break
 
         async with inflight_condition:
-            ctx = inflight.pop(address.sequence, None) if address.sequence is not None else None
+            ctx = None
+            sequence = address.sequence
+            if sequence is not None:
+                ctx = inflight.pop(sequence, None)
+                acks_pending.discard(sequence)
             if ctx is None:
                 for key, candidate in list(inflight.items()):
-                    if candidate.handle.name == address.name or candidate.sequence == address.sequence:
+                    if candidate.handle.name == address.name or candidate.sequence == sequence:
                         ctx = inflight.pop(key)
+                        acks_pending.discard(candidate.sequence)
                         break
             inflight_condition.notify_all()
         if ctx is None:
@@ -844,7 +918,8 @@ async def reply_consumer(
         rtt = max(0.0, now - ctx.sent_at)
         total_latency = max(0.0, now - ctx.captured_at)
         stats.record_round_trip(total_latency, rtt)
-        window.observe_ack(ctx.payload_size, rtt)
+        if ctx.ack_at is None:
+            window.observe_ack(ctx.payload_size, rtt)
 
         if message.kind == MSG_ERROR:
             detail = message.payload.decode(errors="ignore") or "server error"
@@ -1089,6 +1164,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Enable RTT/throughput based TX window adaptation')
     ap.add_argument('--window-ema-alpha', type=float, default=0.2,
                     help='EMA smoothing factor for adaptive window telemetry (0-1)')
+    ap.add_argument('--heartbeat-timeout', type=float, default=10.0,
+                    help='Fail the session if no ACK/heartbeat is observed within this many seconds')
     ap.add_argument('--capture-queue', type=int, default=4,
                     help='Maximum capture queue depth before applying backpressure')
     ap.add_argument('--encode-workers', type=int, default=2,
@@ -1155,7 +1232,9 @@ async def run_client(args: argparse.Namespace) -> None:
     pipeline_stats = PipelineStats()
     frame_counter = itertools.count()
     inflight: Dict[int, FrameContext] = {}
+    acks_pending: set[int] = set()
     pending_inflight = 0
+    pending_acks = 0
     max_window = max(1, args.max_inflight)
     initial_window = max(1, min(args.initial_inflight or max_window, max_window))
     window_controller = WindowController(
@@ -1263,6 +1342,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             protocol,
                             network_queue,
                             inflight,
+                            acks_pending,
                             stats=pipeline_stats,
                             traffic=traffic,
                             stop_event=stop_event,
@@ -1282,11 +1362,13 @@ async def run_client(args: argparse.Namespace) -> None:
                             stop_event=stop_event,
                             inflight_condition=inflight_condition,
                             window=window_controller,
+                            acks_pending=acks_pending,
                             decoded_dir=decoded_dir,
                             to_play=to_play,
                             play_sample=args.play_sample,
                             frame_counter=frame_counter,
                             print_metrics=args.print_metrics,
+                            heartbeat_timeout=args.heartbeat_timeout,
                         )
                     )
                 )
@@ -1320,6 +1402,7 @@ async def run_client(args: argparse.Namespace) -> None:
     finally:
         stop_event.set()
         pending_inflight = len(inflight)
+        pending_acks = len(acks_pending)
         for ctx in list(inflight.values()):
             with contextlib.suppress(Exception):
                 ctx.handle.on_aborted()
@@ -1353,6 +1436,7 @@ async def run_client(args: argparse.Namespace) -> None:
     print(f"    encode→send: {pipeline_stats.encode_to_send.summary()}")
     print(f"    round-trip: {pipeline_stats.round_trip.summary()}")
     print(f"    network RTT: {pipeline_stats.network_rtt.summary()}")
+    print(f"    ACK latency: {pipeline_stats.ack_latency.summary()}")
     print(
         f"  inflight_peak: {traffic.inflight_peak} window_limit={window_controller.limit()}"
         f" adaptive={'on' if args.adaptive_window else 'off'}"
@@ -1361,7 +1445,8 @@ async def run_client(args: argparse.Namespace) -> None:
         f"  queue peaks: capture={traffic.capture_depth_peak} network={traffic.network_depth_peak}"
     )
     print(
-        f"  drops/skipped: {pipeline_stats.skipped_frames} errors={pipeline_stats.error_frames} pending={pending_inflight}"
+        f"  drops/skipped: {pipeline_stats.skipped_frames} errors={pipeline_stats.error_frames}"
+        f" pending={pending_inflight} pending_acks={pending_acks}"
     )
 
     metrics_out_path = Path(args.metrics_out).expanduser() if args.metrics_out else work_dir / 'pipeline_metrics.json'
@@ -1377,6 +1462,7 @@ async def run_client(args: argparse.Namespace) -> None:
             'encode_to_send': pipeline_stats.encode_to_send.as_dict(),
             'round_trip': pipeline_stats.round_trip.as_dict(),
             'network_rtt': pipeline_stats.network_rtt.as_dict(),
+            'ack_latency': pipeline_stats.ack_latency.as_dict(),
             'latency_percentiles_ms': {
                 key: value * 1000.0 for key, value in percentiles.items()
             },
@@ -1386,6 +1472,7 @@ async def run_client(args: argparse.Namespace) -> None:
             'skipped_frames': pipeline_stats.skipped_frames,
             'error_frames': pipeline_stats.error_frames,
             'pending_inflight': pending_inflight,
+            'pending_acks': pending_acks,
             'adaptive_window': args.adaptive_window,
             'window_final': window_controller.limit(),
         }

@@ -22,6 +22,8 @@ __all__ = [
     "MSG_DATA",
     "MSG_ERROR",
     "MSG_EOF",
+    "MSG_ACK",
+    "MSG_HEARTBEAT",
     "ProtocolHandler",
     "available_protocols",
     "resolve_protocol",
@@ -37,12 +39,14 @@ _BINARY_HEADER = struct.Struct("!BBH")  # version, kind, name length
 _BINARY_SIZE = struct.Struct("!Q")
 _BINARY_VERSION = 1
 
-_KIND_TO_CODE = {"data": 0, "error": 1, "eof": 2}
+_KIND_TO_CODE = {"data": 0, "error": 1, "eof": 2, "ack": 3, "heartbeat": 4}
 _CODE_TO_KIND = {value: key for key, value in _KIND_TO_CODE.items()}
 
 MSG_DATA = "data"
 MSG_ERROR = "error"
 MSG_EOF = "eof"
+MSG_ACK = "ack"
+MSG_HEARTBEAT = "heartbeat"
 
 
 class ProtocolError(RuntimeError):
@@ -99,6 +103,20 @@ def _send_text(sock: socket.socket, message: Message) -> None:
         sock.sendall(message.payload)
 
 
+def _send_all(sock: socket.socket, payload: bytes, *, chunk_size: int = 1400) -> None:
+    """Transmit payload in MTU-friendly chunks to reduce large write spikes."""
+
+    view = memoryview(payload)
+    total = len(view)
+    offset = 0
+    while offset < total:
+        end = offset + chunk_size
+        sent = sock.send(view[offset:end])
+        if sent <= 0:
+            raise ConnectionClosed("socket closed while writing")
+        offset += sent
+
+
 def _recv_text(sock: socket.socket) -> Optional[Message]:
     header = sock.recv(_HEADER.size)
     if not header:
@@ -126,7 +144,7 @@ def _send_binary(sock: socket.socket, message: Message) -> None:
     payload_len = len(message.payload)
     sock.sendall(_BINARY_SIZE.pack(payload_len))
     if payload_len:
-        sock.sendall(message.payload)
+        _send_all(sock, message.payload)
 
 
 def _recv_binary(sock: socket.socket) -> Optional[Message]:
@@ -177,18 +195,25 @@ _PROTOCOLS: Dict[str, ProtocolHandler] = {
     ),
 }
 
+_ALIASES: Dict[str, str] = {"legacy": "text"}
+
 
 def available_protocols() -> Dict[str, str]:
     """Return protocol names mapped to descriptions for CLI help."""
 
-    return {name: handler.description for name, handler in _PROTOCOLS.items()}
+    mapping = {name: handler.description for name, handler in _PROTOCOLS.items()}
+    for alias, target in _ALIASES.items():
+        handler = _PROTOCOLS[target]
+        mapping[alias] = f"alias for {handler.name}: {handler.description}"
+    return mapping
 
 
 def resolve_protocol(name: str) -> ProtocolHandler:
     """Return the framing handler requested by the user."""
 
     try:
-        return _PROTOCOLS[name]
+        canonical = _ALIASES.get(name, name)
+        return _PROTOCOLS[canonical]
     except KeyError as exc:  # pragma: no cover - argument parsing validates.
         raise ValueError(f"unknown protocol '{name}'") from exc
 

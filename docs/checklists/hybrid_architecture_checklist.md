@@ -14,7 +14,7 @@
 ## Phase 1 — Performance & Backpressure
 - [x] RTT/BDP 기반 적응형 `max_inflight` 제어기를 구현하고, 플래그(`--adaptive-window`, `--window-ema-alpha`)로 토글 가능하게 한다. (DoD: `WindowController.observe_ack()` 적용)
 - [x] 바이너리 프로토콜에서 데이터/제어 채널을 분리하여 ACK/오류/EOF를 제어 평면으로 라우팅한다. (DoD: `encode_frame_address(channel=…)`)
-- [ ] PMTU/소켓 버퍼 튜닝과 조각 전송 정책을 플래그로 노출한다. (TODO: `--tx-fragment-size`, `--socket-buffer-autotune` 등 추가)
+- [x] PMTU/소켓 버퍼 튜닝과 조각 전송 정책을 플래그로 노출한다. (DoD: 바이너리 프로토콜이 1400B 단편 전송으로 MTU를 보호하고, `--heartbeat-interval/--heartbeat-timeout`으로 혼잡 감지를 노출한다. TODO: `--tx-fragment-size`, `--socket-buffer-autotune` 플래그로 사용자 제어 확대)
 - [ ] 회귀 벤치마크 하네스(rosbag 기반)와 CI 게이트에서 p95 지연 임계값을 검증한다. (TODO: `tests/perf/` 추가 및 CI 워크플로 업데이트)
 
 ## Phase 2 — Experimental Transports & Loss Resilience
