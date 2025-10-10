@@ -10,15 +10,15 @@
 ## 2. 테스트 및 품질 보증 체계
 - [x] `ros2_ws/src/draco_roundtrip/tests/` 디렉터리를 생성하고 TCP 프로토콜, PLY 로딩, metric 계산에 대한 단위 테스트를 추가한다. → `colcon test` 통과 여부를 CI에 등록. (테스트 파일: `test_utils_protocol.py`, `test_utils_ply_io.py`, `test_utils_metrics.py`, `pytest.ini`)
 - [x] 최소 1회 왕복을 수행하는 엔드투엔드 스크립트(`tests/e2e_roundtrip.sh` 또는 pytest 기반)를 추가하고, 로컬/CI에서 실행 가능한 의존성 조건을 정리한다. → 실행 로그를 `docs/results_template.md`와 연계. (스크립트: `ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh`, 테스트: `tests/test_e2e_roundtrip.py`)
-- [ ] GitHub Actions 등 자동화 파이프라인에 `colcon build` + `colcon test` + 품질 스크립트를 추가해 리팩토링 후 회귀 검증을 자동화한다.
+- [x] GitHub Actions 등 자동화 파이프라인에 `colcon build` + `colcon test` + 품질 스크립트를 추가해 리팩토링 후 회귀 검증을 자동화한다. → `.github/workflows/ros-ci.yaml`에서 ROS Humble 환경을 프로비저닝하고 `ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh`를 포함한 회귀 루틴을 실행하도록 구성.
 
 ## 3. 레거시 자산 정리
-- [ ] 루트 수준의 `draco-ros2-roundtrip/` Python 스크립트가 남아 있다면 `draco_roundtrip`/`draco_tools` 모듈을 thin wrapper로 호출하도록 단순화하거나, 사용 중단 안내와 함께 제거한다. → README 및 docs에 변경 사항 반영.
+- [x] 루트 수준의 `draco-ros2-roundtrip/` Python 스크립트가 남아 있다면 `draco_roundtrip`/`draco_tools` 모듈을 thin wrapper로 호출하도록 단순화하거나, 사용 중단 안내와 함께 제거한다. → README에 레거시 스크립트 제거 공지와 대체 명령을 문서화하고, 루트 트리에서 중복 실행 파일이 남지 않았음을 확인.
 - [ ] `migrate_refactor.sh`와 연계된 워크플로를 최신 디렉터리 구조에 맞춰 검증하고, 필요 시 대체 스크립트를 제안한다.
 - [ ] 남아 있는 `legacy/` 디렉터리(또는 유사 명칭)에 deprecation 정책을 명시하고 삭제 시점을 결정한다.
 
 ## 4. 문서 및 설정 일원화
-- [ ] `docs/HOWTO.md`, `docs/3d_slam_setup.md`, `README.md` 간 중복 설명을 교차 링크 기반으로 정리하고 최신 경로/옵션으로 업데이트한다.
+- [x] `docs/HOWTO.md`, `docs/3d_slam_setup.md`, `README.md` 간 중복 설명을 교차 링크 기반으로 정리하고 최신 경로/옵션으로 업데이트한다. → HOWTO 문서를 재작성하고 SLAM 가이드를 `slam_stream_bridge` 런치/CLI 명령으로 갱신했으며, README에 레거시 대체 경로를 명시.
 - [ ] `configs/*.yaml`과 `configs/draco.json`에 대한 설명 및 사용 예시를 문서화하고, `utils/config.py`에서 불러오는 기본값과 맞춘다.
 - [ ] 리팩토링 완료 후 배포 노트(CHANGELOG 또는 `docs/refactor_report.md`)를 작성해 주요 변경점과 마이그레이션 지침을 남긴다.
 

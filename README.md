@@ -93,3 +93,8 @@ ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
 - `refac.md`: 현재 진행 중인 리팩토링 제안 및 단계별 목표
 
 기여 시에는 리팩토링 로드맵과 체크리스트를 참고하여 코드 구조와 문서가 일관되도록 유지해주세요.
+
+## 레거시 스크립트 정리 현황
+- 과거 리포지터리 루트에 위치했던 `draco-ros2-roundtrip/scripts/*.py` 실행 파일은 모두 ROS 2 패키지 내부의 콘솔 엔트리포인트로 대체되었습니다.
+- 기존 스크립트 경로를 사용하는 자동화는 `ros2 run draco_roundtrip ...` 또는 `ros2 run draco_tools ...` 형태로 교체해 주세요.
+- 필요한 경우 `ros2 run <package> <entrypoint> --help`로 최신 인자 목록을 확인할 수 있으며, 본 README와 `docs/encoder_cli.md`에서 대표적인 사용 예시를 제공합니다.
