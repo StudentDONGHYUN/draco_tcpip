@@ -215,7 +215,7 @@ def load_profile(
 
 def _can_use_directory(path: Path, *, allow_create: bool = False) -> bool:
     if path.exists():
-        return True
+        return path.is_dir() and os.access(path, os.W_OK | os.X_OK)
     if not allow_create:
         return False
     parent = path.parent
