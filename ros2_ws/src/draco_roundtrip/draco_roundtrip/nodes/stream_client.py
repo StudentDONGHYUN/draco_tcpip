@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Stream rosbag frames, encode/send to server, replay decoded results to RViz."""
 
+# README NOTE: Runtime flag behaviour is documented in README.md ("Streaming client"):
+#   --max-inflight / --capture-queue gate the bounded async pipeline window.
+#   --capture-transport toggles shared-memory zero-copy capture vs. filesystem legacy mode.
+#   --metrics-out writes pipeline telemetry summaries for latency investigations.
+
 from __future__ import annotations
 
 import argparse
@@ -53,6 +58,15 @@ from draco_roundtrip.ros.playback import start_playback_thread
 _capture_seq = itertools.count()
 _CAPTURE_SENTINEL = object()
 _ENCODE_SENTINEL = object()
+
+
+def _telemetry(stage: str, frame: str, **details: object) -> None:
+    """Emit lightweight telemetry for per-frame stage transitions."""
+
+    extras = " ".join(f"{key}={value}" for key, value in details.items())
+    timestamp = time.monotonic()
+    suffix = f" {extras}" if extras else ""
+    print(f"[CLIENT][TELEM] {stage} frame={frame} ts={timestamp:.6f}{suffix}")
 
 
 async def _put_with_retry(
@@ -378,6 +392,7 @@ async def capture_stage(
         for handle in initial:
             payload = CapturePayload(handle=handle, captured_at=time.monotonic())
             await capture_queue.put((handle.priority_hint(), next(_capture_seq), payload))
+            _telemetry("capture_enqueue", handle.name, depth=capture_queue.qsize())
         empty_rounds = 0
         while not stop_event.is_set():
             handles = await asyncio.to_thread(frame_supplier.wait_for_new, 0.2)
@@ -386,6 +401,7 @@ async def capture_stage(
                 for handle in handles:
                     payload = CapturePayload(handle=handle, captured_at=time.monotonic())
                     await capture_queue.put((handle.priority_hint(), next(_capture_seq), payload))
+                    _telemetry("capture_enqueue", handle.name, depth=capture_queue.qsize())
             else:
                 empty_rounds += 1
             if (
@@ -426,6 +442,7 @@ async def encode_worker(
         handle = payload.handle
         captured_at = payload.captured_at
         encode_start = time.monotonic()
+        _telemetry("encode_start", handle.name, wait_ms=(encode_start - captured_at) * 1000.0)
         try:
             encoder_input = await asyncio.to_thread(handle.ensure_encoder_input, work_dir)
             result = await asyncio.to_thread(
@@ -454,6 +471,7 @@ async def encode_worker(
                 captured_at=captured_at,
                 encoded_at=encoded_at,
             )
+            _telemetry("encode_complete", handle.name, latency_ms=(encoded_at - encode_start) * 1000.0)
             if not await _put_with_retry(network_queue, encoded, stop_event=stop_event):
                 break
         except asyncio.CancelledError:
@@ -491,6 +509,7 @@ async def network_sender(
             network_queue.task_done()
             if encode_finished >= encode_workers and not eof_sent:
                 async with inflight_condition:
+                    # Ensure all inflight frames have been ACKed before closing the stream.
                     while inflight and not stop_event.is_set():
                         await inflight_condition.wait()
                 if not inflight and not stop_event.is_set():
@@ -498,7 +517,10 @@ async def network_sender(
                     try:
                         await asyncio.to_thread(protocol.send, sock, message)
                         print("[CLIENT] Sent EOF marker to server")
+                        _telemetry("send_eof", "all")
                         eof_sent = True
+                        with contextlib.suppress(OSError):
+                            sock.shutdown(socket.SHUT_WR)
                     except Exception as exc:
                         print(f"[CLIENT] ERROR sending EOF marker: {exc}")
                         stop_event.set()
@@ -523,6 +545,7 @@ async def network_sender(
                 inflight_condition.notify_all()
             network_queue.task_done()
             break
+        _telemetry("send_complete", encoded.handle.name, size=len(encoded.payload))
         sent_at = time.monotonic()
         stats.encode_to_send.record(sent_at - encoded.encoded_at)
         inflight[encoded.handle.name] = FrameContext(
@@ -571,6 +594,9 @@ async def reply_consumer(
         if message.kind == MSG_EOF:
             print("[CLIENT] EOF handshake complete")
             stop_event.set()
+            async with inflight_condition:
+                inflight_condition.notify_all()
+            _telemetry("recv_eof", "all")
             reply_queue.task_done()
             break
         stem = Path(message.name or "").stem
@@ -584,11 +610,13 @@ async def reply_consumer(
         if message.kind == MSG_ERROR:
             detail = message.payload.decode(errors="ignore")
             print(f"[CLIENT] SERVER ERROR for {message.name or stem}: {detail}")
+            _telemetry("recv_error", stem, detail=detail)
             with contextlib.suppress(Exception):
                 ctx.handle.on_consumed()
             reply_queue.task_done()
             continue
         traffic.received += len(message.payload)
+        _telemetry("recv_data", stem, size=len(message.payload))
         decoded_name = message.name or f"{stem}.decoded"
         if not decoded_name.endswith(".ply"):
             decoded_name = f"{decoded_name}.ply"
