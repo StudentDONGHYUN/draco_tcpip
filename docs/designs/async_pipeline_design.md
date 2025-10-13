@@ -1,5 +1,15 @@
 # 비동기 프레임 파이프라인 설계
 
+_Last updated: 2025-02-14_
+
+## Changelog
+- 2025-02-14: 테스트 경로 부트스트랩 및 Pyright 연동 지침을 문서에 반영했습니다.
+
+## Type-Checking, Packaging & IDE Integration
+- 워크스페이스 루트의 `conftest.py`를 통해 로컬 테스트 헬퍼가 항상 우선적으로 로드되므로, 에디터의 `PYTHONPATH`에도 동일한 순서를 유지합니다.
+- Pyright `strict` 모드를 사용할 때 `tests` 네임스페이스 충돌을 피하기 위해 `pytest.ini`의 `testpaths = tests` 구성을 그대로 적용하십시오.
+- Editable install 이후에는 `ros2_ws/src`가 자동으로 경로에 포함되지 않을 수 있으므로, VS Code의 `python.analysis.extraPaths`에 명시적으로 추가합니다.
+
 이 문서는 스트리밍 클라이언트/서버가 공유하는 비동기 파이프라인의 목표와 구성 요소를 설명합니다. 실제 구현은 `draco_roundtrip/nodes/stream_client.py`와 `stream_server.py`에서 확인할 수 있으며, 전체 아키텍처 개요는 `../references/codebase_overview.md`를 참고하세요.
 
 ## 목표

@@ -1,5 +1,16 @@
 # 네트워크 왕복 지연 최소화 개선 계획
 
+_Last updated: 2025-02-14_
+
+## Changelog
+- 2025-02-14: 테스트 부트스트랩 경로 충돌 해결 사항을 반영하고, 타입 체킹 및 패키징 표준 섹션을 추가했습니다.
+
+## Type-Checking, Packaging & IDE Integration
+- `pytest.ini`에 `testpaths = tests`를 설정해 상위 ROS 패키지의 `tests` 네임스페이스와 충돌하지 않도록 했습니다.
+- 리포지토리 루트의 `conftest.py`에서 `sys.path`를 정규화하고, VS Code나 Pyright에서 루트와 ROS 2 워크스페이스(`ros2_ws/src`)를 모두 `extraPaths`로 지정해야 합니다.
+- 편집 가능한 설치(`pip install -e .`) 시 `tests` 패키지가 로컬 경로를 가리키도록 보장하고, Pyright strict 모드에서 `ModuleNotFoundError`를 유발하지 않도록 새 부트스트랩을 적용합니다.
+
+
 ## 목표
 - Draco로 압축된 포인트클라우드 프레임을 스트리밍 클라이언트와 서버 사이에서 주고받을 때 엔드투엔드 왕복 지연을 가능한 한 줄입니다.
 - ROS 2와 TCP/IP가 혼재된 환경에서 결정성을 해치지 않으면서 처리량을 높입니다.

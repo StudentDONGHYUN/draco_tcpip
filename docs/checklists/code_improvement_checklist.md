@@ -1,5 +1,15 @@
 # 코드 개선 체크리스트
 
+_Last updated: 2025-02-14_
+
+## Changelog
+- 2025-02-14: 테스트 경로 표준과 Pyright 연동 지침을 포함했습니다.
+
+## Type-Checking, Packaging & IDE Integration
+- 코드 개선 작업 시 Pyright strict 모드가 기본이며, 루트의 `conftest.py` 덕분에 `tests` 패키지가 올바르게 해석됩니다.
+- 새 기능을 도입할 때는 `pytest.ini`의 `testpaths = tests` 구성을 준수하여 회귀 테스트가 ROS 2 패키지 테스트와 충돌하지 않도록 합니다.
+- VS Code 작업 시 `.vscode/settings.json`에서 `python.analysis.extraPaths`에 `ros2_ws/src`를 추가하고, 가상환경을 활성화한 상태로 편집 가능한 설치를 유지합니다.
+
 이 문서는 `../reports/code_improvement_review.md`에 정리된 권장 사항과 후속 작업을 구현할 때 참고하는 체크리스트입니다. 패키지 구조와 관련 코드는 `../references/codebase_overview.md`를 참고하세요.
 
 ## 권장 사항 이행 현황
