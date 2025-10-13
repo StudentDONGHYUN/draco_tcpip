@@ -36,8 +36,8 @@ from draco_tools.core.encoder import (
     format_encode_log,
     resolve_encoder_options,
 )
+from draco_roundtrip.analysis import pointcloud_metrics
 from draco_roundtrip.utils.config import resolve_data_layout, resolve_qos_override
-from draco_roundtrip.utils.metrics import compute_basic_metrics
 from draco_roundtrip.io.ply_codec import save_xyz
 from draco_roundtrip.utils.ply_io import (
     load_points as load_xyz,
@@ -65,6 +65,8 @@ from draco_roundtrip.utils.stream_protocol import (
     ControlPlane,
     ControlPlaneError,
     ControlState,
+    DataHeader,
+    ResponseHeader,
     DATA_CHANNEL,
     ErrorCode,
     FrameFragment,
@@ -73,6 +75,8 @@ from draco_roundtrip.utils.stream_protocol import (
     iter_fragments,
     validate_fragment_size,
     ACK_PAYLOAD_STRUCT,
+    compose_request_payload,
+    parse_response_payload,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
 
@@ -171,11 +175,15 @@ class FrameContext:
 
     sequence: int
     handle: "FrameHandle"
+    header: DataHeader
     captured_at: float
     encoded_at: float
     sent_at: float
     payload_size: int
+    encode_ms: float
     ack_at: float | None = None
+    orig_metrics: dict[str, object] | None = None
+    orig_points: np.ndarray | None = None
 
 
 @dataclass(slots=True)
@@ -205,8 +213,10 @@ class EncodedFrame:
     sequence: int
     handle: "FrameHandle"
     payload: bytes
+    header: DataHeader
     captured_at: float
     encoded_at: float
+    encode_ms: float
 
 
 @dataclass(slots=True)
@@ -467,9 +477,47 @@ class DecodedResult:
 
     sequence: int | None
     base_name: str
-    payload: bytes
+    header: ResponseHeader
+    decoded: bytes
+    metrics: dict[str, object]
     context: FrameContext
     received_at: float
+
+
+def _load_decoded_points(payload: bytes, fmt: str) -> np.ndarray:
+    if fmt == "pcd":
+        header_end = payload.find(b"\nDATA")
+        if header_end == -1:
+            raise ValueError("invalid PCD payload: missing DATA header")
+        header = payload[:header_end].decode("utf-8", errors="ignore")
+        remainder = payload[header_end:]
+        first_line_end = remainder.find(b"\n")
+        if first_line_end == -1:
+            raise ValueError("invalid PCD payload: truncated DATA line")
+        body = remainder[first_line_end + 1 :]
+        points = 0
+        for line in header.splitlines():
+            if line.upper().startswith("POINTS"):
+                parts = line.split()
+                if len(parts) >= 2:
+                    points = int(parts[1])
+                break
+        arr = np.frombuffer(body, dtype="<f4")
+        if points > 0:
+            expected = points * 3
+            if arr.size < expected:
+                raise ValueError("invalid PCD payload: insufficient binary data")
+            arr = arr[:expected]
+        if arr.size % 3 != 0:
+            raise ValueError("invalid PCD payload: uneven XYZ components")
+        return arr.reshape(-1, 3)
+    return load_xyz_from_bytes(payload)
+
+
+def _append_jsonl(path: Path, record: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
 
 
 class ReplyPump(threading.Thread):
@@ -770,12 +818,19 @@ async def encode_worker(
                     prefix=f"[CLIENT][ENCODER:{worker_id}]",
                 )
             )
+            header, packed_payload = compose_request_payload(
+                sequence,
+                drc_bytes,
+                timestamp_ns=time.monotonic_ns(),
+            )
             encoded = EncodedFrame(
                 sequence=sequence,
                 handle=handle,
-                payload=drc_bytes,
+                payload=packed_payload,
+                header=header,
                 captured_at=captured_at,
                 encoded_at=encoded_at,
+                encode_ms=result.duration * 1000.0,
             )
             _telemetry(
                 "encode_complete",
@@ -952,10 +1007,12 @@ async def network_sender(
         ctx = FrameContext(
             sequence=encoded.sequence,
             handle=encoded.handle,
+            header=encoded.header,
             captured_at=encoded.captured_at,
             encoded_at=encoded.encoded_at,
             sent_at=sent_at,
             payload_size=len(encoded.payload),
+            encode_ms=encoded.encode_ms,
         )
         inflight[encoded.sequence] = ctx
         acks_pending.add(encoded.sequence)
@@ -982,6 +1039,11 @@ async def reply_consumer(
     play_sample: int,
     frame_counter: itertools.count,
     print_metrics: bool,
+    quality_report_path: Path | None,
+    quality_thresholds: dict[str, float],
+    save_decoded: bool,
+    metrics_sample: int,
+    default_resp_format: str,
     heartbeat_timeout: float,
     session: SessionTracker,
     heartbeat_watch: HeartbeatWatch,
@@ -996,19 +1058,95 @@ async def reply_consumer(
     next_sequence = 0
 
     async def emit_result(result: DecodedResult) -> None:
-        base_name = result.base_name or result.context.handle.name
-        decoded_name = base_name if base_name.endswith(".ply") else f"{base_name}.ply"
+        ctx = result.context
+        base_name = result.base_name or ctx.handle.name
+        resp_format = result.metrics.get("extra", {}).get("resp_format", default_resp_format)
+        suffix = f".{resp_format}"
+        decoded_name = base_name if base_name.endswith(suffix) else f"{base_name}{suffix}"
         decoded_path = decoded_dir / decoded_name
-        await asyncio.to_thread(decoded_path.write_bytes, result.payload)
-        pts_src = await asyncio.to_thread(result.context.handle.load_source_points)
-        pts_dec = await asyncio.to_thread(load_xyz_from_bytes, result.payload)
-        metrics = await asyncio.to_thread(compute_basic_metrics, pts_src, pts_dec, play_sample)
+        if save_decoded:
+            await asyncio.to_thread(decoded_path.write_bytes, result.decoded)
+        if ctx.orig_points is None:
+            ctx.orig_points = await asyncio.to_thread(ctx.handle.load_source_points)
+        pts_src = ctx.orig_points
+        pts_dec = await asyncio.to_thread(_load_decoded_points, result.decoded, resp_format)
+        if ctx.orig_metrics is None:
+            ctx.orig_metrics = await asyncio.to_thread(
+                pointcloud_metrics.compute,
+                pts_src,
+                sample=metrics_sample,
+                frame_id=ctx.handle.name,
+                encode_ms=ctx.encode_ms,
+            )
+        server_metrics = dict(result.metrics)
+        if server_metrics.get("encode_ms") is None:
+            server_metrics["encode_ms"] = ctx.encode_ms
+        client_metrics = await asyncio.to_thread(
+            pointcloud_metrics.compute,
+            pts_dec,
+            sample=metrics_sample,
+            frame_id=ctx.handle.name,
+        )
+        chamfer_value = await asyncio.to_thread(
+            pointcloud_metrics.chamfer_est,
+            pts_src,
+            pts_dec,
+            sample=play_sample if play_sample > 0 else None,
+        )
+        orig = ctx.orig_metrics
+        assert orig is not None
+
+        def _rel_delta(a: float, b: float) -> float:
+            if b == 0.0:
+                return 0.0 if a == 0.0 else float("inf")
+            return abs(a - b) / abs(b)
+
+        quality = {
+            "point_count_abs": abs(int(client_metrics["point_count"]) - int(orig["point_count"])),
+            "centroid_l2": float(
+                np.linalg.norm(
+                    np.asarray(client_metrics["centroid"], dtype=float)
+                    - np.asarray(orig["centroid"], dtype=float)
+                )
+            ),
+            "scale_diag_rel": _rel_delta(float(client_metrics["scale_diag"]), float(orig["scale_diag"])),
+            "avg_nn_rel": _rel_delta(float(client_metrics["avg_nn_dist"]), float(orig["avg_nn_dist"])),
+            "chamfer_est": chamfer_value,
+        }
+        breaches = {key: quality[key] > value for key, value in quality_thresholds.items() if key in quality}
+        if any(breaches.values()):
+            stats.error_frames += 1
+        status = "WARN" if any(breaches.values()) else "INFO"
+        summary = (
+            f"seq={ctx.sequence} frame={decoded_name} Δpts={quality['point_count_abs']} "
+            f"centroid_l2={quality['centroid_l2']:.5f} scale_rel={quality['scale_diag_rel']:.5f} "
+            f"avg_nn_rel={quality['avg_nn_rel']:.5f} chamfer={quality['chamfer_est']:.5f}"
+        )
+        print(f"[CLIENT][QUALITY][{status}] {summary}")
+        if print_metrics:
+            print(
+                f"[CLIENT] Server metrics {decoded_name}: {server_metrics}"
+            )
+            print(
+                f"[CLIENT] Client metrics {decoded_name}: {client_metrics}"
+            )
+        if quality_report_path is not None:
+            record = {
+                "sequence": ctx.sequence,
+                "frame": decoded_name,
+                "timestamp_ns": result.header.timestamp_ns,
+                "server_metrics": server_metrics,
+                "client_metrics": client_metrics,
+                "original_metrics": orig,
+                "quality": quality,
+                "thresholds": quality_thresholds,
+                "breaches": breaches,
+            }
+            await asyncio.to_thread(_append_jsonl, quality_report_path, record)
         frame_idx = next(frame_counter)
         to_play.put((frame_idx, decoded_name, pts_src, pts_dec))
-        if print_metrics:
-            print(f"[CLIENT] Metrics {decoded_name}: {metrics}")
         with contextlib.suppress(Exception):
-            result.context.handle.on_consumed()
+            ctx.handle.on_consumed()
 
     async def drain_ready(force: bool = False) -> tuple[int, int]:
         nonlocal next_sequence
@@ -1250,24 +1388,43 @@ async def reply_consumer(
                 body = b"".join(ordered)
                 fragment_buffer.pop(ctx.sequence, None)
 
-            payload = body
+            try:
+                header, decoded_payload, metrics_payload = parse_response_payload(body)
+            except ValueError as exc:
+                print(
+                    f"[CLIENT] ERROR parsing response for seq={ctx.sequence}: {exc}"
+                )
+                stats.error_frames += 1
+                reply_queue.task_done()
+                continue
+            try:
+                metrics = json.loads(metrics_payload.decode("utf-8")) if metrics_payload else {}
+            except json.JSONDecodeError as exc:
+                print(
+                    f"[CLIENT] ERROR decoding metrics JSON for seq={ctx.sequence}: {exc}"
+                )
+                stats.error_frames += 1
+                reply_queue.task_done()
+                continue
             control_plane.on_first_data()
             rtt = max(0.0, now - ctx.sent_at)
             total_latency = max(0.0, now - ctx.captured_at)
             stats.record_round_trip(total_latency, rtt)
             if ctx.ack_at is None:
                 window.observe_ack(ctx.payload_size, rtt)
-            traffic.received += len(payload)
+            traffic.received += len(body)
             _telemetry(
                 "recv_data",
                 address.name or ctx.handle.name,
-                size=len(payload),
+                size=len(body),
                 seq=ctx.sequence,
             )
             result = DecodedResult(
                 sequence=ctx.sequence,
                 base_name=address.name or f"{ctx.handle.name}.decoded",
-                payload=payload,
+                header=header,
+                decoded=decoded_payload,
+                metrics=metrics,
                 context=ctx,
                 received_at=now,
             )
@@ -1511,6 +1668,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Override temporary directory for encoder scratch data')
     ap.add_argument('--decoded-dir', default=None,
                     help='Override directory where decoded frames from the server are stored')
+    ap.add_argument('--quality-thresholds', default='{}',
+                    help='JSON object describing max deltas for quality metrics (empty for informational only)')
+    ap.add_argument('--quality-report-dir', default='artifacts/quality',
+                    help='Directory where per-frame quality JSONL reports are written')
+    ap.add_argument('--no-save-decoded', action='store_true',
+                    help='Do not persist decoded responses from the server to disk')
     ap.add_argument('--server-host', default='127.0.0.1')
     ap.add_argument('--server-port', type=int, default=5000)
     ap.add_argument('--control-port', type=int, default=0,
@@ -1519,6 +1682,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument('--play-topic-prefix', default='stream_pair')
     ap.add_argument('--play-hz', type=float, default=10.0)
     ap.add_argument('--play-sample', type=int, default=50000)
+    ap.add_argument('--metrics-sample', type=int, default=50000,
+                    help='Maximum number of points sampled for client-side metrics (0 means use all points)')
+    ap.add_argument('--resp-format', choices=('ply', 'pcd'), default='ply',
+                    help='Expected format for decoded payloads returned by the server (default: %(default)s)')
     ap.add_argument('--qos-override', default=None,
                     help='Override QoS profile file. Defaults to layout profile or package configs')
     ap.add_argument('--socket-timeout', type=float, default=15.0,
@@ -1607,6 +1774,21 @@ async def run_client(args: argparse.Namespace) -> None:
     ply_dir = layout['ply_dir']
     work_dir = layout['work_dir']
     decoded_dir = layout['decoded_dir']
+
+    try:
+        thresholds_raw = json.loads(args.quality_thresholds) if args.quality_thresholds else {}
+        if not isinstance(thresholds_raw, dict):
+            raise ValueError("quality thresholds must be a JSON object")
+        quality_thresholds = {str(key): float(value) for key, value in thresholds_raw.items()}
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError(f"invalid --quality-thresholds payload: {exc}") from exc
+    quality_report_path: Path | None = None
+    if args.quality_report_dir:
+        quality_dir = Path(args.quality_report_dir).expanduser()
+        quality_report_path = (quality_dir / f"{args.prefix}_quality.jsonl").resolve()
+        quality_report_path.parent.mkdir(parents=True, exist_ok=True)
+        with contextlib.suppress(OSError):
+            quality_report_path.unlink()
 
     bag_cmd = ['ros2', 'bag', 'play', str(Path(args.bag).expanduser().resolve())]
     qos_override = resolve_qos_override(args.qos_override, profile=layout.profile)
@@ -1840,6 +2022,11 @@ async def run_client(args: argparse.Namespace) -> None:
                             play_sample=args.play_sample,
                             frame_counter=frame_counter,
                             print_metrics=args.print_metrics,
+                            quality_report_path=quality_report_path,
+                            quality_thresholds=quality_thresholds,
+                            save_decoded=not args.no_save_decoded,
+                            metrics_sample=args.metrics_sample,
+                            default_resp_format=args.resp_format,
                             heartbeat_timeout=args.heartbeat_timeout,
                             session=session_tracker,
                             heartbeat_watch=heartbeat_watch,

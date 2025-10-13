@@ -31,10 +31,13 @@ _Last updated: 2025-02-14_
 3. **네트워크 전송 스테이지**
    - `Encode → Network` 큐는 최대 인플라이트 프레임 수(`max_inflight`)에 따라 크기를 조절한다.
    - TCP 소켓은 논블로킹 모드 + 이벤트 루프로 감시하며, 준비된 프레임을 바이너리 프로토콜로 전송한다.
-   - 송신 완료 후 RTT 측정을 위해 인플라이트 테이블에 `frame_id → (sent_ts, size)`를 기록한다.
+   - 송신 페이로드는 ``DataHeader``(kind=`0x10`, content_type=`DRACO`)와 순수 Draco 바이트로 구성된다. 헤더에는 프레임 시퀀스, 캡처 타임스탬프(ns), 압축 길이가 포함되어 서버가 디코더 메트릭을 계산할 수 있다.
+   - 송신 완료 후 RTT 측정을 위해 인플라이트 테이블에 `frame_id → (sent_ts, size, encode_ms)`를 기록한다.
 4. **응답 처리 스테이지**
    - 별도 I/O 루프가 서버 응답을 수신하고 인플라이트 테이블을 갱신한다.
-   - 디코딩된 PLY/포인트 데이터를 ROS 2 퍼블리셔에 전달하며, 필요 시 렌더 스레드로 바로 전달할 수 있도록 zero-copy 버퍼를 사용한다.
+   - 서버 응답은 ``ResponseHeader``(kind=`0x21`) + 디코딩된 포인트클라우드(Ply/PCD) + JSON 메트릭 블록(프레임 통계, 디코더 지연)을 단일 페이로드로 묶어 전송한다.
+   - 클라이언트는 헤더를 해석해 디코딩된 바이트와 메트릭 JSON을 분리하고, `draco_roundtrip.analysis.pointcloud_metrics`를 통해 원본 클라우드에 대한 품질 지표를 계산한다.
+   - per-frame 품질 요약은 JSONL(`quality_report_dir/…/quality.jsonl`)로 기록되며 임계치 초과 시 텔레메트리에 WARN 이벤트가 남는다.
 5. **역압 및 흐름 제어**
    - 인플라이트 테이블이 임계치에 도달하면 캡처 스테이지에 `PAUSE_CAPTURE` 신호를 보낸다.
    - 서버에서 오류 또는 혼잡 신호를 보내면 `max_inflight`와 인코더 비트레이트를 조정하는 적응형 컨트롤러가 동작한다.

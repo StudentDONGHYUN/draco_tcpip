@@ -22,6 +22,8 @@ __all__ = [
     "CONTROL_CHANNEL",
     "FrameHeader",
     "FrameFragment",
+    "DataHeader",
+    "ResponseHeader",
     "ACK_TIMEOUT_NS",
     "CONTROL_POLL_INTERVAL",
     "HEARTBEAT_INTERVAL_NS",
@@ -29,11 +31,22 @@ __all__ = [
     "MIN_FRAGMENT_SIZE",
     "MAX_FRAGMENT_SIZE",
     "ACK_PAYLOAD_STRUCT",
+    "DATA_KIND_DRACO",
+    "CONTENT_TYPE_DRACO",
+    "RESPONSE_KIND_DECODED_AND_METRICS",
     "iter_fragments",
     "validate_fragment_size",
     "FrameAddress",
     "encode_frame_address",
     "decode_frame_address",
+    "pack_data_header",
+    "unpack_data_header",
+    "pack_response_header",
+    "unpack_response_header",
+    "compose_request_payload",
+    "parse_request_payload",
+    "compose_response_payload",
+    "parse_response_payload",
 ]
 
 # 제어 평면 상수 (docs/contracts/control_plane_contract.md 참고)
@@ -54,6 +67,14 @@ MAX_FRAGMENT_SIZE = 1400
 
 # ACK 페이로드는 8바이트 시퀀스를 big-endian으로 담는다.
 ACK_PAYLOAD_STRUCT = struct.Struct("!Q")
+
+DATA_KIND_DRACO = 0x10
+CONTENT_TYPE_DRACO = 0x01
+
+RESPONSE_KIND_DECODED_AND_METRICS = 0x21
+
+_DATA_HEADER_STRUCT = struct.Struct("!BIQIB")
+_RESPONSE_HEADER_STRUCT = struct.Struct("!BIQI IH".replace(" ", ""))
 
 
 class ControlCode(enum.IntEnum):
@@ -110,6 +131,29 @@ class FrameFragment:
     @property
     def more_fragments(self) -> bool:
         return self.index < self.total - 1
+
+
+@dataclass(slots=True, frozen=True)
+class DataHeader:
+    """Binary request header for Draco payloads."""
+
+    kind: int
+    sequence: int
+    timestamp_ns: int
+    payload_len: int
+    content_type: int
+
+
+@dataclass(slots=True, frozen=True)
+class ResponseHeader:
+    """Binary response header containing decoded payload and metrics layout."""
+
+    kind: int
+    sequence: int
+    timestamp_ns: int
+    decoded_len: int
+    metrics_len: int
+    decode_ms: int
 
 
 def iter_fragments(
@@ -338,3 +382,122 @@ def decode_frame_address(raw: str | None) -> FrameAddress:
             sequence = None
             name = token
     return FrameAddress(channel=channel or DATA_CHANNEL, sequence=sequence, name=name)
+
+
+def pack_data_header(header: DataHeader) -> bytes:
+    if header.kind != DATA_KIND_DRACO:
+        raise ValueError(f"unsupported data kind {header.kind:#x}")
+    return _DATA_HEADER_STRUCT.pack(
+        header.kind,
+        header.sequence & 0xFFFFFFFF,
+        header.timestamp_ns & 0xFFFFFFFFFFFFFFFF,
+        header.payload_len & 0xFFFFFFFF,
+        header.content_type & 0xFF,
+    )
+
+
+def unpack_data_header(buffer: bytes) -> tuple[DataHeader, bytes]:
+    if len(buffer) < _DATA_HEADER_STRUCT.size:
+        raise ValueError("buffer too small for data header")
+    kind, sequence, ts_ns, payload_len, content_type = _DATA_HEADER_STRUCT.unpack_from(buffer)
+    header = DataHeader(
+        kind=kind,
+        sequence=sequence,
+        timestamp_ns=ts_ns,
+        payload_len=payload_len,
+        content_type=content_type,
+    )
+    payload = buffer[_DATA_HEADER_STRUCT.size : _DATA_HEADER_STRUCT.size + payload_len]
+    if len(payload) != payload_len:
+        raise ValueError("payload truncated for declared length")
+    return header, payload
+
+
+def pack_response_header(header: ResponseHeader) -> bytes:
+    if header.kind != RESPONSE_KIND_DECODED_AND_METRICS:
+        raise ValueError(f"unsupported response kind {header.kind:#x}")
+    return _RESPONSE_HEADER_STRUCT.pack(
+        header.kind,
+        header.sequence & 0xFFFFFFFF,
+        header.timestamp_ns & 0xFFFFFFFFFFFFFFFF,
+        header.decoded_len & 0xFFFFFFFF,
+        header.metrics_len & 0xFFFFFFFF,
+        header.decode_ms & 0xFFFF,
+    )
+
+
+def unpack_response_header(buffer: bytes) -> tuple[ResponseHeader, bytes]:
+    if len(buffer) < _RESPONSE_HEADER_STRUCT.size:
+        raise ValueError("buffer too small for response header")
+    parts = _RESPONSE_HEADER_STRUCT.unpack_from(buffer)
+    header = ResponseHeader(
+        kind=parts[0],
+        sequence=parts[1],
+        timestamp_ns=parts[2],
+        decoded_len=parts[3],
+        metrics_len=parts[4],
+        decode_ms=parts[5],
+    )
+    payload = buffer[_RESPONSE_HEADER_STRUCT.size :]
+    if len(payload) < header.decoded_len + header.metrics_len:
+        raise ValueError("payload truncated for declared decoded/metrics lengths")
+    return header, payload
+
+
+def compose_request_payload(
+    sequence: int,
+    draco_bytes: bytes,
+    *,
+    timestamp_ns: int,
+    content_type: int = CONTENT_TYPE_DRACO,
+) -> tuple[DataHeader, bytes]:
+    header = DataHeader(
+        kind=DATA_KIND_DRACO,
+        sequence=sequence,
+        timestamp_ns=timestamp_ns,
+        payload_len=len(draco_bytes),
+        content_type=content_type,
+    )
+    packed = pack_data_header(header) + draco_bytes
+    return header, packed
+
+
+def parse_request_payload(buffer: bytes) -> tuple[DataHeader, bytes]:
+    header, payload = unpack_data_header(buffer)
+    if header.kind != DATA_KIND_DRACO:
+        raise ValueError(f"unexpected data kind {header.kind:#x}")
+    if header.content_type != CONTENT_TYPE_DRACO:
+        raise ValueError(f"unsupported content type {header.content_type:#x}")
+    return header, payload
+
+
+def compose_response_payload(
+    sequence: int,
+    timestamp_ns: int,
+    decoded_payload: bytes,
+    metrics_json: bytes,
+    *,
+    decode_ms: float,
+) -> tuple[ResponseHeader, bytes]:
+    header = ResponseHeader(
+        kind=RESPONSE_KIND_DECODED_AND_METRICS,
+        sequence=sequence,
+        timestamp_ns=timestamp_ns,
+        decoded_len=len(decoded_payload),
+        metrics_len=len(metrics_json),
+        decode_ms=int(round(max(decode_ms, 0.0))),
+    )
+    packed = pack_response_header(header) + decoded_payload + metrics_json
+    return header, packed
+
+
+def parse_response_payload(buffer: bytes) -> tuple[ResponseHeader, bytes, bytes]:
+    header, payload = unpack_response_header(buffer)
+    if header.kind != RESPONSE_KIND_DECODED_AND_METRICS:
+        raise ValueError(f"unexpected response kind {header.kind:#x}")
+    decoded_end = header.decoded_len
+    decoded = payload[:decoded_end]
+    metrics = payload[decoded_end : decoded_end + header.metrics_len]
+    if len(decoded) != header.decoded_len or len(metrics) != header.metrics_len:
+        raise ValueError("response payload segments truncated")
+    return header, decoded, metrics

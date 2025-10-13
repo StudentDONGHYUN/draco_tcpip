@@ -46,6 +46,7 @@ _Last updated: 2025-02-14_
 - TX 루프는 송신 성공 시 `acks_pending`에 시퀀스를 추가하고, ACK를 수신하면 윈도우를 해제합니다.
 - RX 펌프는 제어/데이터 채널을 구분해 ACK, HEARTBEAT, DATA를 파이프라인에 전달합니다.
 - 디코더 풀은 성공/실패를 모두 퍼블리셔에게 알리며, 재정렬 버퍼는 `next_seq` 기준으로 프레임을 방출합니다.
+- 데이터 채널의 응답 페이로드는 `ResponseHeader(kind=0x21)` + 디코딩된 포인트클라우드(Ply/PCD) + JSON 메트릭으로 구성되며, 클라이언트는 원본 클라우드에 대한 품질 비교(centroid, scale, NN 거리, 샘플링된 Chamfer)를 수행합니다.
 
 ## 제어 평면 메시지
 | Kind | Channel | 용도 |
@@ -66,7 +67,7 @@ _Last updated: 2025-02-14_
 ## 텔레메트리 및 요약
 - 스테이지별 대기 시간: capture→encode, encode latency, encode→send, round-trip, network RTT, ACK latency
 - 큐 최대 깊이: 캡처, 네트워크, 인플라이트(ACK 대기)
-- 종료 요약: elapsed, bytes sent/received(Mbps), p50/p95/p99, skipped/error 수, `pending`/`pending_acks`
+- 종료 요약: elapsed, bytes sent/received(Mbps), p50/p95/p99, skipped/error 수, `pending`/`pending_acks`, per-frame 품질 경고 수
 - JSON 메트릭은 동일 필드를 포함하며 CI/대시보드 연계를 위한 스키마로 사용합니다.
 
 ## 후속 과제
