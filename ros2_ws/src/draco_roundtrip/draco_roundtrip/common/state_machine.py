@@ -55,7 +55,7 @@ class StreamStateMachine:
 
         with self._lock:
             if target == StreamState.FAILED:
-                return self.fail(reason)
+                return self._enter_failed_locked(reason)
             if self.state == StreamState.FAILED:
                 return self.state
             if target == self.state:
@@ -80,18 +80,23 @@ class StreamStateMachine:
         """Enter the FAILED state (idempotent)."""
 
         with self._lock:
-            if self.state == StreamState.FAILED:
-                if reason and reason != self.reason:
-                    self.reason = reason
-                    self.history.append({"state": self.state.value, "reason": reason})
-                return self.state
-            previous = self.state
-            self.state = StreamState.FAILED
-            self.reason = reason
-            self.history.append(
-                {"from": previous.value, "state": StreamState.FAILED.value, "reason": reason}
-            )
+            return self._enter_failed_locked(reason)
+
+    def _enter_failed_locked(self, reason: str | None = None) -> StreamState:
+        """Internal helper to record transition into FAILED while holding ``_lock``."""
+
+        if self.state == StreamState.FAILED:
+            if reason and reason != self.reason:
+                self.reason = reason
+                self.history.append({"state": self.state.value, "reason": reason})
             return self.state
+        previous = self.state
+        self.state = StreamState.FAILED
+        self.reason = reason
+        self.history.append(
+            {"from": previous.value, "state": StreamState.FAILED.value, "reason": reason}
+        )
+        return self.state
 
     def snapshot(self) -> dict[str, object]:
         """Return a serialisable summary."""
