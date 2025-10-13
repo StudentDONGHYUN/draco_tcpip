@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://draco.example.com/schemas/telemetry-schema-1.0.0.json",
+  "title": "Draco Streaming Telemetry",
+  "description": "세션 요약 텔레메트리의 표준 구조. docs/specs/telemetry_schema.md에 문서화된 필드 정의를 따른다.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "schema_doc",
+    "session",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "schema_doc": {
+      "type": "string",
+      "const": "docs/specs/telemetry_schema.md"
+    },
+    "session": {
+      "type": "object",
+      "required": [
+        "id",
+        "role",
+        "transport",
+        "protocol",
+        "fragment_size",
+        "started_at_ns",
+        "ended_at_ns",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "client",
+            "server"
+          ]
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "tcp",
+            "quic",
+            "udp_fec"
+          ]
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "legacy",
+            "binary"
+          ]
+        },
+        "fragment_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "socket_buffer_autotune": {
+          "type": "boolean"
+        },
+        "started_at_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ended_at_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "TERMINATED",
+            "FAILED"
+          ]
+        },
+        "error_code": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error_message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "latency_ms",
+        "rtt_ms",
+        "ack_latency_ms",
+        "throughput_mbps",
+        "queues",
+        "frames"
+      ],
+      "properties": {
+        "latency_ms": {
+          "type": "object",
+          "required": [
+            "p50",
+            "p95",
+            "p99"
+          ],
+          "properties": {
+            "p50": {
+              "type": "number",
+              "minimum": 0
+            },
+            "p95": {
+              "type": "number",
+              "minimum": 0
+            },
+            "p99": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "rtt_ms": {
+          "type": "object",
+          "required": [
+            "p50",
+            "p95",
+            "p99"
+          ],
+          "properties": {
+            "p50": {
+              "type": "number",
+              "minimum": 0
+            },
+            "p95": {
+              "type": "number",
+              "minimum": 0
+            },
+            "p99": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "ack_latency_ms": {
+          "type": "object",
+          "required": [
+            "p50",
+            "p95",
+            "p99"
+          ],
+          "properties": {
+            "p50": {
+              "type": "number",
+              "minimum": 0
+            },
+            "p95": {
+              "type": "number",
+              "minimum": 0
+            },
+            "p99": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "throughput_mbps": {
+          "type": "object",
+          "required": [
+            "avg",
+            "peak"
+          ],
+          "properties": {
+            "avg": {
+              "type": "number",
+              "minimum": 0
+            },
+            "peak": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "queues": {
+          "type": "object",
+          "required": [
+            "capture_max",
+            "encode_max",
+            "decode_max",
+            "pending"
+          ],
+          "properties": {
+            "capture_max": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "encode_max": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "decode_max": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pending": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "frames": {
+          "type": "object",
+          "required": [
+            "sent",
+            "acked",
+            "dropped",
+            "skipped"
+          ],
+          "properties": {
+            "sent": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "acked": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "dropped": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

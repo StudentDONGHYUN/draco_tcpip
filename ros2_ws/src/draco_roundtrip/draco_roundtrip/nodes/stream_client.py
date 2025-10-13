@@ -24,7 +24,8 @@ from collections import deque
 from dataclasses import dataclass, field as dataclass_field
 from multiprocessing import shared_memory
 from pathlib import Path
-from typing import Deque, Dict, Iterable, Optional, Protocol
+from typing import Any, Deque, Dict, Iterable, Optional, Protocol
+import os
 
 import numpy as np
 
@@ -57,10 +58,24 @@ from draco_roundtrip.utils.protocol import (
 from draco_roundtrip.shared_memory import SharedMemoryReceiver, SharedMemoryDescriptor
 from draco_roundtrip.ros.playback import start_playback_thread
 from draco_roundtrip.utils.stream_protocol import (
+    ACK_TIMEOUT_NS,
     CONTROL_CHANNEL,
+    CONTROL_POLL_INTERVAL,
+    ControlCode,
+    ControlPlane,
+    ControlPlaneError,
+    ControlState,
     DATA_CHANNEL,
+    ErrorCode,
+    FrameFragment,
+    pack_frame_header,
     decode_frame_address,
     encode_frame_address,
+    iter_fragments,
+    validate_fragment_size,
+    ACK_PAYLOAD_STRUCT,
+    unpack_frame_header,
+    FRAME_HEADER_SIZE,
 )
 
 
@@ -77,6 +92,28 @@ def _telemetry(stage: str, frame: str, **details: object) -> None:
     timestamp = time.monotonic()
     suffix = f" {extras}" if extras else ""
     print(f"[CLIENT][TELEM] {stage} frame={frame} ts={timestamp:.6f}{suffix}")
+
+
+def _validate_client_config(args: argparse.Namespace) -> int:
+    fragment_size = validate_fragment_size(args.tx_fragment_size)
+    if fragment_size and args.protocol != "binary":
+        raise ValueError("--tx-fragment-size requires --protocol binary")
+    if args.socket_buffer_autotune and args.socket_buffer_kb > 0:
+        raise ValueError("--socket-buffer-autotune cannot be combined with --socket-buffer-kb")
+    if args.transport != "tcp":
+        raise NotImplementedError(
+            f"transport '{args.transport}' is reserved; only tcp is implemented in Python client"
+        )
+    return fragment_size
+
+
+def _log_effective_config(args: argparse.Namespace, fragment_size: int) -> None:
+    print("[CLIENT] ---- Effective configuration ----")
+    print(f"  transport={args.transport} protocol={args.protocol}")
+    print(f"  fragment_size={fragment_size} socket_buffer_autotune={args.socket_buffer_autotune}")
+    print(f"  socket_buffer_kb={args.socket_buffer_kb} tcp_nodelay={args.tcp_nodelay}")
+    print(f"  max_inflight={args.max_inflight} adaptive_window={args.adaptive_window}")
+    print(f"  metrics_out={args.metrics_out}")
 
 
 async def _put_with_retry(
@@ -213,6 +250,7 @@ class PipelineStats:
     ack_latency: StageStats = dataclass_field(default_factory=StageStats)
     round_trip_samples: list[float] = dataclass_field(default_factory=list)
     network_rtt_samples: list[float] = dataclass_field(default_factory=list)
+    ack_latency_samples: list[float] = dataclass_field(default_factory=list)
     skipped_frames: int = 0
     error_frames: int = 0
 
@@ -225,6 +263,7 @@ class PipelineStats:
         self.ack_latency = StageStats()
         self.round_trip_samples.clear()
         self.network_rtt_samples.clear()
+        self.ack_latency_samples.clear()
         self.skipped_frames = 0
         self.error_frames = 0
 
@@ -239,6 +278,7 @@ class PipelineStats:
         if latency <= 0:
             return
         self.ack_latency.record(latency)
+        self.ack_latency_samples.append(latency)
 
     def percentile(self, samples: list[float], percentile: float) -> float | None:
         if not samples:
@@ -255,12 +295,21 @@ class PipelineStats:
 
     def latency_percentiles(self) -> dict[str, float]:
         ordered = sorted(self.round_trip_samples)
-        percentiles = {}
+        percentiles: dict[str, float] = {}
         for label, value in (("p50", 50.0), ("p95", 95.0), ("p99", 99.0)):
             percentile = self.percentile(ordered, value)
             if percentile is not None:
                 percentiles[label] = percentile
         return percentiles
+
+    def percentiles_for(self, samples: list[float]) -> dict[str, float]:
+        ordered = sorted(samples)
+        result: dict[str, float] = {}
+        for label, pct in (("p50", 50.0), ("p95", 95.0), ("p99", 99.0)):
+            value = self.percentile(ordered, pct)
+            if value is not None:
+                result[label] = value
+        return result
 
 
 @dataclass(slots=True)
@@ -272,6 +321,168 @@ class TrafficStats:
     inflight_peak: int = 0
     capture_depth_peak: int = 0
     network_depth_peak: int = 0
+    send_mbps_samples: list[float] = dataclass_field(default_factory=list)
+    _last_send_ts: float = 0.0
+
+    def record_send(self, payload_size: int) -> None:
+        now = time.monotonic()
+        if self._last_send_ts == 0.0:
+            self._last_send_ts = now
+            return
+        delta = max(now - self._last_send_ts, 1e-6)
+        mbps = (payload_size * 8) / delta / 1e6
+        self.send_mbps_samples.append(mbps)
+        self._last_send_ts = now
+
+
+class Telemetry:
+    """세션 텔레메트리를 수집하고 스키마로 검증한다.
+
+    스키마 규격: docs/specs/telemetry_schema.md
+    """
+
+    SCHEMA_VERSION = "1.0.0"
+    SCHEMA_DOC = "docs/specs/telemetry_schema.md"
+    _schema_cache: dict[str, Any] | None = None
+
+    def __init__(
+        self,
+        *,
+        role: str,
+        transport: str,
+        protocol: str,
+        fragment_size: int,
+        socket_buffer_autotune: bool,
+    ) -> None:
+        self.role = role
+        self.transport = transport
+        self.protocol = protocol
+        self.fragment_size = fragment_size
+        self.socket_buffer_autotune = socket_buffer_autotune
+        self.session_id = f"{role}-{int(time.time())}-{os.getpid()}"
+
+    @classmethod
+    def _repo_root(cls) -> Path:
+        return Path(__file__).resolve().parents[5]
+
+    @classmethod
+    def schema_path(cls) -> Path:
+        return cls._repo_root() / "docs" / "specs" / "telemetry_schema.json"
+
+    @classmethod
+    def load_schema(cls) -> dict[str, Any]:
+        if cls._schema_cache is None:
+            schema_file = cls.schema_path()
+            data = json.loads(schema_file.read_text(encoding="utf-8"))
+            cls._schema_cache = data
+        return cls._schema_cache
+
+    @staticmethod
+    def _ensure(condition: bool, message: str) -> None:
+        if not condition:
+            raise ValueError(f"Telemetry validation failed: {message}")
+
+    def validate(self, payload: dict[str, Any]) -> None:
+        self._ensure(
+            payload.get("schema_version") == self.SCHEMA_VERSION,
+            "schema_version mismatch",
+        )
+        self._ensure(
+            payload.get("schema_doc") == self.SCHEMA_DOC,
+            "schema_doc mismatch",
+        )
+        session = payload.get("session")
+        self._ensure(isinstance(session, dict), "session section missing")
+        for key in (
+            "id",
+            "role",
+            "transport",
+            "protocol",
+            "fragment_size",
+            "started_at_ns",
+            "ended_at_ns",
+            "state",
+        ):
+            self._ensure(key in session, f"session.{key} missing")
+        metrics = payload.get("metrics")
+        self._ensure(isinstance(metrics, dict), "metrics section missing")
+        for section in ("latency_ms", "rtt_ms", "ack_latency_ms"):
+            stats = metrics.get(section)
+            self._ensure(isinstance(stats, dict), f"{section} section missing")
+            for key in ("p50", "p95", "p99"):
+                self._ensure(key in stats, f"{section}.{key} missing")
+        queues = metrics.get("queues", {})
+        self._ensure(isinstance(queues, dict), "queues section missing")
+        for key in ("capture_max", "encode_max", "decode_max", "pending"):
+            self._ensure(key in queues, f"queues.{key} missing")
+        frames = metrics.get("frames", {})
+        self._ensure(isinstance(frames, dict), "frames section missing")
+        for key in ("sent", "acked", "dropped", "skipped"):
+            self._ensure(key in frames, f"frames.{key} missing")
+
+    def build(
+        self,
+        *,
+        control_plane: ControlPlane,
+        pipeline_stats: PipelineStats,
+        traffic: TrafficStats,
+        elapsed: float,
+        latency_percentiles: dict[str, float],
+        rtt_percentiles: dict[str, float],
+        ack_percentiles: dict[str, float],
+        pending_inflight: int,
+        frames_processed: int,
+    ) -> dict[str, Any]:
+        if pending_inflight != 0 or control_plane.pending != 0:
+            raise ValueError("control plane must have pending=0 before telemetry export")
+        started_ns = control_plane.started_at_ns or time.monotonic_ns()
+        ended_ns = control_plane.ended_at_ns or time.monotonic_ns()
+        throughput_avg = (traffic.sent * 8 / max(elapsed, 1e-6)) / 1e6
+        peak_mbps = max(traffic.send_mbps_samples or [throughput_avg])
+        def fill_percentiles(source: dict[str, float]) -> dict[str, float]:
+            return {key: float(source.get(key, 0.0)) for key in ("p50", "p95", "p99")}
+        payload = {
+            "schema_version": self.SCHEMA_VERSION,
+            "schema_doc": self.SCHEMA_DOC,
+            "session": {
+                "id": self.session_id,
+                "role": self.role,
+                "transport": self.transport,
+                "protocol": self.protocol,
+                "fragment_size": self.fragment_size,
+                "socket_buffer_autotune": self.socket_buffer_autotune,
+                "started_at_ns": int(started_ns),
+                "ended_at_ns": int(ended_ns),
+                "state": control_plane.state.value,
+            },
+            "metrics": {
+                "latency_ms": {k: v * 1000.0 for k, v in fill_percentiles(latency_percentiles).items()},
+                "rtt_ms": {k: v * 1000.0 for k, v in fill_percentiles(rtt_percentiles).items()},
+                "ack_latency_ms": {k: v * 1000.0 for k, v in fill_percentiles(ack_percentiles).items()},
+                "throughput_mbps": {
+                    "avg": throughput_avg,
+                    "peak": peak_mbps,
+                },
+                "queues": {
+                    "capture_max": traffic.capture_depth_peak,
+                    "encode_max": traffic.network_depth_peak,
+                    "decode_max": 0,
+                    "pending": 0,
+                },
+                "frames": {
+                    "sent": frames_processed,
+                    "acked": frames_processed,
+                    "dropped": pipeline_stats.error_frames,
+                    "skipped": pipeline_stats.skipped_frames,
+                },
+            },
+        }
+        if control_plane.state == ControlState.FAILED:
+            payload["session"]["error_code"] = int(control_plane.error_code)
+            if control_plane.error_message:
+                payload["session"]["error_message"] = control_plane.error_message
+        self.validate(payload)
+        return payload
 
 
 @dataclass(slots=True)
@@ -683,6 +894,9 @@ async def network_sender(
     encode_workers: int,
     window: WindowController,
     control: ControlChannel | None = None,
+    fragment_size: int,
+    use_binary: bool,
+    control_plane: ControlPlane,
 ) -> None:
     """Send encoded frames while respecting inflight limits."""
 
@@ -699,6 +913,10 @@ async def network_sender(
                     while (inflight or acks_pending) and not stop_event.is_set():
                         await inflight_condition.wait()
                 if not inflight and not acks_pending and not stop_event.is_set():
+                    eof_payload = b""
+                    if use_binary:
+                        eof_fragment = FrameFragment(sequence=None, payload=b"", control_code=ControlCode.EOF)
+                        eof_payload = pack_frame_header(eof_fragment.header())
                     message = Message(
                         kind=MSG_EOF,
                         name=encode_frame_address(
@@ -706,11 +924,12 @@ async def network_sender(
                             "final",
                             channel=CONTROL_CHANNEL,
                         ),
-                        payload=b"",
+                        payload=eof_payload,
                     )
                     try:
                         await _send_control_message(control, sock, protocol, message)
-                        print("[CLIENT] Sent EOF marker to server")
+                        control_plane.on_eof_sent()
+                        print("[CLIENT] EOF sent to server")
                         _telemetry("send_eof", "all")
                         eof_sent = True
                         with contextlib.suppress(OSError):
@@ -728,13 +947,34 @@ async def network_sender(
             while len(acks_pending) >= window.limit() and not stop_event.is_set():
                 # Wait until the adaptive window controller permits another send.
                 await inflight_condition.wait()
-        message = Message(
-            kind=MSG_DATA,
-            name=encode_frame_address(encoded.sequence, encoded.handle.name, channel=DATA_CHANNEL),
-            payload=encoded.payload,
-        )
+        control_plane.on_frame_sent(encoded.sequence, now_ns=time.monotonic_ns())
+        fragments: Iterable[FrameFragment]
+        if use_binary:
+            fragments = iter_fragments(
+                encoded.payload,
+                sequence=encoded.sequence,
+                fragment_size=fragment_size,
+            )
+        else:
+            fragments = (FrameFragment(sequence=encoded.sequence, payload=encoded.payload),)
         try:
-            await asyncio.to_thread(protocol.send, sock, message)
+            for fragment in fragments:
+                payload = (
+                    pack_frame_header(fragment.header()) + fragment.payload
+                    if use_binary
+                    else fragment.payload
+                )
+                message = Message(
+                    kind=MSG_DATA,
+                    name=encode_frame_address(
+                        fragment.sequence,
+                        encoded.handle.name,
+                        channel=DATA_CHANNEL,
+                    ),
+                    payload=payload,
+                )
+                await asyncio.to_thread(protocol.send, sock, message)
+                traffic.record_send(len(fragment.payload))
         except Exception as exc:
             print(f"[CLIENT] ERROR sending {encoded.handle.name}: {exc}")
             stop_event.set()
@@ -782,12 +1022,14 @@ async def reply_consumer(
     frame_counter: itertools.count,
     print_metrics: bool,
     heartbeat_timeout: float,
+    control_plane: ControlPlane,
+    use_binary: bool,
 ) -> None:
     """Process replies from the server and release inflight slots."""
 
-    # Reorder buffer tracks decoded frames until the next in-order sequence is ready.
     reorder_buffer: Dict[int, DecodedResult] = {}
     skipped_sequences: Dict[int, str] = {}
+    fragment_buffer: Dict[int, bytearray] = {}
     next_sequence = 0
 
     async def emit_result(result: DecodedResult) -> None:
@@ -831,28 +1073,41 @@ async def reply_consumer(
                     stats.skipped_frames += 1
                 skipped_sequences.clear()
 
-    heartbeat_timeout = max(1.0, heartbeat_timeout)
+    heartbeat_timeout = max(heartbeat_timeout, CONTROL_POLL_INTERVAL)
     last_activity = time.monotonic()
 
     while not stop_event.is_set():
         try:
-            event = await asyncio.wait_for(reply_queue.get(), timeout=heartbeat_timeout)
+            event = await asyncio.wait_for(reply_queue.get(), timeout=CONTROL_POLL_INTERVAL)
         except asyncio.TimeoutError:
             if stop_event.is_set():
                 break
-            if inflight:
+            now_ns = time.monotonic_ns()
+            expired = control_plane.expired_sequences(now_ns=now_ns)
+            if expired:
+                detail = ",".join(str(seq) for seq in expired)
+                print(f"[CLIENT] ERROR: ACK timeout for sequences {detail}")
+                control_plane.on_error(ErrorCode.TIMEOUT, f"ack timeout ({detail})")
+                stop_event.set()
+                async with inflight_condition:
+                    inflight_condition.notify_all()
+                continue
+            if control_plane.heartbeat_timed_out(now_ns=now_ns):
+                print("[CLIENT] ERROR: Heartbeat timeout detected")
+                control_plane.on_error(ErrorCode.TIMEOUT, "heartbeat timeout")
+                stop_event.set()
+                async with inflight_condition:
+                    inflight_condition.notify_all()
+                continue
+            if time.monotonic() - last_activity > heartbeat_timeout:
                 print(
                     "[CLIENT] WARN: No server reply within heartbeat window;"
                     f" pending={len(inflight)} inflight"
                 )
-                if time.monotonic() - last_activity > heartbeat_timeout * 2:
-                    print("[CLIENT] ERROR: Heartbeat timeout, stopping")
-                    stop_event.set()
-                    async with inflight_condition:
-                        inflight_condition.notify_all()
             continue
 
-        last_activity = time.monotonic()
+        now = time.monotonic()
+        last_activity = now
         if event.kind == "local_skip":
             sequence = event.sequence
             detail = event.detail or "local failure"
@@ -870,28 +1125,50 @@ async def reply_consumer(
         if event.kind == "error" and event.error:
             channel = event.channel or DATA_CHANNEL
             print(f"[CLIENT] ERROR from reply pump ({channel}): {event.error}")
+            control_plane.on_error(ErrorCode.INTERNAL_ERROR, str(event.error))
             stop_event.set()
             reply_queue.task_done()
             break
         if event.kind == "closed":
             channel = event.channel or DATA_CHANNEL
             print(f"[CLIENT] Connection closed by server on {channel} channel")
+            control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, "connection closed")
             stop_event.set()
             reply_queue.task_done()
             break
         if event.kind != "message" or event.message is None:
             reply_queue.task_done()
             continue
+
         message = event.message
         address = decode_frame_address(message.name)
+        header = None
+        body = message.payload
+        if use_binary:
+            try:
+                header = unpack_frame_header(message.payload)
+            except ValueError as exc:
+                print(f"[CLIENT] ERROR: invalid frame header: {exc}")
+                control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
+                stop_event.set()
+                reply_queue.task_done()
+                continue
+            body = message.payload[FRAME_HEADER_SIZE:]
+
         if message.kind == MSG_HEARTBEAT:
+            control_plane.on_heartbeat(now_ns=time.monotonic_ns())
             _telemetry("recv_heartbeat", address.name or "all")
             async with inflight_condition:
                 inflight_condition.notify_all()
             reply_queue.task_done()
             continue
+
         if message.kind == MSG_ACK:
             sequence = address.sequence
+            if header is not None and header.sequence is not None:
+                sequence = header.sequence
+            if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
+                sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
             ctx: FrameContext | None = None
             async with inflight_condition:
                 if sequence is not None:
@@ -901,10 +1178,16 @@ async def reply_consumer(
             if ctx is None:
                 print(f"[CLIENT] WARN: ACK for unknown frame {message.name}")
             else:
-                ctx.ack_at = last_activity
+                ctx.ack_at = now
                 ack_latency = max(0.0, ctx.ack_at - ctx.sent_at)
                 stats.record_ack(ack_latency)
                 window.observe_ack(ctx.payload_size, ack_latency)
+                try:
+                    control_plane.on_ack(ctx.sequence)
+                except ControlPlaneError as exc:
+                    print(f"[CLIENT] ERROR: {exc}")
+                    control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
+                    stop_event.set()
                 _telemetry(
                     "recv_ack",
                     address.name or ctx.handle.name,
@@ -913,8 +1196,14 @@ async def reply_consumer(
                 )
             reply_queue.task_done()
             continue
+
         if message.kind == MSG_EOF:
-            print("[CLIENT] EOF handshake complete")
+            print("[CLIENT] EOF received from server")
+            try:
+                control_plane.on_eof_received()
+            except ControlPlaneError as exc:
+                print(f"[CLIENT] ERROR: {exc}")
+                control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
             stop_event.set()
             async with inflight_condition:
                 acks_pending.clear()
@@ -942,18 +1231,17 @@ async def reply_consumer(
             reply_queue.task_done()
             continue
 
-        now = time.monotonic()
-        rtt = max(0.0, now - ctx.sent_at)
-        total_latency = max(0.0, now - ctx.captured_at)
-        stats.record_round_trip(total_latency, rtt)
-        if ctx.ack_at is None:
-            window.observe_ack(ctx.payload_size, rtt)
-
         if message.kind == MSG_ERROR:
-            detail = message.payload.decode(errors="ignore") or "server error"
+            if use_binary and header and header.control_code == ControlCode.ERROR and body:
+                code = ErrorCode(body[0]) if body[0] in ErrorCode._value2member_map_ else ErrorCode.INTERNAL_ERROR
+                detail = body[1:].decode("utf-8", errors="replace") if len(body) > 1 else code.name
+            else:
+                code = ErrorCode.INTERNAL_ERROR
+                detail = body.decode("utf-8", errors="replace") if body else code.name
             print(f"[CLIENT] SERVER ERROR for seq={ctx.sequence}: {detail}")
             stats.error_frames += 1
             skipped_sequences[ctx.sequence] = detail
+            control_plane.on_error(code, detail)
             _telemetry("recv_error", address.name or str(ctx.sequence), detail=detail)
             with contextlib.suppress(Exception):
                 ctx.handle.on_aborted()
@@ -961,7 +1249,23 @@ async def reply_consumer(
             reply_queue.task_done()
             continue
 
-        payload = message.payload
+        if use_binary and header is not None:
+            if header.more_fragments and ctx.sequence is not None:
+                fragment_buffer.setdefault(ctx.sequence, bytearray()).extend(body)
+                reply_queue.task_done()
+                continue
+            if ctx.sequence is not None and ctx.sequence in fragment_buffer:
+                bucket = fragment_buffer.pop(ctx.sequence)
+                bucket.extend(body)
+                body = bytes(bucket)
+
+        payload = body if body else message.payload
+        control_plane.on_first_data()
+        rtt = max(0.0, now - ctx.sent_at)
+        total_latency = max(0.0, now - ctx.captured_at)
+        stats.record_round_trip(total_latency, rtt)
+        if ctx.ack_at is None:
+            window.observe_ack(ctx.payload_size, rtt)
         traffic.received += len(payload)
         _telemetry("recv_data", address.name or ctx.handle.name, size=len(payload), seq=ctx.sequence)
         result = DecodedResult(
@@ -975,9 +1279,7 @@ async def reply_consumer(
             await emit_result(result)
         else:
             if result.sequence < next_sequence:
-                print(
-                    f"[CLIENT] WARN: Late arrival for already published seq={result.sequence}, dropping",
-                )
+                print(f"[CLIENT] WARN: Late arrival for already published seq={result.sequence}, dropping")
             else:
                 reorder_buffer[result.sequence] = result
             await drain_ready()
@@ -1186,6 +1488,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     default='binary',
                     help='Framing protocol to use (default: %(default)s). Options: '
                     + ', '.join(f"{name}={desc}" for name, desc in protocol_help.items()))
+    ap.add_argument(
+        '--transport',
+        choices=('tcp', 'quic', 'udp_fec'),
+        default='tcp',
+        help='Transport layer for data plane. tcp만 구현되어 있으며 quic/udp_fec는 예약 상태입니다.',
+    )
+    ap.add_argument(
+        '--tx-fragment-size',
+        type=int,
+        default=0,
+        help='Binary 프로토콜에서 payload를 MTU 안전 조각으로 분할한다 (0은 비활성).',
+    )
     ap.add_argument('--max-inflight', '--max-pending', dest='max_inflight', type=int, default=4,
                     help='Upper bound on in-flight frames awaiting ACK/decoded replies')
     ap.add_argument('--initial-inflight', type=int, default=None,
@@ -1204,12 +1518,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Disable Nagle aggregation to reduce latency for interactive playback')
     ap.add_argument('--socket-buffer-kb', type=int, default=0,
                     help='Resize socket send/receive buffers (KiB) to better saturate fast links')
+    ap.add_argument(
+        '--socket-buffer-autotune',
+        action='store_true',
+        help='커널 소켓 버퍼 자동 튜닝을 요청한다 (SO_SNDBUF/SO_RCVBUF=0).',
+    )
     ap.add_argument('--capture-transport',
                     choices=('filesystem', 'shared-memory'),
                     default='shared-memory',
                     help='Frame capture backend: filesystem spool (legacy) or shared-memory zero copy')
-    ap.add_argument('--metrics-out', default=None,
-                    help='Optional path to write pipeline timing/throughput metrics as JSON')
+    ap.add_argument(
+        '--metrics-out',
+        default='artifacts/perf/client_latest.json',
+        help='텔레메트리 JSON 출력 경로 (스키마 준수).',
+    )
     ap.add_argument('--print-metrics', action='store_true',
                     help='Stream per-frame latency/accuracy metrics to stdout during playback')
     return ap
@@ -1217,6 +1539,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 async def run_client(args: argparse.Namespace) -> None:
+    fragment_size = _validate_client_config(args)
+    _log_effective_config(args, fragment_size)
     layout = resolve_data_layout(
         {
             'ply_dir': 'ply_stream',
@@ -1273,6 +1597,14 @@ async def run_client(args: argparse.Namespace) -> None:
         adaptive=args.adaptive_window,
         alpha=max(0.01, min(0.99, args.window_ema_alpha)),
     )
+    telemetry = Telemetry(
+        role="client",
+        transport=args.transport,
+        protocol=args.protocol,
+        fragment_size=fragment_size,
+        socket_buffer_autotune=args.socket_buffer_autotune,
+    )
+    control_plane = ControlPlane(role="client")
     start_time = time.monotonic()
 
     try:
@@ -1293,10 +1625,15 @@ async def run_client(args: argparse.Namespace) -> None:
                 for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
                     with contextlib.suppress(OSError):
                         sock.setsockopt(socket.SOL_SOCKET, opt, buf_size)
+            elif args.socket_buffer_autotune:
+                for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
+                    with contextlib.suppress(OSError):
+                        sock.setsockopt(socket.SOL_SOCKET, opt, 0)
             protocol = resolve_protocol(args.protocol)
             print(
                 f"[CLIENT] Connected to {args.server_host}:{args.server_port} using {protocol.name} protocol"
             )
+            control_plane.on_connected(time.monotonic_ns())
 
             control_channel: ControlChannel | None = None
             control_sock: socket.socket | None = None
@@ -1317,6 +1654,10 @@ async def run_client(args: argparse.Namespace) -> None:
                     for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
                         with contextlib.suppress(OSError):
                             control_sock.setsockopt(socket.SOL_SOCKET, opt, buf_size)
+                elif args.socket_buffer_autotune:
+                    for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
+                        with contextlib.suppress(OSError):
+                            control_sock.setsockopt(socket.SOL_SOCKET, opt, 0)
                 control_protocol = resolve_protocol(args.protocol)
                 control_channel = ControlChannel(sock=control_sock, protocol=control_protocol)
                 print(
@@ -1426,6 +1767,9 @@ async def run_client(args: argparse.Namespace) -> None:
                             encode_workers=args.encode_workers,
                             window=window_controller,
                             control=control_channel,
+                            fragment_size=fragment_size,
+                            use_binary=(protocol.name == "binary"),
+                            control_plane=control_plane,
                         )
                     )
                 )
@@ -1446,6 +1790,8 @@ async def run_client(args: argparse.Namespace) -> None:
                             frame_counter=frame_counter,
                             print_metrics=args.print_metrics,
                             heartbeat_timeout=args.heartbeat_timeout,
+                            control_plane=control_plane,
+                            use_binary=(protocol.name == "binary"),
                         )
                     )
                 )
@@ -1494,8 +1840,13 @@ async def run_client(args: argparse.Namespace) -> None:
         if saver_proc is not None:
             _terminate_process(saver_proc, 'bag_to_ply')
 
+    control_plane.on_shutdown()
     elapsed = max(time.monotonic() - start_time, 1e-6)
     frames_processed = pipeline_stats.round_trip.count
+    latency_percentiles = pipeline_stats.latency_percentiles()
+    rtt_percentiles = pipeline_stats.percentiles_for(pipeline_stats.network_rtt_samples)
+    ack_percentiles = pipeline_stats.percentiles_for(pipeline_stats.ack_latency_samples)
+
     print('[CLIENT] ---- Transfer summary ----')
     print(f"  elapsed: {elapsed:.2f} s")
     print(f"  frames: {frames_processed}")
@@ -1504,12 +1855,11 @@ async def run_client(args: argparse.Namespace) -> None:
         f"  received: {traffic.received} bytes"
         f" ({traffic.received * 8 / elapsed / 1e6:.3f} Mbps)"
     )
-    percentiles = pipeline_stats.latency_percentiles()
-    if percentiles:
+    if latency_percentiles:
         print("  latency percentiles (capture→reply):")
         for label in ("p50", "p95", "p99"):
-            if label in percentiles:
-                print(f"    {label}: {percentiles[label] * 1000.0:.2f} ms")
+            if label in latency_percentiles:
+                print(f"    {label}: {latency_percentiles[label] * 1000.0:.2f} ms")
     print('  stage metrics:')
     print(f"    capture→encode: {pipeline_stats.capture_to_encode.summary()}")
     print(f"    encode latency: {pipeline_stats.encode_time.summary()}")
@@ -1526,40 +1876,27 @@ async def run_client(args: argparse.Namespace) -> None:
     )
     print(
         f"  drops/skipped: {pipeline_stats.skipped_frames} errors={pipeline_stats.error_frames}"
-        f" pending={pending_inflight} pending_acks={pending_acks}"
+        f" pending={pending_inflight} pending_acks={pending_acks} control_pending={control_plane.pending}"
     )
 
-    metrics_out_path = Path(args.metrics_out).expanduser() if args.metrics_out else work_dir / 'pipeline_metrics.json'
+    metrics_out_path = Path(args.metrics_out).expanduser()
     metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        metrics_payload = {
-            'elapsed_sec': elapsed,
-            'frames': frames_processed,
-            'bytes_sent': traffic.sent,
-            'bytes_received': traffic.received,
-            'capture_to_encode': pipeline_stats.capture_to_encode.as_dict(),
-            'encode_latency': pipeline_stats.encode_time.as_dict(),
-            'encode_to_send': pipeline_stats.encode_to_send.as_dict(),
-            'round_trip': pipeline_stats.round_trip.as_dict(),
-            'network_rtt': pipeline_stats.network_rtt.as_dict(),
-            'ack_latency': pipeline_stats.ack_latency.as_dict(),
-            'latency_percentiles_ms': {
-                key: value * 1000.0 for key, value in percentiles.items()
-            },
-            'inflight_peak': traffic.inflight_peak,
-            'capture_queue_peak': traffic.capture_depth_peak,
-            'network_queue_peak': traffic.network_depth_peak,
-            'skipped_frames': pipeline_stats.skipped_frames,
-            'error_frames': pipeline_stats.error_frames,
-            'pending_inflight': pending_inflight,
-            'pending_acks': pending_acks,
-            'adaptive_window': args.adaptive_window,
-            'window_final': window_controller.limit(),
-        }
-        metrics_out_path.write_text(json.dumps(metrics_payload, indent=2), encoding='utf-8')
-        print(f"[CLIENT] Wrote pipeline metrics to {metrics_out_path}")
+        telemetry_payload = telemetry.build(
+            control_plane=control_plane,
+            pipeline_stats=pipeline_stats,
+            traffic=traffic,
+            elapsed=elapsed,
+            latency_percentiles=latency_percentiles,
+            rtt_percentiles=rtt_percentiles,
+            ack_percentiles=ack_percentiles,
+            pending_inflight=pending_inflight,
+            frames_processed=frames_processed,
+        )
+        metrics_out_path.write_text(json.dumps(telemetry_payload, indent=2), encoding='utf-8')
+        print(f"[CLIENT] Wrote telemetry to {metrics_out_path}")
     except Exception as exc:
-        print(f"[CLIENT] WARN: Failed to write metrics file: {exc}")
+        print(f"[CLIENT] WARN: Failed to write telemetry file: {exc}")
 
 
 def main(argv: Iterable[str] | None = None) -> None:
