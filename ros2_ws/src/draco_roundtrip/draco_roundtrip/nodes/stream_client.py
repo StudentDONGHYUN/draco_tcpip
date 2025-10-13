@@ -758,8 +758,8 @@ async def encode_worker(
                 encoder_input,
                 work_dir,
                 encoder_options,
-                encoder_path,
-                False,
+                encoder_hint=encoder_path,
+                skip_existing=False,
             )
             drc_bytes = await asyncio.to_thread(result.output.read_bytes)
             await asyncio.to_thread(_safe_unlink, result.output)
