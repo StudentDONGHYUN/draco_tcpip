@@ -1,5 +1,15 @@
 # Hybrid Streaming Pipeline v2
 
+_Last updated: 2025-02-14_
+
+## Changelog
+- 2025-02-14: 테스트 모듈 경로 충돌 완화와 타입 체킹 가드레일을 명시했습니다.
+
+## Type-Checking, Packaging & IDE Integration
+- 하이브리드 파이프라인 구현을 편집 가능한 패키지로 사용하려면 리포지토리 루트의 `conftest.py`에서 수행하는 경로 설정을 동일하게 유지하십시오.
+- Pyright/Pylance는 `tests` 네임스페이스를 ROS 2 패키지보다 먼저 해석해야 하므로, `pyrightconfig.json`의 `executionEnvironments`에 루트와 `ros2_ws/src`를 모두 포함시키세요.
+- GitHub Actions나 로컬 CI에서 `pytest` 실행 시에는 루트에 있는 `pytest.ini` 구성을 재사용하여 `tests` 디렉터리만 수집하도록 고정합니다.
+
 본 문서는 `async_pipeline_design.md`, `network_latency_reduction_plan.md`, 그리고 Multiprocess Pipeline Design에서 제안한 장점을 통합한 신규 하이브리드 아키텍처를 요약합니다. Python 기반 파이프라인을 유지하면서도 ROS 2/멀티프로세스 확장과 향후 C++ 포팅을 고려하여 단계별 개선 계획을 재정의했습니다.
 
 ## 핵심 목표
