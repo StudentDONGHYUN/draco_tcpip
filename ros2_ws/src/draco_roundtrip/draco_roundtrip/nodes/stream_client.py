@@ -24,8 +24,7 @@ from collections import deque
 from dataclasses import dataclass, field as dataclass_field
 from multiprocessing import shared_memory
 from pathlib import Path
-from typing import Any, Deque, Dict, Iterable, Optional, Protocol
-import os
+from typing import Deque, Dict, Iterable, Optional, Protocol
 
 import numpy as np
 
@@ -77,6 +76,7 @@ from draco_roundtrip.utils.stream_protocol import (
     unpack_frame_header,
     FRAME_HEADER_SIZE,
 )
+from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
 
 
 _capture_ticket = itertools.count()
@@ -333,156 +333,6 @@ class TrafficStats:
         mbps = (payload_size * 8) / delta / 1e6
         self.send_mbps_samples.append(mbps)
         self._last_send_ts = now
-
-
-class Telemetry:
-    """세션 텔레메트리를 수집하고 스키마로 검증한다.
-
-    스키마 규격: docs/specs/telemetry_schema.md
-    """
-
-    SCHEMA_VERSION = "1.0.0"
-    SCHEMA_DOC = "docs/specs/telemetry_schema.md"
-    _schema_cache: dict[str, Any] | None = None
-
-    def __init__(
-        self,
-        *,
-        role: str,
-        transport: str,
-        protocol: str,
-        fragment_size: int,
-        socket_buffer_autotune: bool,
-    ) -> None:
-        self.role = role
-        self.transport = transport
-        self.protocol = protocol
-        self.fragment_size = fragment_size
-        self.socket_buffer_autotune = socket_buffer_autotune
-        self.session_id = f"{role}-{int(time.time())}-{os.getpid()}"
-
-    @classmethod
-    def _repo_root(cls) -> Path:
-        return Path(__file__).resolve().parents[5]
-
-    @classmethod
-    def schema_path(cls) -> Path:
-        return cls._repo_root() / "docs" / "specs" / "telemetry_schema.json"
-
-    @classmethod
-    def load_schema(cls) -> dict[str, Any]:
-        if cls._schema_cache is None:
-            schema_file = cls.schema_path()
-            data = json.loads(schema_file.read_text(encoding="utf-8"))
-            cls._schema_cache = data
-        return cls._schema_cache
-
-    @staticmethod
-    def _ensure(condition: bool, message: str) -> None:
-        if not condition:
-            raise ValueError(f"Telemetry validation failed: {message}")
-
-    def validate(self, payload: dict[str, Any]) -> None:
-        self._ensure(
-            payload.get("schema_version") == self.SCHEMA_VERSION,
-            "schema_version mismatch",
-        )
-        self._ensure(
-            payload.get("schema_doc") == self.SCHEMA_DOC,
-            "schema_doc mismatch",
-        )
-        session = payload.get("session")
-        self._ensure(isinstance(session, dict), "session section missing")
-        for key in (
-            "id",
-            "role",
-            "transport",
-            "protocol",
-            "fragment_size",
-            "started_at_ns",
-            "ended_at_ns",
-            "state",
-        ):
-            self._ensure(key in session, f"session.{key} missing")
-        metrics = payload.get("metrics")
-        self._ensure(isinstance(metrics, dict), "metrics section missing")
-        for section in ("latency_ms", "rtt_ms", "ack_latency_ms"):
-            stats = metrics.get(section)
-            self._ensure(isinstance(stats, dict), f"{section} section missing")
-            for key in ("p50", "p95", "p99"):
-                self._ensure(key in stats, f"{section}.{key} missing")
-        queues = metrics.get("queues", {})
-        self._ensure(isinstance(queues, dict), "queues section missing")
-        for key in ("capture_max", "encode_max", "decode_max", "pending"):
-            self._ensure(key in queues, f"queues.{key} missing")
-        frames = metrics.get("frames", {})
-        self._ensure(isinstance(frames, dict), "frames section missing")
-        for key in ("sent", "acked", "dropped", "skipped"):
-            self._ensure(key in frames, f"frames.{key} missing")
-
-    def build(
-        self,
-        *,
-        control_plane: ControlPlane,
-        pipeline_stats: PipelineStats,
-        traffic: TrafficStats,
-        elapsed: float,
-        latency_percentiles: dict[str, float],
-        rtt_percentiles: dict[str, float],
-        ack_percentiles: dict[str, float],
-        pending_inflight: int,
-        frames_processed: int,
-    ) -> dict[str, Any]:
-        if pending_inflight != 0 or control_plane.pending != 0:
-            raise ValueError("control plane must have pending=0 before telemetry export")
-        started_ns = control_plane.started_at_ns or time.monotonic_ns()
-        ended_ns = control_plane.ended_at_ns or time.monotonic_ns()
-        throughput_avg = (traffic.sent * 8 / max(elapsed, 1e-6)) / 1e6
-        peak_mbps = max(traffic.send_mbps_samples or [throughput_avg])
-        def fill_percentiles(source: dict[str, float]) -> dict[str, float]:
-            return {key: float(source.get(key, 0.0)) for key in ("p50", "p95", "p99")}
-        payload = {
-            "schema_version": self.SCHEMA_VERSION,
-            "schema_doc": self.SCHEMA_DOC,
-            "session": {
-                "id": self.session_id,
-                "role": self.role,
-                "transport": self.transport,
-                "protocol": self.protocol,
-                "fragment_size": self.fragment_size,
-                "socket_buffer_autotune": self.socket_buffer_autotune,
-                "started_at_ns": int(started_ns),
-                "ended_at_ns": int(ended_ns),
-                "state": control_plane.state.value,
-            },
-            "metrics": {
-                "latency_ms": {k: v * 1000.0 for k, v in fill_percentiles(latency_percentiles).items()},
-                "rtt_ms": {k: v * 1000.0 for k, v in fill_percentiles(rtt_percentiles).items()},
-                "ack_latency_ms": {k: v * 1000.0 for k, v in fill_percentiles(ack_percentiles).items()},
-                "throughput_mbps": {
-                    "avg": throughput_avg,
-                    "peak": peak_mbps,
-                },
-                "queues": {
-                    "capture_max": traffic.capture_depth_peak,
-                    "encode_max": traffic.network_depth_peak,
-                    "decode_max": 0,
-                    "pending": 0,
-                },
-                "frames": {
-                    "sent": frames_processed,
-                    "acked": frames_processed,
-                    "dropped": pipeline_stats.error_frames,
-                    "skipped": pipeline_stats.skipped_frames,
-                },
-            },
-        }
-        if control_plane.state == ControlState.FAILED:
-            payload["session"]["error_code"] = int(control_plane.error_code)
-            if control_plane.error_message:
-                payload["session"]["error_message"] = control_plane.error_message
-        self.validate(payload)
-        return payload
 
 
 @dataclass(slots=True)
@@ -1847,14 +1697,15 @@ async def run_client(args: argparse.Namespace) -> None:
     rtt_percentiles = pipeline_stats.percentiles_for(pipeline_stats.network_rtt_samples)
     ack_percentiles = pipeline_stats.percentiles_for(pipeline_stats.ack_latency_samples)
 
+    throughput_avg_mbps = (traffic.sent * 8 / elapsed) / 1e6
+    throughput_peak_mbps = max(traffic.send_mbps_samples or [throughput_avg_mbps])
+    receive_mbps = (traffic.received * 8 / elapsed) / 1e6
+
     print('[CLIENT] ---- Transfer summary ----')
     print(f"  elapsed: {elapsed:.2f} s")
     print(f"  frames: {frames_processed}")
-    print(f"  sent: {traffic.sent} bytes ({traffic.sent * 8 / elapsed / 1e6:.3f} Mbps)")
-    print(
-        f"  received: {traffic.received} bytes"
-        f" ({traffic.received * 8 / elapsed / 1e6:.3f} Mbps)"
-    )
+    print(f"  sent: {traffic.sent} bytes ({throughput_avg_mbps:.3f} Mbps)")
+    print(f"  received: {traffic.received} bytes ({receive_mbps:.3f} Mbps)")
     if latency_percentiles:
         print("  latency percentiles (capture→reply):")
         for label in ("p50", "p95", "p99"):
@@ -1882,16 +1733,35 @@ async def run_client(args: argparse.Namespace) -> None:
     metrics_out_path = Path(args.metrics_out).expanduser()
     metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
     try:
+        if pending_inflight != 0 or pending_acks != 0:
+            raise ValueError(
+                "pending frames remain at shutdown: "
+                f"inflight={pending_inflight} pending_acks={pending_acks}"
+            )
+        metrics_block = {
+            "latency_ms": percentiles_block(latency_percentiles, scale=1000.0),
+            "rtt_ms": percentiles_block(rtt_percentiles, scale=1000.0),
+            "ack_latency_ms": percentiles_block(ack_percentiles, scale=1000.0),
+            "throughput_mbps": {
+                "avg": throughput_avg_mbps,
+                "peak": throughput_peak_mbps,
+            },
+            "queues": {
+                "capture_max": traffic.capture_depth_peak,
+                "encode_max": traffic.network_depth_peak,
+                "decode_max": 0,
+                "pending": 0,
+            },
+            "frames": {
+                "sent": frames_processed,
+                "acked": frames_processed,
+                "dropped": pipeline_stats.error_frames,
+                "skipped": pipeline_stats.skipped_frames,
+            },
+        }
         telemetry_payload = telemetry.build(
             control_plane=control_plane,
-            pipeline_stats=pipeline_stats,
-            traffic=traffic,
-            elapsed=elapsed,
-            latency_percentiles=latency_percentiles,
-            rtt_percentiles=rtt_percentiles,
-            ack_percentiles=ack_percentiles,
-            pending_inflight=pending_inflight,
-            frames_processed=frames_processed,
+            metrics=metrics_block,
         )
         metrics_out_path.write_text(json.dumps(telemetry_payload, indent=2), encoding='utf-8')
         print(f"[CLIENT] Wrote telemetry to {metrics_out_path}")
