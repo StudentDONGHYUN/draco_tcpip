@@ -529,7 +529,7 @@ async def _send_loop(
                     )
             send_queue.task_done()
     if not eof_sent and producer_done.is_set():
-        if control_plane.state != ControlState.FAILED:
+        if control_plane.state not in (ControlState.FAILED, ControlState.TERMINATED):
             control_plane.on_eof_sent()
         try:
             await _send_control_message(
