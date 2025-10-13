@@ -66,89 +66,93 @@
 ### draco_roundtrip
 
 - **analysis**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/__init__.py` — 외부 소비자를 위한 분석 헬퍼를 제공합니다.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/metrics.py` — 포인트 클라우드 비교용 메트릭 헬퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/pointcloud_metrics.py` — 라운드트립 품질 추적을 위한 포인트 클라우드 메트릭 유틸리티.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/quality.py` — Draco 라운드트립 품질 분석을 위한 공유 헬퍼.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/__init__.py` — Analysis helpers exposed for external consumers.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/metrics.py` — Metric helpers for comparing point clouds.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/pointcloud_metrics.py` — Point cloud metric utilities for round-trip quality tracking.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/analysis/quality.py` — Shared helpers for Draco roundtrip quality analysis.
 
 - **cli**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/__init__.py` — Draco roundtrip 패키지의 콘솔 엔트리포인트.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/monitor.py` — 모니터 도구용 CLI 래퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/replay.py` — 리플레이 도구용 CLI 래퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/stream_client.py` — 스트리밍 클라이언트용 CLI 래퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/stream_server.py` — 스트리밍 서버용 CLI 래퍼.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/__init__.py` — Console entry points for the Draco roundtrip package.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/monitor.py` — CLI wrapper for the monitor tool.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/replay.py` — CLI wrapper for the replay tool.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/stream_client.py` — CLI wrapper for the streaming client.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/cli/stream_server.py` — CLI wrapper for the streaming server.
+
+- **common**
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/common/state_machine.py` — Shared streaming session state machine utilities.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/common/timers.py` — ACK 타임아웃 스케줄러 유틸리티.
 
 - **data**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/data/__init__.py` — draco_roundtrip에서 하위 프로세스 헬퍼를 호출할 때 사용하는 래퍼 엔트리포인트.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/data/bag_to_ply.py` — 공유 bag recorder 유틸리티를 호출.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/data/__init__.py` — Wrapper entry-points used by draco_roundtrip for subprocess helpers.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/data/bag_to_ply.py` — Invoke the shared bag recorder utility.
 
 - **draco**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/draco/__init__.py` — 모듈 주석 없음
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/draco/encoder.py` — 스트리밍과 배치 유틸리티에서 공유하는 Draco 인코더 헬퍼.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/draco/__init__.py` — No module docstring
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/draco/encoder.py` — Shared Draco encoder helpers for streaming and batch utilities.
 
 - **io**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/io/__init__.py` — 모듈 주석 없음
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/io/bag_recorder.py` — ROS2 PointCloud2 → PLY 저장 노드(Open3D 우선, plyfile 폴백).
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/io/ply_codec.py` — PLY 및 포인트 클라우드 유틸리티 헬퍼.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/io/__init__.py` — No module docstring
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/io/bag_recorder.py` — ROS2 PointCloud2 -> PLY 저장 노드 (Open3D 우선 + plyfile 폴백)
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/io/ply_codec.py` — PLY and PointCloud utility helpers.
 
 - **net**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/net/__init__.py` — 모듈 주석 없음
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/net/io.py` — 클라이언트와 서버가 공유하는 소켓 I/O 유틸리티.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/net/protocol.py` — 클라이언트와 서버가 공유하는 TCP 프로토콜 헬퍼.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/net/__init__.py` — No module docstring
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/net/io.py` — Socket I/O utilities shared by client and server.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/net/protocol.py` — TCP protocol helpers shared by client and server.
 
 - **nodes**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/__init__.py` — 모듈 주석 없음
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py` — rosbag 프레임을 스트리밍하고 인코딩/전송하며 디코드 결과를 RViz로 재생.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py` — 제한된 파이프라인과 텔레메트리를 갖춘 비동기 Draco 스트리밍 서버.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/__init__.py` — No module docstring
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py` — Stream rosbag frames, encode/send to server, replay decoded results to RViz.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py` — Async Draco streaming server with bounded pipeline and telemetry.
 
 - **protocol**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/protocol/__init__.py` — 스트리밍 클라이언트/서버가 공유하는 프로토콜 헬퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/protocol/header.py` — 스트리밍 클라이언트와 서버가 공유하는 바이너리 프레이밍 헤더.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/protocol/__init__.py` — Protocol helpers shared by streaming client/server.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/protocol/header.py` — Binary framing header shared by the streaming client and server.
 
 - **ros**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/ros/__init__.py` — 모듈 주석 없음
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/ros/playback.py` — 포인트 클라우드를 퍼블리시하는 ROS 헬퍼 노드.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/ros/__init__.py` — No module docstring
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/ros/playback.py` — ROS helper nodes for publishing point clouds.
 
 - **shared_memory**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/shared_memory/__init__.py` — 제로카피 프레임 캡처를 위한 공유 메모리 전송 헬퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/shared_memory/channel.py` — 포인트 클라우드 프레임을 위한 TCP 조정 공유 메모리 채널.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/shared_memory/__init__.py` — Shared-memory transport helpers for zero-copy frame capture.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/shared_memory/channel.py` — TCP-coordinated shared memory channel for point cloud frames.
 
 - **tools**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/__init__.py` — 모듈 주석 없음
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py` — 실행 아티팩트를 구조화된 결과 디렉터리에 수집하는 유틸리티.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py` — PLY 페어를 재생하며 ROS로 퍼블리시하고 프레임별 차이 메트릭을 출력.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py` — configs/netem.profiles.yaml에 정의된 tc netem 프로파일을 적용하는 헬퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py` — 원본/디코드 PLY 페어를 PointCloud2 토픽으로 재생해 RViz 비교를 지원.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/__init__.py` — No module docstring
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py` — Utilities for collecting run artifacts into a structured results directory.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py` — Replay PLY pairs and emit per-frame diff metrics while publishing to ROS.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py` — Helpers for applying tc netem profiles defined in configs/netem.profiles.yaml.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py` — Replay original & decoded PLY pairs as PointCloud2 topics for RViz comparison.
 
 - **utils**
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/__init__.py` — 레거시 임포트를 위한 하위 호환 재노출 모듈.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/config.py` — QoS 오버라이드와 아티팩트 디렉터리를 위한 구성 헬퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/executable.py` — 필수 외부 실행 파일(draco_encoder/decoder)을 찾는 헬퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/metrics.py` — 새 패키지의 메트릭 헬퍼를 불러오는 하위 호환 래퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/ply_io.py` — 새 모듈의 PLY 헬퍼를 재노출하는 하위 호환 래퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/protocol.py` — 새 모듈의 프로토콜 헬퍼를 재사용하는 하위 호환 래퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/stream_protocol.py` — docs/contracts/control_plane_contract.md에 맞춘 제어 플레인 헬퍼.
-- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py` — docs/specs/telemetry_schema.md와 일치하는 텔레메트리 빌더.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/__init__.py` — Backwards-compatible re-exports for legacy imports.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/config.py` — Configuration helpers for QoS overrides and artifact directories.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/executable.py` — Helpers that locate required external executables (draco_encoder/decoder).
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/metrics.py` — Backwards-compatible shim importing metrics helpers from the new package.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/ply_io.py` — Backwards-compatible shim importing PLY helpers from the new module.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/protocol.py` — Backwards-compatible shim importing protocol helpers from the new module.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/stream_protocol.py` — Control-plane helpers aligned with docs/contracts/control_plane_contract.md.
+- `ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py` — Telemetry builder aligned with docs/specs/telemetry_schema.md.
 
 ### draco_tools
 
 - **analysis**
-- `ros2_ws/src/draco_tools/draco_tools/analysis/__init__.py` — 모듈 주석 없음
-- `ros2_ws/src/draco_tools/draco_tools/analysis/analyze_draco_quality.py` — PLY(original) vs DRC(Draco) 품질/성능 비교(멀티코어 + 진행바 강화판)
-- `ros2_ws/src/draco_tools/draco_tools/analysis/quality.py` — Draco 라운드트립 품질 분석을 위한 공유 헬퍼.
+- `ros2_ws/src/draco_tools/draco_tools/analysis/__init__.py` — No module docstring
+- `ros2_ws/src/draco_tools/draco_tools/analysis/analyze_draco_quality.py` — PLY(original) vs DRC(Draco) 품질/성능 비교 (멀티코어 + 진행바 강화판)
+- `ros2_ws/src/draco_tools/draco_tools/analysis/quality.py` — Shared helpers for Draco roundtrip quality analysis.
 
 - **cli**
-- `ros2_ws/src/draco_tools/draco_tools/cli/__init__.py` — draco_tools 패키지의 콘솔 엔트리포인트.
-- `ros2_ws/src/draco_tools/draco_tools/cli/encode_ply_to_draco.py` — 공유 핵심 헬퍼를 재사용하는 배치 인코더 CLI.
+- `ros2_ws/src/draco_tools/draco_tools/cli/__init__.py` — Console entry points for draco_tools.
+- `ros2_ws/src/draco_tools/draco_tools/cli/encode_ply_to_draco.py` — Batch encoder CLI that reuses shared core helpers.
 
 - **core**
-- `ros2_ws/src/draco_tools/draco_tools/core/__init__.py` — Draco 도구 전반에서 공유하는 핵심 헬퍼.
-- `ros2_ws/src/draco_tools/draco_tools/core/encoder.py` — 공유 Draco 인코더 헬퍼와 CLI 바인딩을 노출하는 호환 계층.
+- `ros2_ws/src/draco_tools/draco_tools/core/__init__.py` — Core helpers shared across Draco tooling.
+- `ros2_ws/src/draco_tools/draco_tools/core/encoder.py` — Compatibility layer exposing shared Draco encoder helpers and CLI bindings.
 
 ### slam_stream_bridge
 
 - **launch**
-- `ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/bringup.launch.py` — 모듈 주석 없음
-- `ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/hdl_graph_slam_stream.launch.py` — 모듈 주석 없음
-- `ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/rtabmap_stream.launch.py` — 모듈 주석 없음
+- `ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/bringup.launch.py` — No module docstring
+- `ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/hdl_graph_slam_stream.launch.py` — No module docstring
+- `ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/rtabmap_stream.launch.py` — No module docstring
 <!-- AUTODOC:MODULE_MAP:END -->

@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Mapping
+
+
+_LEGACY_DIR = Path(__file__).resolve().parents[1] / "legacy" / "diagrams"
+
+
+def _read_legacy(name: str) -> str:
+    path = _LEGACY_DIR / name
+    return path.read_text(encoding="utf-8").strip()
 
 
 def render_control_state_diagram(transitions: Mapping[object, tuple[object, ...]]) -> str:
@@ -22,23 +31,40 @@ def render_control_state_diagram(transitions: Mapping[object, tuple[object, ...]
     return "\n".join(lines)
 
 
-def render_e2e_sequence() -> str:
+def render_e2e_sequence_simple() -> str:
     lines = [
         "sequenceDiagram",
-        "  participant Capture as Capture Thread",
-        "  participant Encode as Draco Encoder",
-        "  participant Tx as TCP Sender",
-        "  participant Rx as TCP Receiver",
-        "  participant Decode as Draco Decoder",
-        "  participant Publish as ROS Publisher",
-        "  Capture->>Encode: FrameHandle + metadata",
-        "  Encode->>Tx: DATA[FrameHeader+DataHeader+Draco payload]",
-        "  Tx-->>Rx: TCP stream (DATA frames)",
-        "  Rx->>Decode: Draco payload (fragment reassembly)",
-        "  Decode->>Publish: PointCloud2 + metrics",
-        "  Publish-->>Tx: compose_response_payload()",
-        "  Tx-->>Rx: CONTROL ACK/EOF/Error (ControlPlane)",
-        "  Rx-->>Tx: HEARTBEAT / ACK for flow control",
-        "  Tx->>Capture: backpressure via max_inflight",
+        "  participant Sensor as LiDAR Sensor",
+        "  participant Encoder as Draco Encoder",
+        "  participant Sender as TCP Sender",
+        "  participant Bridge as ROS 2 Bridge",
+        "  Sensor->>Encoder: Capture frame",
+        "  Encoder->>Sender: Compressed Draco payload",
+        "  Sender-->>Bridge: TCP DATA stream",
+        "  Bridge->>Bridge: Decode + build PointCloud2",
+        "  Bridge-->>Sender: ACK / flow control",
     ]
     return "\n".join(lines)
+
+
+def render_e2e_sequence_detailed() -> str:
+    return _read_legacy("legacy_e2e_roundtrip_sequence.mmd")
+
+
+def render_tcp_control_plane_sequence_simple() -> str:
+    lines = [
+        "sequenceDiagram",
+        "  participant Sender as TCP Sender",
+        "  participant Receiver as TCP Receiver",
+        "  participant Control as Control Plane",
+        "  Sender->>Receiver: DATA frame",
+        "  Receiver-->>Sender: ACK (window update)",
+        "  Control-->>Sender: Heartbeat timer",
+        "  Sender-->>Control: EOF / Error signal",
+        "  Control-->>Receiver: Close stream on EOF",
+    ]
+    return "\n".join(lines)
+
+
+def render_tcp_control_plane_sequence_detailed() -> str:
+    return _read_legacy("legacy_tcp_control_plane_sequence.mmd")

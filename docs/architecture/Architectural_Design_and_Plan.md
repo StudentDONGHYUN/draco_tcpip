@@ -62,27 +62,9 @@ _마지막 업데이트: 2025-03-15_
 [비동기 파이프라인 설계](../designs/async_pipeline_design.md), [제어 플레인 계약](../contracts/control_plane_contract.md), [코드베이스 개요](../references/codebase_overview.md)도 참고하십시오.
 
 ### 자동 생성 시퀀스
-<!-- AUTODOC:E2E_SEQUENCE:BEGIN -->
-```mermaid
-sequenceDiagram
-  participant Capture as 캡처 스레드
-  participant Encode as Draco 인코더
-  participant Tx as TCP 송신기
-  participant Rx as TCP 수신기
-  participant Decode as Draco 디코더
-  participant Publish as ROS 퍼블리셔
-  Capture->>Encode: FrameHandle + 메타데이터
-  Encode->>Tx: DATA[FrameHeader+DataHeader+Draco payload]
-  Tx-->>Rx: TCP 스트림(DATA 프레임)
-  Rx->>Decode: Draco payload(조각 재조립)
-  Decode->>Publish: PointCloud2 + 지표
-  Publish-->>Tx: compose_response_payload()
-  Tx-->>Rx: CONTROL ACK/EOF/Error(ControlPlane)
-  Rx-->>Tx: HEARTBEAT / ACK (흐름 제어)
-  Tx->>Capture: max_inflight 기반 백프레셔
-```
-<!-- AUTODOC:E2E_SEQUENCE:END -->
 
+<!-- AUTODOC:E2E_SEQUENCE -->
+<!-- AUTODOC:E2E_SEQUENCE:BEGIN -->
 ```mermaid
 sequenceDiagram
     title Draco TCP/IP 라운드트립 — 엔드투엔드 데이터 흐름
@@ -94,8 +76,8 @@ sequenceDiagram
     participant DEC as Draco 디코더 (프로세스)
     participant ROS as ROS 2 토픽(/stream_pair/decoded)
 
-    %% 데이터 채널은 바이너리 프레이밍을 사용하고, 제어 채널은 ACK/HEARTBEAT/EOF를 운반합니다.
-    %% 큐는 모두 제한되어 있으며 TX 경로는 max_inflight를 준수합니다.
+    %% 데이터 채널은 바이너리 프레이밍을 사용하며, 제어 채널은 ACK/HEARTBEAT/EOF를 운반합니다.
+    %% 큐는 모두 제한되어 있고 TX 경로는 max_inflight를 준수합니다.
 
     U->>SRV: 서버 시작(리스닝)
     U->>CLI: 클라이언트 시작
@@ -108,61 +90,24 @@ sequenceDiagram
 
     ENC-->>CLI: 인코딩된 바이트
     CLI->>SRV: TCP로 프레이밍된 DATA 전송(바이너리 프로토콜)
-    Note right of CLI: 네트워크 큐(제한)\nmax_inflight를 갖는 TX 루프
+    Note right of CLI: 네트워크 큐(제한)
+max_inflight를 갖는 TX 루프
 
-    SRV-->>CLI: 제어 채널로 ACK(seq)
+    SRV-->>CLI: 제어 채널 ACK(seq)
     Note right of CLI: in_flight -= 1
 
     SRV->>DEC: Draco → PLY 디코딩
     Note right of DEC: 외부 프로세스 호출
 
-    DEC-->>SRV: 디코드된 포인트 클라우드
+    DEC-->>SRV: 디코드된 클라우드(PLY/PCD)
     SRV-->>ROS: 디코드된 클라우드 게시
 
     SRV-->>CLI: (선택) 프레임별 지표/요약
 
     %% 정상 종료
     CLI-->>SRV: EOF(제어 채널)
-    SRV-->>CLI: pending=0 이후 EOF
+    SRV-->>CLI: EOF(pending=0 이후)
     SRV-xROS: 세션 종료
-    CLI-xBAG: 캡처 중단 및 세션 종료
+    CLI-xBAG: 캡처 종료 및 세션 종료
 ```
-
-```mermaid
-sequenceDiagram
-    title Draco TCP/IP 라운드트립 — TCP 제어 플레인
-    participant CLI as StreamClient
-    participant SRV as StreamServer
-
-    %% 제어 플레인 종류: ACK(0x01), HEARTBEAT(0x02), EOF(0x03), ERROR(0x04)
-    %% 계약에 따라 데이터와 제어 채널을 분리합니다.
-
-    rect rgb(245,245,245)
-      CLI->>SRV: TCP 연결(데이터)
-      CLI-->>SRV: (선택) TCP 연결(제어)
-    end
-
-    par 스트리밍
-      CLI->>SRV: DATA 프레임(seq=1)  %% 데이터 채널
-      SRV-->>CLI: ACK(seq=1)          %% 제어 채널
-      Note right of CLI: in_flight ≤ max_inflight\nACK가 슬롯을 해제
-
-      CLI->>SRV: DATA 프레임(seq=2)
-      SRV-->>CLI: ACK(seq=2)
-      CLI->>SRV: DATA 프레임(seq=3)
-      SRV-->>CLI: ACK(seq=3)
-    and 하트비트
-      loop 유휴
-        SRV-->>CLI: HEARTBEAT
-      end
-    end
-
-    opt 오류 경로
-      SRV-->>CLI: ERROR(code, reason)
-      CLI->>SRV: 세션 종료 절차
-    end
-
-    CLI-->>SRV: EOF(pending=0 확인 후)
-    SRV-->>CLI: EOF 응답
-    CLI-xSRV: 연결 종료
-```
+<!-- AUTODOC:E2E_SEQUENCE:END -->

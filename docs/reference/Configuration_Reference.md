@@ -75,9 +75,9 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 
 ## 자동 생성 구성 매트릭스
 <!-- AUTODOC:CONFIG_KEYS:BEGIN -->
-### CLI 플래그
+### CLI Flags
 
-| 명령 | 플래그 | 유형 | 기본값 | 필수 여부 | 설명 | 소스 |
+| Command | Flag | Type | Default | Required | Description | Source |
 | - | - | - | - | - | - | - |
 | encode_ply_to_draco | --in | str | ./ply_raw | no | 입력 PLY 디렉터리 (기본: ./ply_raw) | ros2_ws/src/draco_tools/draco_tools/cli/encode_ply_to_draco.py:26 |
 | encode_ply_to_draco | --log-csv | str |  | no | 프레임별 인코드 시간 로그 CSV | ros2_ws/src/draco_tools/draco_tools/cli/encode_ply_to_draco.py:39 |
@@ -92,84 +92,84 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | offline_pipeline | --bag-warmup-sec | float | 0.0 | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:181 |
 | offline_pipeline | --best-effort | bool | False | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:192 |
 | offline_pipeline | --cl | int | DEFAULT_CL | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:199 |
-| offline_pipeline | --data-root | str |  | no | 생성된 아티팩트 기본 디렉터리(프로파일/데이터 루트를 덮어씀) | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:188 |
-| offline_pipeline | --decoded-dir | str |  | no | 임시 디코드 디렉터리 덮어쓰기 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:211 |
+| offline_pipeline | --data-root | str |  | no | Base directory for generated artifacts (overrides profile/data root) | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:188 |
+| offline_pipeline | --decoded-dir | str |  | no | Override decoded temporary directory | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:211 |
 | offline_pipeline | --decoder | str | draco_decoder | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:204 |
-| offline_pipeline | --drc-dir | str |  | no | Draco 출력 디렉터리 덮어쓰기 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:209 |
+| offline_pipeline | --drc-dir | str |  | no | Override Draco output directory | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:209 |
 | offline_pipeline | --encoder-extra | str | [] | no | draco_encoder에 넘길 추가 인자 문자열 (예: '--speed 10') | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:233 |
 | offline_pipeline | --fast-preset | bool | False | no | 30FPS 목표용 빠른 설정 적용 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:235 |
 | offline_pipeline | --force-tqdm | bool | False | no | QA 단계(analyze_draco_quality.py)에서 tqdm 강제 표시 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:239 |
 | offline_pipeline | --jobs | int | 1 | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:202 |
 | offline_pipeline | --keep-decoded | bool | False | no | QA 단계에서 디코드 PLY를 삭제하지 않음 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:223 |
-| offline_pipeline | --layout-profile | str |  | no | 디렉터리 해석에 사용할 레이아웃 프로파일 이름 또는 경로 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:186 |
+| offline_pipeline | --layout-profile | str |  | no | Name or path of a layout profile for directories | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:186 |
 | offline_pipeline | --max-frames | int | 0 | no | 0=무제한 (bag 끝날 때까지) | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:190 |
 | offline_pipeline | --no-qa | bool | False | no | 품질 분석 단계 생략 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:236 |
-| offline_pipeline | --ply-dir | str |  | no | 원본 PLY 출력 디렉터리 덮어쓰기 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:207 |
+| offline_pipeline | --ply-dir | str |  | no | Override raw PLY output directory | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:207 |
 | offline_pipeline | --prefix | str |  | yes |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:185 |
 | offline_pipeline | --qg | int | DEFAULT_QG | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:201 |
 | offline_pipeline | --qp | int | DEFAULT_QP | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:200 |
-| offline_pipeline | --results-dir | str |  | no | 결과 집계 디렉터리 덮어쓰기 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:213 |
+| offline_pipeline | --results-dir | str |  | no | Override aggregated results directory | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:213 |
 | offline_pipeline | --reuse-drc | bool | False | no | 기존 DRC를 재사용(재인코딩 생략) | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:224 |
 | offline_pipeline | --rmw-impl | str |  | no | 하위 프로세스에 전달할 RMW_IMPLEMENTATION 덮어쓰기 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:218 |
 | offline_pipeline | --ros-domain-id | int |  | no | 하위 프로세스에 전달할 ROS_DOMAIN_ID 덮어쓰기 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:216 |
 | offline_pipeline | --ros-localhost-only | str |  | no | 하위 프로세스에 전달할 ROS_LOCALHOST_ONLY 값 Choices: 0, 1 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:220 |
-| offline_pipeline | --saver-timeout | float | 180.0 | no | bag_to_ply 단계의 전체 타임아웃(초). 0은 비활성 | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:227 |
-| offline_pipeline | --saver-voxel-size | float | 0.0 | no | bag_to_ply 복셀 다운샘플 크기(m) | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:225 |
+| offline_pipeline | --saver-timeout | float | 180.0 | no | Global timeout (seconds) for bag_to_ply stage; 0 disables | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:227 |
+| offline_pipeline | --saver-voxel-size | float | 0.0 | no | bag_to_ply voxel downsample 크기(m) | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:225 |
 | offline_pipeline | --thresholds | float | [0.01, 0.03, 0.05] | no |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:203 |
 | offline_pipeline | --topic | str |  | yes |  | ros2_ws/src/draco_tools/draco_tools/offline_pipeline.py:184 |
-| stream_client | --ack-timeout | float | 0.5 | no | 적응 조정 이전의 기본 ACK 타임아웃(초, 최소값) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1807 |
-| stream_client | --ack-timeout-max | float | 2.0 | no | 적응형 ACK 타임아웃 상한(초) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1819 |
-| stream_client | --ack-timeout-min | float | 0.5 | no | 적응형 ACK 타임아웃 하한(초) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1813 |
-| stream_client | --ack-timeout-strikes | int | 3 | no | 세션 실패 전 허용할 연속 ACK 타임아웃 횟수 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1825 |
-| stream_client | --adaptive-window | bool | False | no | RTT/처리량 기반 TX 윈도 적응 기능 활성화 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1801 |
-| stream_client | --bag | str |  | yes |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1728 |
-| stream_client | --best-effort | bool | False | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1752 |
-| stream_client | --capture-queue | int | 4 | no | 백프레셔를 적용하기 전 허용되는 최대 캡처 큐 깊이 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1831 |
-| stream_client | --capture-transport | str | shared-memory | no | 캡처 백엔드 선택: 파일 시스템 스풀(레거시) 또는 공유 메모리 제로카피 (선택지: filesystem, shared-memory) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1844 |
-| stream_client | --control-port | int | 0 | no | 전용 제어 플레인 연결을 위한 TCP 포트(0은 비활성) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1765 |
-| stream_client | --data-root | str |  | no | 생성된 아티팩트 기본 디렉터리(프로파일/데이터 루트를 덮어씀) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1733 |
-| stream_client | --decoded-dir | str |  | no | 서버에서 받은 디코드 프레임 저장 디렉터리 덮어쓰기 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1755 |
-| stream_client | --encode-workers | int | 2 | no | 비동기 파이프라인 인코더 워커 수 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1833 |
-| stream_client | --heartbeat-timeout | float | 10.0 | no | 해당 시간(초) 동안 ACK/하트비트가 없으면 세션 실패 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1805 |
-| stream_client | --idle-timeout | float | 10.0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1750 |
-| stream_client | --initial-inflight | int |  | no | 적응 제어가 조정하기 전 초기 TX 윈도(기본은 최대) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1799 |
-| stream_client | --layout-profile | str |  | no | 레이아웃 프로파일 이름 또는 경로(configs/*.profile.{yaml,json}) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1731 |
-| stream_client | --max-frames | int | 0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1751 |
-| stream_client | --max-inflight, --max-pending | int | 4 | no | ACK/디코드 응답을 기다리는 최대 동시 프레임 수 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1797 |
-| stream_client | --metrics-out, --telemetry-out | str | artifacts/perf/client_latest.json | no | 텔레메트리 JSON 출력 경로 (스키마 준수). | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1848 |
-| stream_client | --metrics-sample | int | 50000 | no | 클라이언트 메트릭 계산에 사용할 최대 포인트 수(0은 전체 사용) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1771 |
-| stream_client | --no-save-decoded | bool | False | no | 서버에서 받은 디코드 응답을 디스크에 저장하지 않음 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1761 |
-| stream_client | --play-frame-id | str | lidar_link | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1767 |
-| stream_client | --play-hz | float | 10.0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1769 |
-| stream_client | --play-sample | int | 50000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1770 |
-| stream_client | --play-topic-prefix | str | stream_pair | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1768 |
-| stream_client | --ply-dir | str |  | no | 캡처한 PLY 스풀 디렉터리 덮어쓰기 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1735 |
-| stream_client | --prefix | str |  | yes |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1730 |
-| stream_client | --print-metrics | bool | False | no | 재생 중 프레임별 지연/정확도 메트릭을 표준 출력으로 송출 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1855 |
-| stream_client | --protocol | str | binary | no | 사용할 프레이밍 프로토콜(기본: %(default)s). `protocol_help`에서 제공하는 설명과 함께 선택지를 나열 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1780 |
-| stream_client | --qos-override | str |  | no | QoS 프로파일 파일 덮어쓰기(기본은 레이아웃 프로파일 또는 패키지 설정) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1775 |
-| stream_client | --quality-report-dir | str | artifacts/quality | no | 프레임별 품질 JSONL 보고서를 저장할 디렉터리 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1759 |
-| stream_client | --quality-thresholds | str | {} | no | 품질 메트릭 허용 최대 편차를 정의하는 JSON 객체(비어 있으면 정보용) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1757 |
-| stream_client | --resp-format | str | ply | no | 서버가 반환하는 디코드 페이로드 형식(기본: %(default)s) 선택지: ply, pcd | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1773 |
-| stream_client | --server-host | str | 127.0.0.1 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1763 |
-| stream_client | --server-port | int | 5000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1764 |
-| stream_client | --socket-buffer-autotune | bool | False | no | 커널 소켓 버퍼 자동 튜닝을 요청한다 (SO_SNDBUF/SO_RCVBUF=0). | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1839 |
-| stream_client | --socket-buffer-kb | int | 0 | no | 고속 링크 포화를 위해 소켓 송수신 버퍼 크기(KiB) 조정 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1837 |
-| stream_client | --socket-timeout | float | 15.0 | no | 소켓 연산 타임아웃(초). 0은 보호 기능 비활성 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1777 |
-| stream_client | --spool-gc-window | int | 0 | no | 파일 시스템 스풀 스캔 시 기억할 최대 항목 수(0은 무제한) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1737 |
-| stream_client | --tcp-nodelay | bool | False | no | 대화형 재생 지연을 줄이기 위해 Nagle 집계를 비활성 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1835 |
-| stream_client | --topic | str |  | yes |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1729 |
-| stream_client | --transport | str | tcp | no | Transport layer for data plane. tcp만 구현되어 있으며 quic/udp_fec는 예약 상태입니다. Choices: tcp, quic, udp_fec | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1785 |
-| stream_client | --tx-fragment-size | int | 0 | no | Binary 프로토콜에서 payload를 MTU 안전 조각으로 분할한다 (0은 비활성). | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1791 |
-| stream_client | --window-ema-alpha | float | 0.2 | no | 적응형 윈도 텔레메트리 EMA 평활 계수(0–1) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1803 |
-| stream_client | --work-dir | str |  | no | 인코더 임시 데이터 디렉터리 덮어쓰기 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1753 |
-| stream_collect_logs | --attach | str | [] | no | artifacts/에 추가로 복사할 파일 또는 디렉터리 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:84 |
-| stream_collect_logs | --data-root | str |  | no | 데이터 루트를 덮어쓰기 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:81 |
-| stream_collect_logs | --layout-profile | str |  | no | 디렉터리를 해석할 때 사용할 레이아웃 프로파일 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:80 |
-| stream_collect_logs | --metadata | str | [] | no | 매니페스트에 기록할 키=값 메타데이터 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:82 |
-| stream_collect_logs | --notes | str |  | no | notes/README.txt에 기록할 자유 형식 노트 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:85 |
-| stream_collect_logs | --ros-log | str | [] | no | 보관할 ROS 로그 디렉터리 경로 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:83 |
-| stream_collect_logs | run_id | str |  | no | 실험 실행 식별자(디렉터리 이름으로 사용) | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:79 |
+| stream_client | --ack-timeout | float | 0.5 | no | Base ACK timeout in seconds before adaptive adjustments (minimum clamp) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2248 |
+| stream_client | --ack-timeout-max | float | 2.0 | no | Upper bound for adaptive ACK timeout (seconds) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2260 |
+| stream_client | --ack-timeout-min | float | 0.5 | no | Lower bound for adaptive ACK timeout (seconds) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2254 |
+| stream_client | --ack-timeout-strikes | int | 3 | no | Number of consecutive ACK timeout strikes before failing the session | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2266 |
+| stream_client | --adaptive-window | bool | False | no | Enable RTT/throughput based TX window adaptation | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2231 |
+| stream_client | --bag | str |  | yes |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2103 |
+| stream_client | --best-effort | bool | False | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2136 |
+| stream_client | --capture-queue | int | 4 | no | Maximum capture queue depth before applying backpressure | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2272 |
+| stream_client | --capture-transport | str | shared-memory | no | Frame capture backend: filesystem spool (legacy) or shared-memory zero copy Choices: filesystem, shared-memory | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2300 |
+| stream_client | --control-port | int | 0 | no | Optional TCP port for a dedicated control-plane connection (0 disables) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2164 |
+| stream_client | --data-root | str |  | no | Base directory for generated artifacts (overrides profile/data root) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2111 |
+| stream_client | --decoded-dir | str |  | no | Override directory where decoded frames from the server are stored | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2142 |
+| stream_client | --encode-workers | int | 2 | no | Number of concurrent encoder workers for the async pipeline | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2278 |
+| stream_client | --heartbeat-timeout | float | 10.0 | no | Fail the session if no ACK/heartbeat is observed within this many seconds | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2242 |
+| stream_client | --idle-timeout | float | 10.0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2134 |
+| stream_client | --initial-inflight | int |  | no | Initial TX window before adaptive control adjusts it (defaults to max) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2225 |
+| stream_client | --layout-profile | str |  | no | Name or path of a layout profile (configs/*.profile.{yaml,json}) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2106 |
+| stream_client | --max-frames | int | 0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2135 |
+| stream_client | --max-inflight, --max-pending | int | 4 | no | Upper bound on in-flight frames awaiting ACK/decoded replies | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2217 |
+| stream_client | --metrics-out, --telemetry-out | str | artifacts/perf/client_latest.json | no | 텔레메트리 JSON 출력 경로 (스키마 준수). | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2306 |
+| stream_client | --metrics-sample | int | 50000 | no | Maximum number of points sampled for client-side metrics (0 means use all points) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2174 |
+| stream_client | --no-save-decoded | bool | False | no | Do not persist decoded responses from the server to disk | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2157 |
+| stream_client | --play-frame-id | str | lidar_link | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2170 |
+| stream_client | --play-hz | float | 10.0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2172 |
+| stream_client | --play-sample | int | 50000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2173 |
+| stream_client | --play-topic-prefix | str | stream_pair | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2171 |
+| stream_client | --ply-dir | str |  | no | Override the spool directory for captured PLY frames | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2116 |
+| stream_client | --prefix | str |  | yes |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2105 |
+| stream_client | --print-metrics | bool | False | no | Stream per-frame latency/accuracy metrics to stdout during playback | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2313 |
+| stream_client | --protocol | str | binary | no | 'Framing protocol to use (default: %(default)s). Options: ' + ', '.join((f'{name}={desc}' for name, desc in protocol_help.items())) Choices: sorted(protocol_help.keys()) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2198 |
+| stream_client | --qos-override | str |  | no | Override QoS profile file. Defaults to layout profile or package configs | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2186 |
+| stream_client | --quality-report-dir | str | artifacts/quality | no | Directory where per-frame quality JSONL reports are written | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2152 |
+| stream_client | --quality-thresholds | str | {} | no | JSON object describing max deltas for quality metrics (empty for informational only) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2147 |
+| stream_client | --resp-format | str | ply | no | Expected format for decoded payloads returned by the server (default: %(default)s) Choices: ply, pcd | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2180 |
+| stream_client | --server-host | str | 127.0.0.1 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2162 |
+| stream_client | --server-port | int | 5000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2163 |
+| stream_client | --socket-buffer-autotune | bool | False | no | 커널 소켓 버퍼 자동 튜닝을 요청한다 (SO_SNDBUF/SO_RCVBUF=0). | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2295 |
+| stream_client | --socket-buffer-kb | int | 0 | no | Resize socket send/receive buffers (KiB) to better saturate fast links | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2289 |
+| stream_client | --socket-timeout | float | 15.0 | no | Timeout (seconds) for socket operations; 0 disables the safeguard | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2191 |
+| stream_client | --spool-gc-window | int | 0 | no | Maximum number of discovered spool files to remember before pruning (0 disables) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2121 |
+| stream_client | --tcp-nodelay | bool | False | no | Disable Nagle aggregation to reduce latency for interactive playback | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2284 |
+| stream_client | --topic | str |  | yes |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2104 |
+| stream_client | --transport | str | tcp | no | Transport layer for data plane. tcp만 구현되어 있으며 quic/udp_fec는 예약 상태입니다. Choices: tcp, quic, udp_fec | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2205 |
+| stream_client | --tx-fragment-size | int | 0 | no | Binary 프로토콜에서 payload를 MTU 안전 조각으로 분할한다 (0은 비활성). | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2211 |
+| stream_client | --window-ema-alpha | float | 0.2 | no | EMA smoothing factor for adaptive window telemetry (0-1) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2236 |
+| stream_client | --work-dir | str |  | no | Override temporary directory for encoder scratch data | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2137 |
+| stream_collect_logs | --attach | str | [] | no | Additional files or directories to copy into artifacts/ | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:84 |
+| stream_collect_logs | --data-root | str |  | no | Override base data root | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:81 |
+| stream_collect_logs | --layout-profile | str |  | no | Layout profile used to resolve directories | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:80 |
+| stream_collect_logs | --metadata | str | [] | no | Key=Value metadata to record in the manifest | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:82 |
+| stream_collect_logs | --notes | str |  | no | Free-form note written into notes/README.txt | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:85 |
+| stream_collect_logs | --ros-log | str | [] | no | Path(s) to ROS log directories to archive | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:83 |
+| stream_collect_logs | run_id | str |  | no | Identifier for the experiment run (used as directory name) | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/log_collection.py:79 |
 | stream_monitor | --decoded-dir | str | data/tmp_decoded_ply | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py:47 |
 | stream_monitor | --decoded-suffix | str | .decoded.ply | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py:50 |
 | stream_monitor | --frame-id | str | lidar_link | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py:52 |
@@ -181,14 +181,14 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | stream_monitor | --prefix | str | sample2 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py:48 |
 | stream_monitor | --sample | int | 50000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py:56 |
 | stream_monitor | --topic-prefix | str | sample2_pair | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/monitor.py:53 |
-| stream_netem | --clear | bool | False | no | 선택한 프로파일을 적용하기 전에 기존 netem qdisc 제거 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:147 |
-| stream_netem | --config | str |  | no | netem 프로파일 파일 경로 덮어쓰기 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:145 |
-| stream_netem | --dry-run | bool | False | no | 명령을 실행하지 않고 출력만 표시 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:146 |
-| stream_netem | --iface | str | lo | no | 설정할 네트워크 인터페이스(기본: loopback) | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:144 |
-| stream_netem | profile | str |  | no | 적용할 프로파일 이름 또는 `list`로 목록 조회 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:143 |
+| stream_netem | --clear | bool | False | no | Remove existing netem qdisc before applying the selected profile | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:147 |
+| stream_netem | --config | str |  | no | Override path to netem profiles file | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:145 |
+| stream_netem | --dry-run | bool | False | no | Print commands without executing them | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:146 |
+| stream_netem | --iface | str | lo | no | Network interface to configure (default: loopback) | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:144 |
+| stream_netem | profile | str |  | no | Name of the profile to apply or 'list' to inspect available profiles | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/netem.py:143 |
 | stream_replay | --decoded-dir | str | data/tmp_decoded_ply | no | 디코드 PLY 디렉토리 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:77 |
 | stream_replay | --decoded-suffix | str | .decoded.ply | no | 디코드 파일 접미사 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:80 |
-| stream_replay | --frame-id | str | map | no | 헤더 frame_id | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:82 |
+| stream_replay | --frame-id | str | map | no | header frame_id | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:82 |
 | stream_replay | --hz | float | 5.0 | no | 재생 속도(Hz) | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:83 |
 | stream_replay | --limit | int | 0 | no | 0=전체, 양수=앞에서 N개만 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:85 |
 | stream_replay | --loop | bool | False | no | 끝나면 처음부터 반복 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:84 |
@@ -196,32 +196,32 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | stream_replay | --orig-suffix | str | .ply | no | 원본 파일 접미사 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:79 |
 | stream_replay | --prefix | str | sample2 | no | 파일 접두어 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:78 |
 | stream_replay | --topic-prefix | str | compare | no | 퍼블리시 토픽 접두어 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:81 |
-| stream_server | --control-port | int | 0 | no | 제어 플레인 메시지용 TCP 포트(0은 비활성) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:316 |
-| stream_server | --decode-timeout | float | 30.0 | no | 외부 도구가 이 타임아웃(초)을 초과하면 디코딩을 실패 처리 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:320 |
-| stream_server | --decode-workers | int | 2 | no | 비동기 파이프라인에서 동시에 실행되는 디코드 워커 수 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:330 |
-| stream_server | --decoder | str |  | no | 사용할 draco_decoder 경로 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:318 |
-| stream_server | --heartbeat-interval | float | 2.0 | no | 제어 플레인 하트비트 전송 간격(초). 0은 keepalive 비활성 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:342 |
-| stream_server | --host | str | 0.0.0.0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:314 |
-| stream_server | --keep-artifacts | bool | False | no | .drc/.ply 디코드 아티팩트를 디버깅용으로 유지(기본은 정리) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:332 |
-| stream_server | --legacy-mode | bool | False | no | 문제 해결을 위해 동기식 레거시 루프로 폴백 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:340 |
-| stream_server | --max-inflight | int | 2 | no | 클라이언트에 백프레셔를 걸기 전 동시에 디코드할 수 있는 최대 프레임 수 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:328 |
-| stream_server | --queue-size | int | 0 | no | 디코드/송신 큐의 최대 대기 길이(0이면 --max-inflight와 동일) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:329 |
-| stream_server | --metrics-sample | int | 50000 | no | 품질 메트릭 계산 시 사용할 최대 포인트 수(0은 샘플링 비활성) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:336 |
-| stream_server | --port | int | 5000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:315 |
-| stream_server | --protocol | str | binary | no | 클라이언트가 사용할 프레이밍 프로토콜(기본: %(default)s). `protocol_help`에서 제공하는 설명과 함께 선택지를 나열 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:345 |
-| stream_server | --resp-format | str | ply | no | 클라이언트에 반환할 디코드 페이로드 형식(기본: %(default)s) 선택지: ply, pcd | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:334 |
-| stream_server | --socket-buffer-kb | int | 0 | no | 고처리량 링크를 위해 소켓 송수신 버퍼 크기(KiB) 조정 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:324 |
-| stream_server | --socket-timeout | float | 30.0 | no | 소켓 연산 타임아웃(초). 0은 보호 기능 비활성 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:326 |
-| stream_server | --tcp-nodelay | bool | False | no | 지연을 줄이기 위해 수락된 소켓에서 Nagle 집계를 비활성 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:322 |
-| stream_server | --work-dir | str | data/server_tmp | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:319 |
-| stream_server | --zero-copy-reply | bool | False | no | 응답 전송 시 복사 오버헤드를 줄이기 위해 디코드된 PLY 페이로드를 메모리 매핑 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:338 |
+| stream_server | --control-port | int | 0 | no | Optional TCP port dedicated to control-plane messages (0 disables) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:400 |
+| stream_server | --decode-timeout | float | 30.0 | no | Fail decoding if the external tool exceeds this timeout (seconds) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:408 |
+| stream_server | --decode-workers | int | 2 | no | Number of concurrent decode workers in the async pipeline | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:443 |
+| stream_server | --decoder | str |  | no | Path to draco_decoder | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:406 |
+| stream_server | --heartbeat-interval | float | 2.0 | no | Interval (seconds) for control-plane heartbeat messages; 0 disables keepalive | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:476 |
+| stream_server | --host | str | 0.0.0.0 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:398 |
+| stream_server | --keep-artifacts | bool | False | no | Retain .drc/.ply decode artifacts for debugging (default cleans up) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:449 |
+| stream_server | --legacy-mode | bool | False | no | Fallback to the synchronous legacy loop for troubleshooting | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:471 |
+| stream_server | --max-inflight | int | 2 | no | Maximum number of frames to decode concurrently before backpressuring the client | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:431 |
+| stream_server | --metrics-sample | int | 50000 | no | Maximum number of points sampled when computing quality metrics (0 disables sampling) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:460 |
+| stream_server | --port | int | 5000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:399 |
+| stream_server | --protocol | str | binary | no | 'Framing protocol expected from clients (default: %(default)s). Options: ' + ', '.join((f'{name}={desc}' for name, desc in protocol_help.items())) Choices: sorted(protocol_help.keys()) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:483 |
+| stream_server | --queue-size | int | 0 | no | Maximum server queue depth before applying backpressure (0 uses --max-inflight) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:437 |
+| stream_server | --resp-format | str | ply | no | Format used for decoded payloads returned to the client (default: %(default)s) Choices: ply, pcd | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:454 |
+| stream_server | --socket-buffer-kb | int | 0 | no | Resize socket send/receive buffers (KiB) for high-throughput links | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:419 |
+| stream_server | --socket-timeout | float | 30.0 | no | Timeout (seconds) for socket operations; 0 disables the safeguard | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:425 |
+| stream_server | --tcp-nodelay | bool | False | no | Disable Nagle aggregation on accepted sockets for lower latency | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:414 |
+| stream_server | --work-dir | str | data/server_tmp | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:407 |
+| stream_server | --zero-copy-reply | bool | False | no | Memory-map decoded PLY payloads to reduce copy overhead when sending replies | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:466 |
 
-### 구성 파일
+### Configuration Files
 
-| 키 | 기본값/값 | 소스 | 컨텍스트 |
+| Key | Default/Value | Source | Context |
 | - | - | - | - |
 | data_root | ./data | configs/client.profile.yaml | profile |
-| description | 루프백 TCP 서버에서 로컬 rosbag 재생 | configs/client.profile.yaml | profile |
+| description | Local rosbag playback with loopback TCP server | configs/client.profile.yaml | profile |
 | directories.client_work | client_tmp | configs/client.profile.yaml | profile |
 | directories.decoded_from_server | decoded_from_server | configs/client.profile.yaml | profile |
 | directories.ply_stream | ply_stream | configs/client.profile.yaml | profile |
@@ -239,7 +239,7 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | encoder.quantization_bits.position | 14 | configs/draco.json | profile |
 | encoder.speed.decoding | 5 | configs/draco.json | profile |
 | encoder.speed.encoding | 5 | configs/draco.json | profile |
-| notes | draco_tools.core.encoder.resolve_encoder_options 기본값과 동일하게 구성 | configs/draco.json | profile |
+| notes | Values mirror the defaults used by draco_tools.core.encoder.resolve_encoder_options | configs/draco.json | profile |
 | base_frame_id | lidar_link | configs/hdl_graph_slam_stream.yaml | profile |
 | downsample_method | VoxelGrid | configs/hdl_graph_slam_stream.yaml | profile |
 | imu_topic |  | configs/hdl_graph_slam_stream.yaml | profile |
@@ -269,20 +269,20 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | use_reflectance | False | configs/hdl_graph_slam_stream.yaml | profile |
 | voxel_leaf_size | 0.2 | configs/hdl_graph_slam_stream.yaml | profile |
 | profiles.clear.clear | True | configs/netem.profiles.yaml | profile |
-| profiles.clear.description | 기존 qdisc 항목 제거 | configs/netem.profiles.yaml | profile |
-| profiles.loopback.description | 트래픽 셰이핑 없음. 순수 처리량 벤치마크에 사용 | configs/netem.profiles.yaml | profile |
+| profiles.clear.description | Remove existing qdisc entries | configs/netem.profiles.yaml | profile |
+| profiles.loopback.description | No shaping; use when benchmarking raw throughput | configs/netem.profiles.yaml | profile |
 | profiles.lte_nominal.delay | 60ms | configs/netem.profiles.yaml | profile |
-| profiles.lte_nominal.description | 표준 LTE 업링크 조건 | configs/netem.profiles.yaml | profile |
+| profiles.lte_nominal.description | Nominal LTE uplink | configs/netem.profiles.yaml | profile |
 | profiles.lte_nominal.jitter | 20ms | configs/netem.profiles.yaml | profile |
 | profiles.lte_nominal.loss | 0.2% | configs/netem.profiles.yaml | profile |
 | profiles.lte_nominal.rate | 18mbit | configs/netem.profiles.yaml | profile |
 | profiles.satellite_demo.delay | 550ms | configs/netem.profiles.yaml | profile |
-| profiles.satellite_demo.description | 부하 시험용 고지연 위성 구간 | configs/netem.profiles.yaml | profile |
+| profiles.satellite_demo.description | High-latency satellite hop used for stress testing | configs/netem.profiles.yaml | profile |
 | profiles.satellite_demo.jitter | 120ms | configs/netem.profiles.yaml | profile |
 | profiles.satellite_demo.loss | 1.2% | configs/netem.profiles.yaml | profile |
 | profiles.satellite_demo.rate | 8mbit | configs/netem.profiles.yaml | profile |
 | profiles.wifi_dense.delay | 45ms | configs/netem.profiles.yaml | profile |
-| profiles.wifi_dense.description | 혼잡한 Wi-Fi 환경(중간 수준 패킷 손실) | configs/netem.profiles.yaml | profile |
+| profiles.wifi_dense.description | Congested Wi-Fi with modest packet loss | configs/netem.profiles.yaml | profile |
 | profiles.wifi_dense.jitter | 15ms | configs/netem.profiles.yaml | profile |
 | profiles.wifi_dense.loss | 0.5% | configs/netem.profiles.yaml | profile |
 | profiles.wifi_dense.rate | 35mbit | configs/netem.profiles.yaml | profile |
@@ -363,7 +363,7 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 
 ### Environment Variables
 
-| 환경 변수 | 기본값 | 소스 | 비고 |
+| Environment Variable | Default | Source | Notes |
 | - | - | - | - |
 | DRACO_CONFIG_ROOT |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/config.py:113 | dict.get |
 | DRACO_DATA_ROOT |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/config.py:259 | dict.get |

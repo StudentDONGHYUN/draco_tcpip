@@ -1,13 +1,13 @@
 stateDiagram-v2
   [*] --> INIT
-  INIT --> HANDSHAKING: on_connected() 호출
+  INIT --> HANDSHAKING: on_connected()
   HANDSHAKING --> STREAMING: on_first_data() / on_heartbeat()
   STREAMING --> DRAINING: on_eof_sent() / on_eof_received()
-  DRAINING --> TERMINATED: on_ack() && pending 없음
-  STREAMING --> FAILED: on_error() / 하트비트 타임아웃
+  DRAINING --> TERMINATED: on_ack() with no pending
+  STREAMING --> FAILED: on_error() / heartbeat timeout
   DRAINING --> FAILED: on_error()
   HANDSHAKING --> FAILED: on_error()
   TERMINATED --> [*]
   FAILED --> [*]
-  STREAMING --> STREAMING: on_frame_sent() / ACK 대기
-  DRAINING --> DRAINING: 남은 ACK 처리
+  STREAMING --> STREAMING: on_frame_sent() / ACK pending
+  DRAINING --> DRAINING: pending ACKs remain

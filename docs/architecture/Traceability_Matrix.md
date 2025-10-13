@@ -19,10 +19,10 @@ _마지막 업데이트: 2025-03-15_
 
 ## 자동 생성 요구사항 매핑
 <!-- AUTODOC:TRACEABILITY:BEGIN -->
-| 요구사항 | 원본 | 구현 | 검증 | 문서 |
+| Requirement | Source | Implementation | Verification | Documentation |
 | - | - | - | - | - |
-| RQ-CP-001 | 프로토콜 및 스키마 참조에 정의된 제어 플레인 상태 기계 | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/stream_protocol.py | tests/unit/test_protocol_integration.py | docs/reference/Protocol_and_Schema_Reference.md |
-| RQ-DATA-001 | 바이너리 프레임 헤더 레이아웃 | ros2_ws/src/draco_roundtrip/draco_roundtrip/protocol/header.py | tests/unit/test_protocol_header.py | docs/reference/Protocol_and_Schema_Reference.md |
-| RQ-CLI-001 | 구성 참조 CLI 매트릭스 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py | tests/unit/test_window_enforcement.py | docs/reference/Configuration_Reference.md |
-| RQ-TEL-001 | 텔레메트리 스키마 JSON | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py | tests/unit/test_telemetry_minimal.py | docs/reference/Protocol_and_Schema_Reference.md |
+| RQ-CP-001 | Control-plane state machine defined in Protocol and Schema Reference | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/stream_protocol.py | tests/unit/test_protocol_integration.py | docs/reference/Protocol_and_Schema_Reference.md |
+| RQ-DATA-001 | Binary frame header layout | ros2_ws/src/draco_roundtrip/draco_roundtrip/protocol/header.py | tests/unit/test_protocol_header.py | docs/reference/Protocol_and_Schema_Reference.md |
+| RQ-CLI-001 | Configuration Reference CLI matrix | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py | tests/unit/test_window_enforcement.py | docs/reference/Configuration_Reference.md |
+| RQ-TEL-001 | Telemetry schema JSON | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py | tests/unit/test_telemetry_minimal.py | docs/reference/Protocol_and_Schema_Reference.md |
 <!-- AUTODOC:TRACEABILITY:END -->
