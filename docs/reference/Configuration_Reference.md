@@ -205,6 +205,7 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | stream_server | --keep-artifacts | bool | False | no | .drc/.ply 디코드 아티팩트를 디버깅용으로 유지(기본은 정리) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:332 |
 | stream_server | --legacy-mode | bool | False | no | 문제 해결을 위해 동기식 레거시 루프로 폴백 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:340 |
 | stream_server | --max-inflight | int | 2 | no | 클라이언트에 백프레셔를 걸기 전 동시에 디코드할 수 있는 최대 프레임 수 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:328 |
+| stream_server | --queue-size | int | 0 | no | 디코드/송신 큐의 최대 대기 길이(0이면 --max-inflight와 동일) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:329 |
 | stream_server | --metrics-sample | int | 50000 | no | 품질 메트릭 계산 시 사용할 최대 포인트 수(0은 샘플링 비활성) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:336 |
 | stream_server | --port | int | 5000 | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:315 |
 | stream_server | --protocol | str | binary | no | 클라이언트가 사용할 프레이밍 프로토콜(기본: %(default)s). `protocol_help`에서 제공하는 설명과 함께 선택지를 나열 | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:345 |

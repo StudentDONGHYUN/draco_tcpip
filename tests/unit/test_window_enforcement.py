@@ -14,7 +14,10 @@ from draco_roundtrip.draco_roundtrip.nodes.stream_client import (
     WindowController,
     network_sender,
 )
-from draco_roundtrip.draco_roundtrip.utils.stream_protocol import DataHeader, ControlPlane
+from draco_roundtrip.draco_roundtrip.utils.stream_protocol import (
+    DataHeader,
+    ControlPlane,
+)
 
 
 class _StubHandle:
@@ -54,7 +57,9 @@ async def test_network_sender_respects_window_limit():
     protocol = _RecordingProtocol()
 
     for seq in range(8):
-        header = DataHeader(kind=0, sequence=seq, timestamp_ns=0, payload_len=1, content_type=0)
+        header = DataHeader(
+            kind=0, sequence=seq, timestamp_ns=0, payload_len=1, content_type=0
+        )
         frame = EncodedFrame(
             sequence=seq,
             handle=_StubHandle(f"frame{seq}"),
