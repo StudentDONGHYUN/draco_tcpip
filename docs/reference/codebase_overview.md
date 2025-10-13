@@ -24,7 +24,8 @@
 
 ### 공용 유틸리티
 - `utils/config.py`: 레이아웃 프로파일과 QoS 오버라이드를 로드/검증하며, `slam_stream_bridge` 런치에서도 재사용됩니다.【F:ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/bringup.launch.py†L15-L83】
-- `utils/protocol.py`, `utils/stream_protocol.py`: TCP 프레이밍과 제어/데이터 채널 인코딩을 담당합니다.
+- `net/protocol.py`, `protocol/header.py`: 단일 TCP 연결에서 FrameType 기반 멀티플렉싱과 통합 헤더(v2)를 처리합니다. `utils/protocol.py`는 레거시 호환 래퍼입니다.
+- `utils/stream_protocol.py`: 주소 인코딩, 제어 상수, 레거시 호환성을 위한 헬퍼를 제공하며 새 프레임 헤더와 함께 사용됩니다.
 - `draco/encoder.py`: Draco 바이너리 실행 파일 탐색과 옵션 구성을 담당하며, 배치 도구와 노드에서 동일한 인터페이스를 사용하도록 유지합니다.【F:ros2_ws/src/draco_tools/draco_tools/core/encoder.py†L1-L107】
 
 ## `draco_tools` 패키지

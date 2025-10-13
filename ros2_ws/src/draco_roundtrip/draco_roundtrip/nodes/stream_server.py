@@ -26,10 +26,12 @@ import numpy as np
 from draco_roundtrip.analysis import pointcloud_metrics
 from draco_roundtrip.common.state_machine import StreamState, StreamStateMachine
 
+from draco_roundtrip.protocol.header import LEGACY_VERSION, VERSION
 from draco_roundtrip.utils import ensure_directory, resolve_executable
 from draco_roundtrip.utils.ply_io import load_points_from_bytes
 from draco_roundtrip.utils.protocol import (
     Message,
+    ProtocolHandler,
     MSG_ACK,
     MSG_DATA,
     MSG_EOF,
@@ -41,15 +43,15 @@ from draco_roundtrip.utils.protocol import (
 from draco_roundtrip.utils.stream_protocol import (
     ACK_PAYLOAD_STRUCT,
     CONTROL_CHANNEL,
+    CONTENT_TYPE_DRACO,
     DATA_CHANNEL,
     ControlPlane,
     ControlState,
-    DataHeader,
     ErrorCode,
     compose_response_payload,
     decode_frame_address,
     encode_frame_address,
-    parse_request_payload,
+    parse_legacy_request_payload,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
 
@@ -58,6 +60,10 @@ logger = logging.getLogger(__name__)
 
 
 _HAS_ASYNCIO_TIMEOUT = hasattr(asyncio, "timeout")
+
+FRAGMENT_GC_INTERVAL = 60.0
+FRAGMENT_TTL_SEC = 300.0
+FRAGMENT_BUFFER_MAX_BYTES = 128 * 1024 * 1024
 
 
 class QueueStopped(Exception):
@@ -146,12 +152,6 @@ class PipelineStats:
 
 
 @dataclass(slots=True)
-class ControlChannel:
-    sock: socket.socket
-    protocol: ProtocolHandler
-
-
-@dataclass(slots=True)
 class DecodeJob:
     sequence: int | None
     name: str
@@ -160,7 +160,9 @@ class DecodeJob:
     frame_payload_len: int | None = None
     fragments: int = 1
     flags: int | None = None
-    data_header: DataHeader | None = None
+    timestamp_ns: int | None = None
+    content_type: int | None = None
+    header_version: int | None = None
 
 
 @dataclass(slots=True)
@@ -171,17 +173,100 @@ class FragmentAssembly:
     expected_len: int | None
     chunks: Dict[int, bytes] = field(default_factory=dict)
     received: int = 0
+    last_update: float = field(default_factory=time.monotonic)
 
-    def add(self, index: int, payload: bytes) -> bool:
+    def add(self, index: int, payload: bytes, *, now: float | None = None) -> bool:
         if index in self.chunks:
             return False
         self.chunks[index] = payload
         self.received += len(payload)
+        self.last_update = now if now is not None else time.monotonic()
         return len(self.chunks) == self.total
 
     def assemble(self) -> bytes:
         return b"".join(self.chunks[i] for i in range(self.total))
 
+
+@dataclass(slots=True)
+class FragmentDrop:
+    sequence: int
+    state: FragmentAssembly
+    reason: str
+
+
+@dataclass(slots=True)
+class FragmentBuffer:
+    ttl: float
+    max_bytes: int
+    states: Dict[int, FragmentAssembly] = field(default_factory=dict)
+    buffered_bytes: int = 0
+
+    def add(
+        self,
+        *,
+        sequence: int,
+        name: str,
+        total: int,
+        expected_len: int | None,
+        index: int,
+        payload: bytes,
+        now: float,
+    ) -> tuple[bool, bytes | None, list[FragmentDrop]]:
+        state = self.states.get(sequence)
+        if state is None:
+            state = FragmentAssembly(
+                sequence=sequence,
+                name=name,
+                total=total,
+                expected_len=expected_len,
+            )
+            self.states[sequence] = state
+        complete = state.add(index, payload, now=now)
+        self.buffered_bytes += len(payload)
+        drops = self._evict_for_memory(exclude=sequence)
+        if complete and sequence in self.states:
+            assembled = state.assemble()
+            self.states.pop(sequence, None)
+            self.buffered_bytes = max(0, self.buffered_bytes - state.received)
+            return True, assembled, drops
+        if sequence not in self.states:
+            drops.append(FragmentDrop(sequence, state, "buffer-limit"))
+            return False, None, drops
+        return False, None, drops
+
+    def gc(self, now: float) -> list[FragmentDrop]:
+        drops: list[FragmentDrop] = []
+        for seq, state in list(self.states.items()):
+            if now - state.last_update >= self.ttl:
+                self.states.pop(seq, None)
+                self.buffered_bytes = max(0, self.buffered_bytes - state.received)
+                drops.append(FragmentDrop(seq, state, "ttl"))
+        return drops
+
+    def clear(self) -> list[FragmentDrop]:
+        drops = [FragmentDrop(seq, state, "shutdown") for seq, state in self.states.items()]
+        self.states.clear()
+        self.buffered_bytes = 0
+        return drops
+
+    def _evict_for_memory(self, *, exclude: int | None = None) -> list[FragmentDrop]:
+        if self.buffered_bytes <= self.max_bytes:
+            return []
+        drops: list[FragmentDrop] = []
+        ordered = sorted(
+            self.states.items(), key=lambda item: item[1].last_update
+        )
+        for seq, state in ordered:
+            if exclude is not None and seq == exclude and self.buffered_bytes <= self.max_bytes:
+                continue
+            if self.buffered_bytes <= self.max_bytes:
+                break
+            removed = self.states.pop(seq, None)
+            if removed is None:
+                continue
+            self.buffered_bytes = max(0, self.buffered_bytes - removed.received)
+            drops.append(FragmentDrop(seq, removed, "buffer-limit"))
+        return drops
 
 @dataclass(slots=True)
 class DecodedArtifact:
@@ -271,17 +356,6 @@ def _export_server_telemetry(
         logger.info("[SERVER] Wrote telemetry to %s", target)
     except Exception as exc:  # pragma: no cover - best effort logging
         logger.warning("[SERVER] Failed to export telemetry: %s", exc)
-
-
-async def _send_control_message(
-    control: ControlChannel | None,
-    fallback_protocol: ProtocolHandler,
-    fallback_sock: socket.socket,
-    message: Message,
-) -> None:
-    target = control.sock if control is not None else fallback_sock
-    protocol = control.protocol if control is not None else fallback_protocol
-    await asyncio.to_thread(protocol.send, target, message)
 
 
 async def _fail_and_signal(
@@ -401,7 +475,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--control-port",
         type=int,
         default=0,
-        help="Optional TCP port dedicated to control-plane messages (0 disables)",
+        help="[DEPRECATED] Ignored; control-plane messages reuse the data port",
     )
     ap.add_argument("--decoder", default=None, help="Path to draco_decoder")
     ap.add_argument("--work-dir", default="data/server_tmp")
@@ -493,32 +567,54 @@ def build_arg_parser() -> argparse.ArgumentParser:
 async def _recv_loop(
     protocol,
     conn: socket.socket,
-    control: ControlChannel | None,
     decode_queue: "asyncio.Queue[DecodeJob | None]",
     stop_event: asyncio.Event,
     producer_done: asyncio.Event,
     totals: Dict[str, int],
     heartbeat_interval: float,
     control_plane: ControlPlane,
-    control_down: asyncio.Event,
     lifecycle: StreamStateMachine,
+    legacy_mode: bool = False,
 ) -> None:
     heartbeat_interval = max(0.0, heartbeat_interval)
     last_heartbeat = time.monotonic()
-    control_down.clear()
-
-    fragment_states: Dict[int, FragmentAssembly] = {}
+    fragment_buffer = FragmentBuffer(
+        ttl=FRAGMENT_TTL_SEC, max_bytes=FRAGMENT_BUFFER_MAX_BYTES
+    )
     use_binary = protocol.name == "binary"
+
+    def _log_fragment_drops(drops: list[FragmentDrop]) -> None:
+        for drop in drops:
+            logger.warning(
+                "[SERVER] Dropping fragment seq=%s (%s, %d bytes buffered)",
+                drop.sequence,
+                drop.reason,
+                drop.state.received,
+            )
+            _telemetry(
+                "fragment_drop",
+                drop.state.name,
+                seq=drop.sequence,
+                reason=drop.reason,
+                buffered=drop.state.received,
+            )
+
+    async def _fragment_gc_loop() -> None:
+        try:
+            while not stop_event.is_set():
+                await asyncio.sleep(FRAGMENT_GC_INTERVAL)
+                drops = fragment_buffer.gc(time.monotonic())
+                if drops:
+                    _log_fragment_drops(drops)
+        except asyncio.CancelledError:  # pragma: no cover - shutdown path
+            return
 
     async def send_control_with_retry(message: Message, label: str) -> bool:
         delay = 0.05
         attempts = 3
         for attempt in range(1, attempts + 1):
             try:
-                await _send_control_message(control, protocol, conn, message)
-                if control_down.is_set():
-                    logger.info("[SERVER] Control channel for %s recovered", label)
-                    control_down.clear()
+                await asyncio.to_thread(protocol.send, conn, message)
                 return True
             except Exception as exc:
                 logger.warning(
@@ -530,189 +626,259 @@ async def _recv_loop(
                 )
                 await asyncio.sleep(delay)
                 delay = min(delay * 2.0, 0.5)
-        logger.error("[SERVER] Control channel down while sending %s", label)
-        control_down.set()
+        logger.error("[SERVER] Control send failed for %s", label)
         return False
 
-    while not stop_event.is_set():
-        try:
-            message = await asyncio.to_thread(protocol.recv, conn)
-        except socket.timeout:
-            if producer_done.is_set():
-                break
-            if (
-                heartbeat_interval > 0
-                and (time.monotonic() - last_heartbeat) >= heartbeat_interval
-            ):
-                heartbeat = Message(
-                    kind=MSG_HEARTBEAT,
-                    name=encode_frame_address(
-                        None,
-                        "server-heartbeat",
-                        channel=CONTROL_CHANNEL,
-                    ),
-                    payload=b"",
-                )
-                if await send_control_with_retry(heartbeat, "heartbeat"):
-                    _telemetry("send_heartbeat", "all")
-                else:
-                    await _fail_and_signal(
-                        lifecycle,
-                        stop_event,
-                        "heartbeat send failure",
-                    )
+    fragment_gc_task: asyncio.Task | None = (
+        asyncio.create_task(_fragment_gc_loop()) if use_binary else None
+    )
+
+    try:
+        while not stop_event.is_set():
+            try:
+                message = await asyncio.to_thread(protocol.recv, conn)
+            except socket.timeout:
+                if producer_done.is_set():
                     break
-                last_heartbeat = time.monotonic()
-            continue
-        except Exception as exc:
-            logger.error("[SERVER] ERROR receiving frame: %s", exc)
-            await _fail_and_signal(lifecycle, stop_event, f"recv error: {exc}")
-            break
-        if message is None:
-            logger.info("[SERVER] Client closed connection")
-            await _fail_and_signal(lifecycle, stop_event, "client closed connection")
-            break
-        last_heartbeat = time.monotonic()
-        address = decode_frame_address(message.name)
-        if message.kind == MSG_HEARTBEAT:
-            control_plane.on_heartbeat()
-            _telemetry("recv_heartbeat", address.name or "all")
-            continue
-        if message.kind == MSG_ERROR:
-            detail = (
-                message.payload.decode("utf-8", errors="ignore")
-                if message.payload
-                else ""
-            )
-            logger.error("[SERVER] ERROR from client: %s", detail or "unspecified")
-            control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, detail or None)
-            await _fail_and_signal(
-                lifecycle,
-                stop_event,
-                f"client error: {detail or 'unspecified'}",
-            )
-            break
-        if message.kind == MSG_EOF:
-            logger.info("[SERVER] Received EOF marker from client")
-            _telemetry("recv_eof", "all")
-            control_plane.on_eof_received()
-            lifecycle.transition(StreamState.DRAINING, reason="client EOF")
-            if control_plane.state == ControlState.TERMINATED:
-                lifecycle.transition(StreamState.TERMINATED, reason="client EOF")
-            producer_done.set()
-            break
-        if message.kind != MSG_DATA:
-            logger.warning(
-                "[SERVER] Ignoring unexpected message kind: %s", message.kind
-            )
-            continue
-        if address.channel != DATA_CHANNEL:
-            logger.warning(
-                "[SERVER] Received data on control channel: %s", message.name
-            )
-        if control_plane.state in (ControlState.INIT, ControlState.HANDSHAKING):
-            control_plane.on_first_data()
-            lifecycle.transition(StreamState.STREAMING, reason="first frame")
-        sequence = (
-            message.sequence if message.sequence is not None else address.sequence
-        )
-        frame_name = address.name or "frame"
-        payload_bytes = message.payload
-        totals["bytes_in"] += len(payload_bytes)
-        if use_binary and message.fragmented:
-            if sequence is None:
-                logger.error(
-                    "[SERVER] ERROR: fragmented frame missing sequence metadata"
+                if (
+                    heartbeat_interval > 0
+                    and (time.monotonic() - last_heartbeat) >= heartbeat_interval
+                ):
+                    heartbeat = Message(
+                        kind=MSG_HEARTBEAT,
+                        name=encode_frame_address(
+                            None,
+                            "server-heartbeat",
+                            channel=CONTROL_CHANNEL,
+                        ),
+                        payload=b"",
+                    )
+                    if await send_control_with_retry(heartbeat, "heartbeat"):
+                        _telemetry("send_heartbeat", "all")
+                    else:
+                        await _fail_and_signal(
+                            lifecycle,
+                            stop_event,
+                            "heartbeat send failure",
+                        )
+                        break
+                    last_heartbeat = time.monotonic()
+                continue
+            except Exception as exc:
+                logger.error("[SERVER] ERROR receiving frame: %s", exc)
+                await _fail_and_signal(lifecycle, stop_event, f"recv error: {exc}")
+                break
+            if message is None:
+                logger.info("[SERVER] Client closed connection")
+                await _fail_and_signal(lifecycle, stop_event, "client closed connection")
+                break
+            last_heartbeat = time.monotonic()
+            address = decode_frame_address(message.name)
+            if message.kind == MSG_HEARTBEAT:
+                control_plane.on_heartbeat()
+                _telemetry("recv_heartbeat", address.name or "all")
+                continue
+            if message.kind == MSG_ERROR:
+                detail = (
+                    message.payload.decode("utf-8", errors="ignore")
+                    if message.payload
+                    else ""
                 )
-                control_plane.on_error(
-                    ErrorCode.PROTOCOL_VIOLATION, "fragment missing sequence"
+                logger.error("[SERVER] ERROR from client: %s", detail or "unspecified")
+                control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, detail or None)
+                await _fail_and_signal(
+                    lifecycle,
+                    stop_event,
+                    f"client error: {detail or 'unspecified'}",
+                )
+                break
+            if message.kind == MSG_EOF:
+                logger.info("[SERVER] Received EOF marker from client")
+                _telemetry("recv_eof", "all")
+                control_plane.on_eof_received()
+                lifecycle.transition(StreamState.DRAINING, reason="client EOF")
+                if control_plane.state == ControlState.TERMINATED:
+                    lifecycle.transition(StreamState.TERMINATED, reason="client EOF")
+                producer_done.set()
+                break
+            if message.kind != MSG_DATA:
+                logger.warning(
+                    "[SERVER] Ignoring unexpected message kind: %s", message.kind
                 )
                 continue
-            state = fragment_states.get(sequence)
-            total = message.fragments_total or 1
-            expected_len = message.frame_payload_len
-            if state is None:
-                state = FragmentAssembly(
+            if address.channel != DATA_CHANNEL:
+                logger.warning(
+                    "[SERVER] Received data on control channel: %s", message.name
+                )
+            if control_plane.state in (ControlState.INIT, ControlState.HANDSHAKING):
+                control_plane.on_first_data()
+                lifecycle.transition(StreamState.STREAMING, reason="first frame")
+            sequence = (
+                message.sequence if message.sequence is not None else address.sequence
+            )
+            frame_name = address.name or "frame"
+            payload_bytes = message.payload
+            totals["bytes_in"] += len(payload_bytes)
+            if use_binary and message.fragmented:
+                if sequence is None:
+                    logger.error(
+                        "[SERVER] ERROR: fragmented frame missing sequence metadata"
+                    )
+                    control_plane.on_error(
+                        ErrorCode.PROTOCOL_VIOLATION, "fragment missing sequence"
+                    )
+                    continue
+                total = message.fragments_total or 1
+                expected_len = message.frame_payload_len
+                complete, assembled, drops = fragment_buffer.add(
                     sequence=sequence,
                     name=frame_name,
                     total=total,
                     expected_len=expected_len,
+                    index=message.fragment_index or 0,
+                    payload=payload_bytes,
+                    now=time.monotonic(),
                 )
-                fragment_states[sequence] = state
-            complete = state.add(message.fragment_index or 0, payload_bytes)
-            _telemetry(
-                "recv_fragment",
-                frame_name,
-                seq=sequence,
-                index=message.fragment_index or 0,
-                total=total,
+                if drops:
+                    _log_fragment_drops(drops)
+                _telemetry(
+                    "recv_fragment",
+                    frame_name,
+                    seq=sequence,
+                    index=message.fragment_index or 0,
+                    total=total,
+                )
+                if not complete:
+                    continue
+                if assembled is None:  # pragma: no cover - defensive
+                    logger.error(
+                        "[SERVER] fragment assembly returned no payload for seq=%s",
+                        sequence,
+                    )
+                    continue
+                payload_bytes = assembled
+            timestamp_ns = (
+                message.timestamp_ns
+                if message.timestamp_ns is not None
+                else time.monotonic_ns()
             )
-            if not complete:
+            content_type = message.content_type or CONTENT_TYPE_DRACO
+            draco_payload = payload_bytes
+            header_version = message.header_version if use_binary else None
+            if use_binary and header_version == LEGACY_VERSION:
+                if not legacy_mode:
+                    detail = "legacy frame received but --legacy-mode is disabled"
+                    logger.error("[SERVER] %s", detail)
+                    error_message = Message(
+                        kind=MSG_ERROR,
+                        name=encode_frame_address(
+                            sequence, frame_name, channel=CONTROL_CHANNEL
+                        ),
+                        payload=str(detail).encode(),
+                        sequence=sequence,
+                    )
+                    await send_control_with_retry(
+                        error_message, f"legacy-deny-{sequence}"
+                    )
+                    continue
+                try:
+                    legacy_seq, legacy_ts, legacy_content_type, legacy_payload = (
+                        parse_legacy_request_payload(payload_bytes)
+                    )
+                except ValueError as exc:
+                    detail = f"invalid legacy payload: {exc}"
+                    logger.error("[SERVER] ERROR parsing frame %s: %s", frame_name, detail)
+                    error_message = Message(
+                        kind=MSG_ERROR,
+                        name=encode_frame_address(
+                            sequence, frame_name, channel=CONTROL_CHANNEL
+                        ),
+                        payload=str(detail).encode(),
+                        sequence=sequence,
+                    )
+                    await send_control_with_retry(
+                        error_message, f"legacy-parse-error-{sequence}"
+                    )
+                    continue
+                draco_payload = legacy_payload
+                timestamp_ns = legacy_ts
+                if sequence is None:
+                    sequence = legacy_seq
+                elif legacy_seq != sequence:
+                    logger.warning(
+                        "[SERVER] Sequence mismatch legacy header=%s message=%s",
+                        legacy_seq,
+                        sequence,
+                    )
+                content_type = legacy_content_type or CONTENT_TYPE_DRACO
+            elif use_binary and header_version not in (None, VERSION):
+                detail = f"unsupported frame header version {header_version}"
+                logger.error("[SERVER] %s", detail)
+                error_message = Message(
+                    kind=MSG_ERROR,
+                    name=encode_frame_address(
+                        sequence, frame_name, channel=CONTROL_CHANNEL
+                    ),
+                    payload=str(detail).encode(),
+                    sequence=sequence,
+                )
+                await send_control_with_retry(error_message, f"version-error-{sequence}")
                 continue
-            payload_bytes = state.assemble()
-            fragment_states.pop(sequence, None)
-        try:
-            data_header, draco_payload = parse_request_payload(payload_bytes)
-        except ValueError as exc:
-            detail = f"invalid payload: {exc}"
-            logger.error("[SERVER] ERROR parsing frame %s: %s", frame_name, detail)
-            error_message = Message(
-                kind=MSG_ERROR,
-                name=encode_frame_address(
-                    sequence, frame_name, channel=CONTROL_CHANNEL
-                ),
-                payload=str(detail).encode(),
+            job = DecodeJob(
                 sequence=sequence,
+                name=frame_name,
+                payload=draco_payload,
+                received_at=time.monotonic(),
+                frame_payload_len=(
+                    message.frame_payload_len
+                    if message.frame_payload_len
+                    else len(draco_payload)
+                ),
+                fragments=message.fragments_total or 1,
+                flags=message.flags,
+                timestamp_ns=timestamp_ns,
+                content_type=content_type,
+                header_version=header_version,
             )
-            await send_control_with_retry(error_message, f"parse-error-{sequence}")
-            continue
-        if sequence is None:
-            sequence = data_header.sequence
-        elif sequence != data_header.sequence:
-            logger.warning(
-                "[SERVER] Sequence mismatch header=%s message=%s",
-                data_header.sequence,
-                sequence,
+            ack_payload = (
+                ACK_PAYLOAD_STRUCT.pack(job.sequence) if job.sequence is not None else b""
             )
-        job = DecodeJob(
-            sequence=sequence,
-            name=frame_name,
-            payload=draco_payload,
-            received_at=time.monotonic(),
-            frame_payload_len=len(draco_payload),
-            fragments=message.fragments_total or 1,
-            flags=message.flags,
-            data_header=data_header,
-        )
-        ack_payload = (
-            ACK_PAYLOAD_STRUCT.pack(job.sequence) if job.sequence is not None else b""
-        )
-        ack_message = Message(
-            kind=MSG_ACK,
-            name=encode_frame_address(job.sequence, job.name, channel=CONTROL_CHANNEL),
-            payload=ack_payload,
-            sequence=job.sequence,
-        )
-        if not await send_control_with_retry(ack_message, f"ack-{job.sequence}"):
-            producer_done.set()
-            await _fail_and_signal(
-                lifecycle,
-                stop_event,
-                f"ack send failure seq={job.sequence}",
+            ack_message = Message(
+                kind=MSG_ACK,
+                name=encode_frame_address(
+                    job.sequence, job.name, channel=CONTROL_CHANNEL
+                ),
+                payload=ack_payload,
+                sequence=job.sequence,
             )
-            break
-        _telemetry("send_ack", job.name, seq=job.sequence)
-        if not await _queue_put(decode_queue, job, stop_event=stop_event):
-            stop_event.set()
-            break
-        _telemetry(
-            "recv_data",
-            job.name,
-            size=len(job.payload),
-            depth=decode_queue.qsize(),
-            seq=job.sequence,
-        )
-    producer_done.set()
+            if not await send_control_with_retry(ack_message, f"ack-{job.sequence}"):
+                producer_done.set()
+                await _fail_and_signal(
+                    lifecycle,
+                    stop_event,
+                    f"ack send failure seq={job.sequence}",
+                )
+                break
+            _telemetry("send_ack", job.name, seq=job.sequence)
+            if not await _queue_put(decode_queue, job, stop_event=stop_event):
+                stop_event.set()
+                break
+            _telemetry(
+                "recv_data",
+                job.name,
+                size=len(job.payload),
+                depth=decode_queue.qsize(),
+                seq=job.sequence,
+            )
+    finally:
+        if fragment_gc_task is not None:
+            fragment_gc_task.cancel()
+            with suppress(Exception):
+                await fragment_gc_task
+        drops = fragment_buffer.clear()
+        if drops:
+            _log_fragment_drops(drops)
+        producer_done.set()
 
 
 async def _decode_worker(
@@ -763,11 +929,9 @@ async def _decode_worker(
                 metrics_sample=getattr(args, "metrics_sample", None),
                 frame_id=job.name,
                 draco_bytes_len=(
-                    job.data_header.payload_len if job.data_header else len(job.payload)
+                    job.frame_payload_len if job.frame_payload_len else len(job.payload)
                 ),
-                timestamp_ns=(
-                    job.data_header.timestamp_ns if job.data_header else None
-                ),
+                timestamp_ns=job.timestamp_ns,
             )
             decoded_at = time.monotonic()
             stats.decode_time.record(decoded_at - decode_start)
@@ -812,7 +976,6 @@ async def _decode_worker(
 async def _send_loop(
     protocol,
     conn: socket.socket,
-    control: ControlChannel | None,
     send_queue: "asyncio.Queue[PipelineResult | None]",
     stats: PipelineStats,
     totals: Dict[str, int],
@@ -889,10 +1052,7 @@ async def _send_loop(
             )
             stage_label = "send_data"
         try:
-            if message.kind == MSG_DATA:
-                await asyncio.to_thread(protocol.send, conn, message)
-            else:
-                await _send_control_message(control, protocol, conn, message)
+            await asyncio.to_thread(protocol.send, conn, message)
         except Exception as exc:
             logger.error(
                 "[SERVER] ERROR sending %s: %s",
@@ -958,9 +1118,6 @@ async def _send_loop(
         with suppress(OSError):
             # ``SHUT_WR`` triggers a FIN after the MSG_EOF handshake reaches the client.
             conn.shutdown(socket.SHUT_WR)
-        if control is not None:
-            with suppress(OSError):
-                control.sock.shutdown(socket.SHUT_WR)
 
 
 async def handle_connection(
@@ -971,50 +1128,37 @@ async def handle_connection(
     work_dir: Path,
     stats: PipelineStats,
     totals: Dict[str, int],
-    control_conn: socket.socket | None = None,
 ) -> ControlPlane:
     with ExitStack() as stack:
         data_conn = stack.enter_context(conn)
-        control_socket = (
-            stack.enter_context(control_conn) if control_conn is not None else None
-        )
+        def _adapt_protocol(handler: ProtocolHandler) -> ProtocolHandler:
+            if handler.name != "binary" or not args.legacy_mode:
+                return handler
+
+            def recv(sock: socket.socket, *, _recv=handler.recv):
+                return _recv(sock, allow_legacy=True)
+
+            return ProtocolHandler(
+                name=handler.name,
+                send=handler.send,
+                recv=recv,
+                description=handler.description,
+            )
+
         if args.tcp_nodelay:
             with suppress(OSError):
                 data_conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            if control_socket is not None:
-                with suppress(OSError):
-                    control_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         if args.socket_buffer_kb > 0:
             buf_size = args.socket_buffer_kb * 1024
             for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
                 with suppress(OSError):
                     data_conn.setsockopt(socket.SOL_SOCKET, opt, buf_size)
-                if control_socket is not None:
-                    with suppress(OSError):
-                        control_socket.setsockopt(socket.SOL_SOCKET, opt, buf_size)
         if args.socket_timeout > 0:
             data_conn.settimeout(args.socket_timeout)
-            if control_socket is not None:
-                control_socket.settimeout(args.socket_timeout)
-        protocol = resolve_protocol(args.protocol)
+        protocol = _adapt_protocol(resolve_protocol(args.protocol))
         logger.info(
             "[SERVER] Connection from %s using %s protocol", addr, protocol.name
         )
-        control_channel: ControlChannel | None = None
-        if control_socket is not None:
-            control_protocol = resolve_protocol(args.protocol)
-            control_channel = ControlChannel(
-                sock=control_socket, protocol=control_protocol
-            )
-            try:
-                peer = control_socket.getpeername()
-            except OSError:
-                peer = "unknown"
-            logger.info(
-                "[SERVER] Control channel paired from %s using %s protocol",
-                peer,
-                control_protocol.name,
-            )
 
         control_plane = ControlPlane(role="server")
         control_plane.on_connected(time.monotonic_ns())
@@ -1037,21 +1181,18 @@ async def handle_connection(
         )
         stop_event = asyncio.Event()
         producer_done = asyncio.Event()
-        control_path_down = asyncio.Event()
-
         recv_task = asyncio.create_task(
             _recv_loop(
                 protocol,
                 data_conn,
-                control_channel,
                 decode_queue,
                 stop_event,
                 producer_done,
                 totals,
                 args.heartbeat_interval,
                 control_plane,
-                control_path_down,
                 lifecycle,
+                legacy_mode=args.legacy_mode,
             )
         )
         worker_tasks = [
@@ -1073,7 +1214,6 @@ async def handle_connection(
             _send_loop(
                 protocol,
                 data_conn,
-                control_channel,
                 send_queue,
                 stats,
                 totals,
@@ -1126,8 +1266,11 @@ async def run_server(args: argparse.Namespace) -> None:
     totals: Dict[str, int] = {"bytes_in": 0, "bytes_out": 0}
     start_time = time.monotonic()
 
-    if args.control_port and args.control_port == args.port:
-        raise ValueError("control-port must differ from data port when enabled")
+    if args.control_port:
+        logger.warning(
+            "[SERVER] --control-port is deprecated and ignored; using single data channel"
+        )
+        args.control_port = 0
 
     try:
         server = socket.create_server((args.host, args.port), reuse_port=True)
@@ -1135,37 +1278,11 @@ async def run_server(args: argparse.Namespace) -> None:
         logger.warning("[SERVER] reuse_port failed (%s), retrying without it", exc)
         server = socket.create_server((args.host, args.port))
 
-    control_server: socket.socket | None = None
-    if args.control_port > 0:
-        try:
-            control_server = socket.create_server(
-                (args.host, args.control_port), reuse_port=True
-            )
-        except OSError as exc:
-            logger.warning(
-                "[SERVER] control reuse_port failed (%s), retrying without it",
-                exc,
-            )
-            control_server = socket.create_server((args.host, args.control_port))
-
     with ExitStack() as stack:
         stack.enter_context(server)
-        if control_server is not None:
-            stack.enter_context(control_server)
         logger.info("[SERVER] Listening on %s:%d", args.host, args.port)
-        if control_server is not None:
-            logger.info(
-                "[SERVER] Control channel listening on %s:%d",
-                args.host,
-                args.control_port,
-            )
         conn, addr = await asyncio.to_thread(server.accept)
         logger.info("[SERVER] Accepted connection from %s", addr)
-        control_conn: socket.socket | None = None
-        control_addr = None
-        if control_server is not None:
-            control_conn, control_addr = await asyncio.to_thread(control_server.accept)
-            logger.info("[SERVER] Accepted control connection from %s", control_addr)
         control_plane: ControlPlane | None = None
         try:
             control_plane = await handle_connection(
@@ -1176,14 +1293,10 @@ async def run_server(args: argparse.Namespace) -> None:
                 work_dir,
                 stats,
                 totals,
-                control_conn=control_conn,
             )
         finally:
             with suppress(Exception):
                 conn.close()
-            if control_conn is not None:
-                with suppress(Exception):
-                    control_conn.close()
 
     elapsed = max(time.monotonic() - start_time, 1e-6)
     if control_plane is not None:

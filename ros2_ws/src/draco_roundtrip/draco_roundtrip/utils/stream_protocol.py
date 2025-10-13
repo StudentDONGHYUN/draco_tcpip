@@ -22,7 +22,6 @@ __all__ = [
     "CONTROL_CHANNEL",
     "FrameHeader",
     "FrameFragment",
-    "DataHeader",
     "ResponseHeader",
     "ACK_TIMEOUT_NS",
     "CONTROL_POLL_INTERVAL",
@@ -39,14 +38,12 @@ __all__ = [
     "FrameAddress",
     "encode_frame_address",
     "decode_frame_address",
-    "pack_data_header",
-    "unpack_data_header",
     "pack_response_header",
     "unpack_response_header",
-    "compose_request_payload",
-    "parse_request_payload",
+    "parse_legacy_request_payload",
     "compose_response_payload",
     "parse_response_payload",
+    "LEGACY_DATA_HEADER_SIZE",
 ]
 
 # 제어 평면 상수 (docs/contracts/control_plane_contract.md 참고)
@@ -73,7 +70,8 @@ CONTENT_TYPE_DRACO = 0x01
 
 RESPONSE_KIND_DECODED_AND_METRICS = 0x21
 
-_DATA_HEADER_STRUCT = struct.Struct("!BIQIB")
+_LEGACY_DATA_HEADER_STRUCT = struct.Struct("!BIQIB")
+LEGACY_DATA_HEADER_SIZE = _LEGACY_DATA_HEADER_STRUCT.size
 _RESPONSE_HEADER_STRUCT = struct.Struct("!BIQI IH".replace(" ", ""))
 
 
@@ -131,17 +129,6 @@ class FrameFragment:
     @property
     def more_fragments(self) -> bool:
         return self.index < self.total - 1
-
-
-@dataclass(slots=True, frozen=True)
-class DataHeader:
-    """Binary request header for Draco payloads."""
-
-    kind: int
-    sequence: int
-    timestamp_ns: int
-    payload_len: int
-    content_type: int
 
 
 @dataclass(slots=True, frozen=True)
@@ -401,35 +388,6 @@ def decode_frame_address(raw: str | None) -> FrameAddress:
     return FrameAddress(channel=channel or DATA_CHANNEL, sequence=sequence, name=name)
 
 
-def pack_data_header(header: DataHeader) -> bytes:
-    if header.kind != DATA_KIND_DRACO:
-        raise ValueError(f"unsupported data kind {header.kind:#x}")
-    return _DATA_HEADER_STRUCT.pack(
-        header.kind,
-        header.sequence & 0xFFFFFFFF,
-        header.timestamp_ns & 0xFFFFFFFFFFFFFFFF,
-        header.payload_len & 0xFFFFFFFF,
-        header.content_type & 0xFF,
-    )
-
-
-def unpack_data_header(buffer: bytes) -> tuple[DataHeader, bytes]:
-    if len(buffer) < _DATA_HEADER_STRUCT.size:
-        raise ValueError("buffer too small for data header")
-    kind, sequence, ts_ns, payload_len, content_type = _DATA_HEADER_STRUCT.unpack_from(buffer)
-    header = DataHeader(
-        kind=kind,
-        sequence=sequence,
-        timestamp_ns=ts_ns,
-        payload_len=payload_len,
-        content_type=content_type,
-    )
-    payload = buffer[_DATA_HEADER_STRUCT.size : _DATA_HEADER_STRUCT.size + payload_len]
-    if len(payload) != payload_len:
-        raise ValueError("payload truncated for declared length")
-    return header, payload
-
-
 def pack_response_header(header: ResponseHeader) -> bytes:
     if header.kind != RESPONSE_KIND_DECODED_AND_METRICS:
         raise ValueError(f"unsupported response kind {header.kind:#x}")
@@ -461,31 +419,25 @@ def unpack_response_header(buffer: bytes) -> tuple[ResponseHeader, bytes]:
     return header, payload
 
 
-def compose_request_payload(
-    sequence: int,
-    draco_bytes: bytes,
-    *,
-    timestamp_ns: int,
-    content_type: int = CONTENT_TYPE_DRACO,
-) -> tuple[DataHeader, bytes]:
-    header = DataHeader(
-        kind=DATA_KIND_DRACO,
-        sequence=sequence,
-        timestamp_ns=timestamp_ns,
-        payload_len=len(draco_bytes),
-        content_type=content_type,
-    )
-    packed = pack_data_header(header) + draco_bytes
-    return header, packed
+def parse_legacy_request_payload(buffer: bytes) -> tuple[int, int, int, bytes]:
+    """Decode the legacy (v1) in-band request header into metadata.
 
+    Returns ``(sequence, timestamp_ns, content_type, payload)`` and validates the
+    declared payload length so callers can safely fall back to the unified v2
+    frame header without double allocation.
+    """
 
-def parse_request_payload(buffer: bytes) -> tuple[DataHeader, bytes]:
-    header, payload = unpack_data_header(buffer)
-    if header.kind != DATA_KIND_DRACO:
-        raise ValueError(f"unexpected data kind {header.kind:#x}")
-    if header.content_type != CONTENT_TYPE_DRACO:
-        raise ValueError(f"unsupported content type {header.content_type:#x}")
-    return header, payload
+    if len(buffer) < LEGACY_DATA_HEADER_SIZE:
+        raise ValueError("buffer too small for legacy data header")
+    kind, sequence, ts_ns, payload_len, content_type = _LEGACY_DATA_HEADER_STRUCT.unpack_from(buffer)
+    if kind != DATA_KIND_DRACO:
+        raise ValueError(f"unexpected legacy data kind {kind:#x}")
+    payload = buffer[
+        LEGACY_DATA_HEADER_SIZE : LEGACY_DATA_HEADER_SIZE + payload_len
+    ]
+    if len(payload) != payload_len:
+        raise ValueError("legacy payload truncated for declared length")
+    return sequence, ts_ns, content_type, payload
 
 
 def compose_response_payload(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import logging
 import socket
 import struct
 from dataclasses import dataclass
@@ -11,13 +13,18 @@ from .io import recv_exact
 from ..protocol.header import (
     FLAG_FRAGMENTED,
     FLAG_MORE_FRAGMENTS,
+    FrameHeader,
     FrameType,
     FragmentInfo,
-    HEADER_SIZE,
     FRAGMENT_INFO_SIZE,
-    pack_frame_header,
-    unpack_frame_header,
+    HEADER_PREFIX_SIZE,
+    HEADER_SIZE,
+    LEGACY_HEADER_SIZE,
     HeaderError,
+    LEGACY_MAGIC,
+    LEGACY_VERSION,
+    MAGIC,
+    VERSION,
 )
 
 __all__ = [
@@ -35,6 +42,9 @@ __all__ = [
     "send_message",
     "recv_message",
 ]
+
+MAX_TEXT_NAME_LEN = 4096
+MAX_TEXT_PAYLOAD_LEN = 100 * 1024 * 1024
 
 _HEADER = struct.Struct("!I")
 _SIZE = struct.Struct("!Q")
@@ -56,6 +66,9 @@ _FRAME_TYPE_BY_KIND = {
 
 _KIND_BY_FRAME_TYPE = {value: key for key, value in _FRAME_TYPE_BY_KIND.items()}
 
+logger = logging.getLogger(__name__)
+_text_limit_drops = 0
+
 
 class ProtocolError(RuntimeError):
     """Raised when the TCP framing is malformed."""
@@ -76,6 +89,9 @@ class Message:
     fragments_total: int | None = None
     frame_payload_len: int | None = None
     flags: int | None = None
+    timestamp_ns: int | None = None
+    content_type: int | None = None
+    header_version: int = VERSION
 
     def as_meta(self) -> str:
         return f"{self.kind}{_SEPARATOR}{self.name}" if self.name else self.kind
@@ -117,7 +133,15 @@ def _send_all(sock: socket.socket, payload: bytes, *, chunk_size: int = 1400) ->
         offset += sent
 
 
+def _close_socket(sock: socket.socket) -> None:
+    with contextlib.suppress(OSError):
+        sock.shutdown(socket.SHUT_RDWR)
+    with contextlib.suppress(OSError):
+        sock.close()
+
+
 def _recv_text(sock: socket.socket) -> Optional[Message]:
+    global _text_limit_drops
     header = sock.recv(_HEADER.size)
     if not header:
         return None
@@ -126,8 +150,26 @@ def _recv_text(sock: socket.socket) -> Optional[Message]:
     (name_len,) = _HEADER.unpack(header)
     if name_len <= 0:
         return None
+    if name_len > MAX_TEXT_NAME_LEN:
+        _text_limit_drops += 1
+        logger.warning(
+            "[PROTO] text meta length %d exceeds limit %d; closing connection",
+            name_len,
+            MAX_TEXT_NAME_LEN,
+        )
+        _close_socket(sock)
+        raise ConnectionClosed("text meta length exceeded limit")
     meta = recv_exact(sock, name_len).decode("utf-8")
     (payload_len,) = _SIZE.unpack(recv_exact(sock, _SIZE.size))
+    if payload_len > MAX_TEXT_PAYLOAD_LEN:
+        _text_limit_drops += 1
+        logger.warning(
+            "[PROTO] text payload length %d exceeds limit %d; closing connection",
+            payload_len,
+            MAX_TEXT_PAYLOAD_LEN,
+        )
+        _close_socket(sock)
+        raise ConnectionClosed("text payload length exceeded limit")
     payload = recv_exact(sock, payload_len) if payload_len else b""
     return Message.from_meta(meta, payload)
 
@@ -154,37 +196,57 @@ def _send_binary(sock: socket.socket, message: Message) -> None:
         raise ProtocolError("message name too long for binary framing")
     sequence = message.sequence if message.sequence is not None else 0
     fragment, more = _build_fragment_info(message)
-    header = pack_frame_header(
+    flags = int(frame_type) & 0x0F
+    if fragment is not None:
+        flags |= FLAG_FRAGMENTED
+    if more:
+        flags |= FLAG_MORE_FRAGMENTS
+    header = FrameHeader(
         frame_type=frame_type,
         sequence=sequence,
         name_len=len(name_bytes),
         payload_len=len(message.payload),
+        timestamp_ns=message.timestamp_ns or 0,
+        content_type=message.content_type or 0,
+        flags=flags,
+        version=message.header_version or VERSION,
         fragment=fragment,
-        more_fragments=more,
     )
-    sock.sendall(header)
+    sock.sendall(header.to_bytes())
     if name_bytes:
         sock.sendall(name_bytes)
     if message.payload:
         _send_all(sock, message.payload)
 
 
-def _recv_binary(sock: socket.socket) -> Optional[Message]:
-    first = sock.recv(HEADER_SIZE)
+def _recv_binary(sock: socket.socket, *, allow_legacy: bool = False) -> Optional[Message]:
+    first = sock.recv(HEADER_PREFIX_SIZE)
     if not first:
         return None
     header_buf = bytearray(first)
-    while len(header_buf) < HEADER_SIZE:
-        chunk = sock.recv(HEADER_SIZE - len(header_buf))
+    while len(header_buf) < HEADER_PREFIX_SIZE:
+        chunk = sock.recv(HEADER_PREFIX_SIZE - len(header_buf))
         if not chunk:
             raise ConnectionClosed("socket closed while reading header")
         header_buf.extend(chunk)
+    magic = bytes(header_buf[:4])
+    version = header_buf[4]
     flags = header_buf[5]
+    if magic == MAGIC and version == VERSION:
+        header_len = HEADER_SIZE
+    elif allow_legacy and magic == LEGACY_MAGIC and version == LEGACY_VERSION:
+        header_len = LEGACY_HEADER_SIZE
+    else:
+        raise ProtocolError(f"unsupported header magic/version {magic!r}/{version}")
     if flags & FLAG_FRAGMENTED:
-        extra = recv_exact(sock, FRAGMENT_INFO_SIZE)
-        header_buf.extend(extra)
+        header_len += FRAGMENT_INFO_SIZE
+    while len(header_buf) < header_len:
+        chunk = sock.recv(header_len - len(header_buf))
+        if not chunk:
+            raise ConnectionClosed("socket closed while reading header")
+        header_buf.extend(chunk)
     try:
-        frame_header = unpack_frame_header(bytes(header_buf))
+        frame_header = FrameHeader.from_bytes(bytes(header_buf), allow_legacy=allow_legacy)
     except HeaderError as exc:
         raise ProtocolError(str(exc)) from exc
     name_bytes = recv_exact(sock, frame_header.name_len) if frame_header.name_len else b""
@@ -195,6 +257,9 @@ def _recv_binary(sock: socket.socket) -> Optional[Message]:
     message.sequence = frame_header.sequence
     message.fragmented = frame_header.is_fragmented
     message.flags = frame_header.flags
+    message.timestamp_ns = frame_header.timestamp_ns
+    message.content_type = frame_header.content_type
+    message.header_version = frame_header.version
     if frame_header.fragment is not None:
         message.fragment_index = frame_header.fragment.index
         message.fragments_total = frame_header.fragment.total

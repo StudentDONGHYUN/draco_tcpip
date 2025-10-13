@@ -9,7 +9,7 @@
 | 유틸리티 모듈 | 핵심 심볼 | 주 사용처 | 비고 |
 | --- | --- | --- | --- |
 | `draco_roundtrip.utils.protocol` | `Message`, `ProtocolHandler`, `resolve_protocol`, `available_protocols` | `nodes/stream_client.py`, `nodes/stream_server.py` | 스트리밍 클라이언트와 서버가 동일한 프로토콜 업데이트를 유지하도록 TCP 프레이밍 레이어를 공유하며, `binary`/`text` 선택지를 제공합니다. |
-| `draco_roundtrip.utils.stream_protocol` | `CONTROL_CHANNEL`, `DATA_CHANNEL`, `encode_frame_address`, `decode_frame_address` | `nodes/stream_client.py`, `nodes/stream_server.py` | 제어/데이터 채널을 분리해 메시지 순서를 유지합니다. |
+| `draco_roundtrip.utils.stream_protocol` | `CONTROL_CHANNEL`, `DATA_CHANNEL`, `encode_frame_address`, `decode_frame_address` | `nodes/stream_client.py`, `nodes/stream_server.py` | 단일 TCP 소켓 위에서 논리적 주소(데이터/제어)를 구분하고 프래그먼트 상태 키를 구성합니다. |
 | `draco_roundtrip.utils.ply_io` | `collect_matching_pairs`, `load_points`, `load_points_from_bytes` | `nodes/stream_client.py`, `tools/monitor.py`, `tools/replay.py` | 스트리밍 임포터와 오프라인 도구가 일관된 I/O 동작을 유지합니다. |
 | `draco_roundtrip.utils.metrics` | `compute_basic_metrics`, `sample_indices` | `nodes/stream_client.py`, `tools/monitor.py`, `draco_tools/offline_pipeline.py` | 실시간 스트림과 오프라인 분석이 동일한 메트릭 계산을 사용합니다. |
 | `draco_roundtrip.utils.config` | `resolve_data_layout`, `resolve_profile_path`, `resolve_qos_override`, `ensure_directory` | `nodes/stream_client.py`, `slam_stream_bridge/launch/bringup.launch.py`, `draco_tools/offline_pipeline.py` | 디렉터리와 QoS 구성 로직을 중앙에서 재사용합니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/config.py†L1-L140】 |

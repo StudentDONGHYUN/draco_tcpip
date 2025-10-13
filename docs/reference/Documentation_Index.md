@@ -6,7 +6,7 @@ Draco TCP/IP Roundtrip 문서를 범주별로 탐색할 수 있는 색인입니�
 - [사용자 가이드](../guides/User_Guide.md): 환경 준비, 스트리밍/SLAM bringup, 로그 수집, 문제 해결 절차를 순차적으로 안내합니다.
 
 ## 아키텍처
-- [아키텍처 설계 및 지연 시간 계획](../architecture/Architectural_Design_and_Plan.md): 비동기 파이프라인, 제어 플레인 상태 기계, 지연 단축 로드맵과 Mermaid 시퀀스 다이어그램을 제공합니다.
+- [아키텍처 설계 및 지연 시간 계획](../architecture/Architectural_Design_and_Plan.md): 비동기 파이프라인, 단일 TCP 멀티플렉싱 제어 플레인, 지연 단축 로드맵과 Mermaid 시퀀스 다이어그램을 제공합니다.
 - [추적성 매트릭스](../architecture/Traceability_Matrix.md): 요구사항, 구현 산출물, 테스트, 문서 간 연결을 표 형식으로 정리합니다.
 
 ## 참조

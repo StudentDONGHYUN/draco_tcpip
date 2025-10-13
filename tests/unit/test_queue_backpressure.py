@@ -28,7 +28,7 @@ from draco_roundtrip.draco_roundtrip.nodes.stream_server import (
 from draco_roundtrip.draco_roundtrip.utils.stream_protocol import (
     ControlPlane as ProtocolControlPlane,
     ControlState,
-    DataHeader,
+    CONTENT_TYPE_DRACO,
 )
 from draco_roundtrip.draco_roundtrip.common.timers import AckDeadlineHeap
 
@@ -139,14 +139,12 @@ async def test_client_network_sender_queue_bound(monkeypatch):
 
     async def produce() -> None:
         for seq in range(4):
-            header = DataHeader(
-                kind=0, sequence=seq, timestamp_ns=0, payload_len=1, content_type=0
-            )
             frame = EncodedFrame(
                 sequence=seq,
                 handle=DummyHandle(f"frame{seq}"),
                 payload=b"x",
-                header=header,
+                timestamp_ns=0,
+                content_type=CONTENT_TYPE_DRACO,
                 captured_at=0.0,
                 encoded_at=0.0,
                 encode_ms=0.0,
