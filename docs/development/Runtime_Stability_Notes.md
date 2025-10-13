@@ -1,30 +1,30 @@
-# Runtime Stability Notes
-Hardening summary for the Python streaming stack to ensure graceful degradation when the server or control plane encounters faults.
-_Last updated: 2025-03-15_
+# 런타임 안정성 메모
+이 문서는 서버나 제어 플레인에 장애가 발생했을 때 Python 스트리밍 스택이 우아하게 성능을 저하시킬 수 있도록 하는 강화 내용을 요약합니다.
+_마지막 업데이트: 2025-03-15_
 
-**Sections**
-- [Client (`stream_client.py`)](#client-stream_clientpy)
-- [Shared Memory](#shared-memory)
-- [Server (`stream_server.py`)](#server-stream_serverpy)
-- [Offline Pipeline](#offline-pipeline)
-- [Testing](#testing)
+**목차**
+- [클라이언트(`stream_client.py`)](#클라이언트stream_clientpy)
+- [공유 메모리](#공유-메모리)
+- [서버(`stream_server.py`)](#서버stream_serverpy)
+- [오프라인 파이프라인](#오프라인-파이프라인)
+- [테스트](#테스트)
 
-## Client (`stream_client.py`)
-- Tracks explicit lifecycle states **OK → DEGRADED → CLOSING**; transitions are logged and shutdown summaries export queue and latency metrics.
-- `network_sender` wakes every 500 ms while waiting on the inflight condition so heartbeat/stop signals cannot deadlock the loop and it honours `HeartbeatWatch` timeouts.
-- `reply_consumer` handles `CancelledError` gracefully by draining reordering buffers, clearing pending ACK slots, and emitting tail statistics.
-- New `--spool-gc-window=N` flag bounds remembered spool entries when scanning filesystem transports and prunes processed files to control RSS.
-- Shutdown prints structured JSON with queue depths, latency percentiles, pending counts, and session state; the same data surfaces in telemetry JSON through `session_overrides`.
+## 클라이언트(`stream_client.py`)
+- 명시적 라이프사이클 상태 **OK → DEGRADED → CLOSING**을 추적하며 전환 시 로그를 남기고 종료 요약에 큐·지연 메트릭을 내보냅니다.
+- `network_sender`는 in-flight 조건을 기다리는 동안 500 ms마다 깨어나 하트비트/정지 신호가 루프를 교착시키지 못하게 하고 `HeartbeatWatch` 타임아웃을 준수합니다.
+- `reply_consumer`는 `CancelledError`를 정상적으로 처리하며 재정렬 버퍼를 비우고, 대기 중인 ACK 슬롯을 정리하고, 꼬리 통계를 출력합니다.
+- 새 플래그 `--spool-gc-window=N`은 파일 시스템 전송을 스캔할 때 기억하는 스풀 항목 수를 제한하고 처리된 파일을 제거해 RSS를 제어합니다.
+- 종료 시 큐 깊이, 지연 분위수, 대기 카운트, 세션 상태를 포함한 구조화된 JSON을 출력하며 동일한 데이터가 `session_overrides`를 통해 텔레메트리 JSON에도 노출됩니다.
 
-## Shared Memory
-- Segments are always unlinked if `sendall` fails, with an optional background janitor (disabled by default) that retries unlinking when eager cleanup is insufficient.
+## 공유 메모리
+- `sendall` 실패 시 세그먼트를 항상 unlink하며, 적극적 정리가 충분하지 않을 경우 재시도를 수행하는 선택적 백그라운드 관리 스레드(기본 비활성)를 제공합니다.
 
-## Server (`stream_server.py`)
-- Sends ACKs and heartbeats using a bounded exponential backoff helper. Failure marks the control path as down, drains queued frames, and logs degradation instead of dropping payloads silently.
+## 서버(`stream_server.py`)
+- 제한된 지수 백오프 헬퍼를 사용해 ACK와 하트비트를 전송합니다. 실패하면 제어 경로를 다운 상태로 표시하고 큐에 쌓인 프레임을 비우며, 페이로드를 조용히 버리는 대신 열화 상황을 기록합니다.
 
-## Offline Pipeline
-- `bag_to_ply` saver stage is monitored by a reader thread that captures the last 1 KB of stdout; `--saver-timeout` (default 180 s) aborts stalled runs and prints diagnostics on abnormal exits.
-- Early EOF events map to `stream_end` ensuring the pipeline terminates cleanly.
+## 오프라인 파이프라인
+- `bag_to_ply` 저장 단계는 마지막 1 KB stdout을 수집하는 리더 스레드로 감시되며, `--saver-timeout`(기본 180 초)이 정체된 실행을 중단하고 비정상 종료 시 진단 정보를 출력합니다.
+- 조기 EOF 이벤트는 `stream_end`에 매핑되어 파이프라인이 깨끗하게 종료됩니다.
 
-## Testing
-- Unit tests cover spool watcher pruning behaviour and shared memory publisher cleanup when `sendall` raises.
+## 테스트
+- 단위 테스트는 스풀 워처 정리 동작과 `sendall`이 예외를 발생시킬 때 공유 메모리 퍼블리셔가 정리되는 경로를 다룹니다.

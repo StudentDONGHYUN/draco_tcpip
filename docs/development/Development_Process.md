@@ -1,67 +1,67 @@
-# Development Process
-Outlines the continuous improvement workflow for Draco Roundtrip, combining review findings with actionable checklists for code quality, hybrid architecture, and refactoring milestones.
-_Last updated: 2025-03-15_
+# 개발 프로세스
+이 문서는 Draco Roundtrip의 지속적 개선 워크플로를 설명하며, 코드 품질·하이브리드 아키텍처·리팩터링 이정표를 위한 검토 결과와 실행 가능한 체크리스트를 통합합니다.
+_마지막 업데이트: 2025-03-15_
 
-**Sections**
-- [Workflow Overview](#workflow-overview)
-- [Definition of Done](#definition-of-done)
-- [Execution Checklist](#execution-checklist)
-- [Outstanding Work](#outstanding-work)
-- [References](#references)
+**목차**
+- [워크플로 개요](#워크플로-개요)
+- [완료 정의](#완료-정의)
+- [실행 체크리스트](#실행-체크리스트)
+- [미해결 작업](#미해결-작업)
+- [참고 자료](#참고-자료)
 
-## Workflow Overview
-- **Context**: Draco Roundtrip streams Draco-compressed LiDAR frames over TCP using shared utilities between ROS 2 nodes and CLI tools. The codebase layout is summarised in [Configuration Reference](../reference/Configuration_Reference.md).
-- **Bootstrap**: Activate a Python 3.11 virtual environment, run `pip install -e .`, and ensure IDEs include the repository root before `ros2_ws/src` in `PYTHONPATH` to prevent module shadowing.
-- **Type Checking**: Pyright strict mode is mandatory. `pytest.ini` limits discovery to the repository `tests/` package to avoid ROS package conflicts.
-- **Testing Strategy**: Run `pytest`, targeted perf gates, and, when relevant, `colcon test` from `ros2_ws`. Record outcomes in the [Results Template](../reports/results_template.md).
+## 워크플로 개요
+- **맥락**: Draco Roundtrip은 ROS 2 노드와 CLI 도구 사이에서 공유하는 유틸리티를 사용해 Draco로 압축한 LiDAR 프레임을 TCP로 스트리밍합니다. 코드 구조는 [구성 참조](../reference/Configuration_Reference.md)에 요약되어 있습니다.
+- **부트스트랩**: Python 3.11 가상환경을 활성화하고 `pip install -e .`를 실행합니다. IDE에서 `PYTHONPATH`에 저장소 루트를 `ros2_ws/src`보다 앞에 추가해 모듈 그림자를 방지합니다.
+- **타입 검사**: Pyright strict 모드를 필수로 사용합니다. `pytest.ini`는 `tests/` 패키지만 검색하도록 제한해 ROS 패키지 충돌을 막습니다.
+- **테스트 전략**: `pytest`, 목표 성능 게이트, 필요 시 `ros2_ws`에서 `colcon test`를 실행하고, 결과를 [결과 템플릿](../reports/results_template.md)에 기록합니다.
 
-## Definition of Done
-### Code Improvement Stream
-1. **Control-plane handshake**: `MSG_EOF` exchanged at shutdown, logs show `EOF sent`/`EOF received` with `pending=0` summary.
-2. **Filesystem watcher**: Event-based watcher enabled when available; fallback polling prunes processed entries to avoid RSS growth.
-3. **Configuration safety**: `utils/config.py` handles shallow installations without `IndexError` and keeps profile/QoS resolution consistent.
-4. **Socket portability**: Server gracefully falls back when `SO_REUSEPORT` is unavailable.
-5. **Decode hygiene**: Temporary decode artifacts removed unless `--keep-artifacts` is explicitly set.
+## 완료 정의
+### 코드 개선 스트림
+1. **제어 플레인 핸드셰이크**: 종료 시 `MSG_EOF`가 교환되고, 로그에 `EOF sent`/`EOF received`와 `pending=0` 요약이 표시됩니다.
+2. **파일 시스템 워처**: 이벤트 기반 워처를 사용할 수 있을 때 활성화하고, 폴링 폴백은 처리된 항목을 정리해 RSS 증가를 방지합니다.
+3. **구성 안전성**: `utils/config.py`가 얕은 설치에서도 `IndexError` 없이 동작하며 프로파일/QoS 해상도를 일관되게 유지합니다.
+4. **소켓 이식성**: `SO_REUSEPORT`를 사용할 수 없을 때 서버가 정상적으로 대체 경로로 폴백합니다.
+5. **디코드 위생**: `--keep-artifacts`가 명시되지 않으면 임시 디코드 아티팩트를 정리합니다.
 
-### Hybrid Architecture Stream
-1. **Bounded queues** across capture→encode→send→decode with explicit `maxsize` and pause/resume signalling.
-2. **TX/RX separation** with worker pools propagating stop events on error.
-3. **Adaptive window** toggled via `--adaptive-window`, `--window-ema-alpha`, and validated through latency gates.
-4. **Binary protocol** default with distinct control/data addressing and MTU-safe fragmentation (`--tx-fragment-size`).
-5. **Performance gate** enforced via `tests/perf/test_latency_gate.py` and CI scripts.
+### 하이브리드 아키텍처 스트림
+1. 캡처→인코드→전송→디코드 전 구간에서 제한 큐를 사용하고 `maxsize` 및 일시정지/재개 신호를 명시합니다.
+2. 오류 발생 시 정지 이벤트를 전파하는 TX/RX 분리 워커 풀을 유지합니다.
+3. `--adaptive-window`, `--window-ema-alpha`로 토글되는 적응형 윈도를 지연 게이트를 통해 검증합니다.
+4. 제어/데이터 주소를 분리하고 MTU 안전 분할(`--tx-fragment-size`)을 지원하는 바이너리 프로토콜을 기본값으로 사용합니다.
+5. `tests/perf/test_latency_gate.py`와 CI 스크립트로 성능 게이트를 강제합니다.
 
-### Refactor Stream
-1. **Utility consolidation**: Shared helpers (`protocol`, `executable`, `ply_io`, `metrics`) referenced consistently by nodes, tools, and CLIs.
-2. **Encoder CLI harmonisation**: `draco_tools.core.encoder` acts as the single entry point for option parsing/log formatting.
-3. **Config unification**: `resolve_data_layout` and QoS helpers reused by offline pipelines and launch files.
-4. **Testing and CI**: Unit tests live in `ros2_ws/src/draco_roundtrip/tests/`, E2E scripts exercise at least one roundtrip, and CI runs build + test + perf gates.
-5. **Documentation alignment**: Guides and references link to the unified configuration and protocol docs, with README/HOWTO kept in sync.
+### 리팩터 스트림
+1. **유틸리티 통합**: 노드·도구·CLI가 `protocol`, `executable`, `ply_io`, `metrics`와 같은 공용 헬퍼를 일관되게 참조합니다.
+2. **인코더 CLI 정렬**: `draco_tools.core.encoder`가 옵션 파싱/로그 형식의 단일 진입점 역할을 합니다.
+3. **구성 통합**: `resolve_data_layout` 및 QoS 헬퍼를 오프라인 파이프라인과 런치 파일에서 재사용합니다.
+4. **테스트와 CI**: 단위 테스트는 `ros2_ws/src/draco_roundtrip/tests/`에 위치하고, E2E 스크립트는 최소 1회의 라운드트립을 검증하며, CI는 빌드+테스트+성능 게이트를 수행합니다.
+5. **문서 정합성**: 가이드와 참조 문서가 통합 구성·프로토콜 문서를 가리키며 README/HOWTO가 최신 상태로 유지됩니다.
 
-## Execution Checklist
-1. **Plan the change** using the [Architectural Design and Plan](../architecture/Architectural_Design_and_Plan.md) and identify affected requirements in the [Traceability Matrix](../architecture/Traceability_Matrix.md).
-2. **Update configuration docs** when introducing new flags or directories; keep the [Configuration Reference](../reference/Configuration_Reference.md) consistent with CLI defaults.
-3. **Implement and lint**:
+## 실행 체크리스트
+1. [아키텍처 설계 및 계획](../architecture/Architectural_Design_and_Plan.md)을 참고해 변경 사항을 계획하고 [추적성 매트릭스](../architecture/Traceability_Matrix.md)에서 영향받는 요구사항을 확인합니다.
+2. 새로운 플래그나 디렉터리를 도입할 때 구성 문서를 갱신하고 [구성 참조](../reference/Configuration_Reference.md)가 CLI 기본값과 일치하도록 유지합니다.
+3. **구현 및 린트**:
    ```bash
    ruff check .
    pyright
    pytest --maxfail=1 --disable-warnings
    ```
-4. **Run performance gates** if transport, queueing, or telemetry paths change:
+4. 전송, 큐잉, 텔레메트리 경로가 변경되면 성능 게이트를 실행합니다:
    ```bash
    pytest tests/perf/test_latency_gate.py
    ```
-5. **Capture telemetry** and logs with `stream_collect_logs`, archiving manifests alongside artifacts for reproducibility.
-6. **Document outcomes**: update relevant checklist sections here, record regression evidence in [Refactor and Audit Log](../reports/Refactor_and_Audit_Log.md), and populate the [Results Template](../reports/results_template.md).
+5. `stream_collect_logs`로 텔레메트리와 로그를 수집하고, 재현 가능성을 위해 아티팩트와 함께 매니페스트를 보관합니다.
+6. **결과 문서화**: 이 문서의 관련 체크리스트를 업데이트하고, [리팩터 및 감사를 위한 로그](../reports/Refactor_and_Audit_Log.md)에 회귀 증거를 남기며, [결과 템플릿](../reports/results_template.md)을 채웁니다.
 
-## Outstanding Work
-- [ ] Measure filesystem watcher performance on non-Linux platforms and adjust polling intervals if necessary.
-- [ ] Prototype `--transport=quic|udp_fec` and capture perf deltas under loss scenarios.
-- [ ] Extend regression suites to cover EOF/binary control paths end-to-end.
-- [ ] Port streaming nodes to rclcpp + Asio and validate parity with Python implementation.
-- [ ] Automate container-based deployment with low-latency kernel tuning and telemetry dashboards.
+## 미해결 작업
+- [ ] 비 Linux 플랫폼에서 파일 시스템 워처 성능을 측정하고 필요한 경우 폴링 주기를 조정합니다.
+- [ ] `--transport=quic|udp_fec` 프로토타입을 만들고 손실 시나리오에서의 성능 변화를 기록합니다.
+- [ ] EOF/바이너리 제어 경로를 엔드투엔드로 다루는 회귀 테스트를 확장합니다.
+- [ ] 스트리밍 노드를 rclcpp + Asio로 이식하고 Python 구현과 동등성을 검증합니다.
+- [ ] 저지연 커널 튜닝과 텔레메트리 대시보드를 포함한 컨테이너 기반 배포를 자동화합니다.
 
-## References
-- [Architectural Design and Plan](../architecture/Architectural_Design_and_Plan.md)
-- [Traceability Matrix](../architecture/Traceability_Matrix.md)
-- [Protocol and Schema Reference](../reference/Protocol_and_Schema_Reference.md)
-- [User Guide](../guides/User_Guide.md)
+## 참고 자료
+- [아키텍처 설계 및 지연 시간 계획](../architecture/Architectural_Design_and_Plan.md)
+- [추적성 매트릭스](../architecture/Traceability_Matrix.md)
+- [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md)
+- [사용자 가이드](../guides/User_Guide.md)

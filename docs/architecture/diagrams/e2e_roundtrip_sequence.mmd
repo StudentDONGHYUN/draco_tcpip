@@ -1,42 +1,42 @@
 sequenceDiagram
-    title Draco TCP/IP Roundtrip — End-to-End Data Flow
-    participant U as User/CLI
-    participant BAG as ros2 bag play (proc)
+    title Draco TCP/IP 라운드트립 — 엔드투엔드 데이터 흐름
+    participant U as 사용자/CLI
+    participant BAG as ros2 bag play (프로세스)
     participant CLI as StreamClient (stream_client.py)
-    participant ENC as Draco Encoder (proc)
+    participant ENC as Draco 인코더 (프로세스)
     participant SRV as StreamServer (stream_server.py)
-    participant DEC as Draco Decoder (proc)
-    participant ROS as ROS 2 Topic (/stream_pair/decoded)
+    participant DEC as Draco 디코더 (프로세스)
+    participant ROS as ROS 2 토픽(/stream_pair/decoded)
 
-    %% Data channel uses binary framing; control channel carries ACK/HEARTBEAT/EOF (see control_plane_contract.md)
-    %% Queues are bounded; TX path honors max_inflight (see async_pipeline_design.md)
+    %% 데이터 채널은 바이너리 프레이밍을 사용하며, 제어 채널은 ACK/HEARTBEAT/EOF를 운반합니다.
+    %% 큐는 모두 제한되어 있고 TX 경로는 max_inflight를 준수합니다.
 
-    U->>SRV: Start server (listen)
-    U->>CLI: Start client
+    U->>SRV: 서버 시작(리스닝)
+    U->>CLI: 클라이언트 시작
 
-    BAG-->>CLI: Publish PointCloud2 (capture)
-    Note right of CLI: Capture queue (bounded)
+    BAG-->>CLI: PointCloud2 게시(캡처)
+    Note right of CLI: 캡처 큐(제한)
 
-    CLI->>ENC: Encode PLY → Draco (.drc)
-    Note right of ENC: External process call
+    CLI->>ENC: PLY → Draco(.drc) 인코딩
+    Note right of ENC: 외부 프로세스 호출
 
-    ENC-->>CLI: Encoded bytes
-    CLI->>SRV: Send framed DATA over TCP (binary protocol)
-    Note right of CLI: Network queue (bounded)\nTX loop with max_inflight
+    ENC-->>CLI: 인코딩된 바이트
+    CLI->>SRV: TCP로 프레이밍된 DATA 전송(바이너리 프로토콜)
+    Note right of CLI: 네트워크 큐(제한)\nmax_inflight를 갖는 TX 루프
 
-    SRV-->>CLI: ACK(seq) on control channel
+    SRV-->>CLI: 제어 채널 ACK(seq)
     Note right of CLI: in_flight -= 1
 
-    SRV->>DEC: Decode Draco → PLY
-    Note right of DEC: External process call
+    SRV->>DEC: Draco → PLY 디코딩
+    Note right of DEC: 외부 프로세스 호출
 
-    DEC-->>SRV: Decoded cloud (PLY/PCD)
-    SRV-->>ROS: Publish decoded cloud
+    DEC-->>SRV: 디코드된 클라우드(PLY/PCD)
+    SRV-->>ROS: 디코드된 클라우드 게시
 
-    SRV-->>CLI: (optional) Metrics/summary for frame
+    SRV-->>CLI: (선택) 프레임별 지표/요약
 
-    %% Graceful end
-    CLI-->>SRV: EOF (control channel)
-    SRV-->>CLI: EOF (after pending=0)
-    SRV-xROS: Close session
-    CLI-xBAG: Stop capture; close session
+    %% 정상 종료
+    CLI-->>SRV: EOF(제어 채널)
+    SRV-->>CLI: EOF(pending=0 이후)
+    SRV-xROS: 세션 종료
+    CLI-xBAG: 캡처 종료 및 세션 종료

@@ -1,43 +1,43 @@
-# Project Progress Report
-Summarises short- and long-term initiatives for Draco Roundtrip along with current execution status and outstanding checklist items.
-_Last updated: 2025-03-15_
+# 프로젝트 진행 보고서
+Draco Roundtrip의 단기·중기 과제, 현재 실행 상태, 남은 체크리스트를 요약합니다.
+_마지막 업데이트: 2025-03-15_
 
-**Sections**
-- [Executive Summary](#executive-summary)
-- [Short-Term Plan](#short-term-plan)
-- [Long-Term Plan](#long-term-plan)
-- [Status Table](#status-table)
-- [Outstanding Checklist](#outstanding-checklist)
+**목차**
+- [요약](#요약)
+- [단기 계획](#단기-계획)
+- [중기 계획](#중기-계획)
+- [상태 표](#상태-표)
+- [잔여 체크리스트](#잔여-체크리스트)
 
-## Executive Summary
-Async pipeline and hybrid control-plane objectives are largely stable. Binary protocol, telemetry, and adaptive window features are in production, but regression benchmarking, advanced transports, and in-process Draco remain open. Long-term items (QUIC/UDP-FEC, C++ port, telemetry-driven adaptation) are still in design review.
+## 요약
+비동기 파이프라인과 하이브리드 제어 플레인 목표는 대부분 안정화되었습니다. 바이너리 프로토콜, 텔레메트리, 적응형 윈도 기능은 운영 단계에 있지만 회귀 벤치마킹, 고급 전송, 인프로세스 Draco는 아직 남아 있습니다. 장기 과제인 QUIC/UDP-FEC, C++ 포트, 텔레메트리 기반 적응 제어는 설계 검토 단계입니다.
 
-## Short-Term Plan
-- Build rosbag regression benchmark harness and enforce the p95 latency gate automatically.
-- Measure filesystem watcher performance on platforms without native event APIs and document remediation strategies.
-- Expand integration tests and logging coverage for EOF and binary protocol flows.
-- Finalise tuning flags for `--tx-fragment-size` and `--socket-buffer-autotune` with documented defaults.
+## 단기 계획
+- rosbag 회귀 벤치마크 하네스를 구축하고 p95 지연 기준을 자동으로 확인합니다.
+- 네이티브 이벤트 API가 없는 플랫폼에서 파일 시스템 워처 성능을 측정하고 개선 전략을 문서화합니다.
+- EOF 및 바이너리 프로토콜 흐름에 대한 통합 테스트와 로깅 범위를 확장합니다.
+- `--tx-fragment-size`, `--socket-buffer-autotune`의 기본값과 튜닝 전략을 확정합니다.
 
-## Long-Term Plan
-- Introduce QUIC and UDP+FEC transport modes with standardised loss scenarios.
-- Integrate Draco C++ API for in-process encode/decode paired with shared memory transport.
-- Implement rclcpp + Asio pipeline with a Python compatibility layer.
-- Automate deployment via containers, CI/CD, and telemetry dashboards.
-- Complete telemetry-driven adaptive control loops for inflight window and bitrate adjustments.
+## 중기 계획
+- 표준화된 손실 시나리오를 포함해 QUIC 및 UDP+FEC 전송 모드를 도입합니다.
+- Draco C++ API를 통합해 공유 메모리 전송과 함께 인프로세스 인코드/디코드를 구현합니다.
+- rclcpp + Asio 파이프라인을 구축하고 Python 호환 계층을 마련합니다.
+- 컨테이너, CI/CD, 텔레메트리 대시보드를 활용한 자동 배포를 완성합니다.
+- 텔레메트리 기반으로 인플라이트 윈도와 비트레이트를 조정하는 적응 제어 루프를 마무리합니다.
 
-## Status Table
-| Workstream | State | Notes |
-|------------|-------|-------|
-| Async pipeline stabilisation | ✅ Complete | Bounded queues, EOF/ACK handshake, binary protocol live. |
-| Regression benchmarking | ⏳ In Progress | Harness defined, automated enforcement pending. |
-| Transport experiments | 🟡 Planned | QUIC/UDP-FEC profiles drafted but not prototyped. |
-| C++ migration | 🟡 Planned | Architecture captured; implementation not started. |
-| Telemetry automation | ⏳ In Progress | Schema enforced; dashboards pending. |
+## 상태 표
+| 작업 영역 | 상태 | 메모 |
+|-----------|------|------|
+| 비동기 파이프라인 안정화 | ✅ 완료 | 제한 큐, EOF/ACK 핸드셰이크, 바이너리 프로토콜 운영 중 |
+| 회귀 벤치마킹 | ⏳ 진행 중 | 하네스 정의 완료, 자동 기준 확인은 보류 |
+| 전송 실험 | 🟡 계획됨 | QUIC/UDP-FEC 프로파일 초안은 준비되었으나 프로토타입 미구현 |
+| C++ 마이그레이션 | 🟡 계획됨 | 아키텍처 정의 완료, 구현 미착수 |
+| 텔레메트리 자동화 | ⏳ 진행 중 | 스키마는 강제 중, 대시보드 구축 대기 |
 
-## Outstanding Checklist
-- [ ] Rosbag regression benchmark and CI threshold enforcement.
-- [ ] Cross-platform filesystem watcher performance study and tuning.
-- [ ] Binary protocol end-to-end integration tests with comprehensive logging.
-- [ ] QUIC/UDP+FEC transport prototypes and loss scenario catalogues.
-- [ ] Draco C++ in-process encode/decode pathway and rclcpp parity validation.
-- [ ] Container deployment pipeline with telemetry dashboard integration.
+## 잔여 체크리스트
+- [ ] rosbag 회귀 벤치마크와 CI 기준선 enforcement.
+- [ ] 크로스 플랫폼 파일 시스템 워처 성능 조사 및 튜닝.
+- [ ] 바이너리 프로토콜 엔드투엔드 통합 테스트와 상세 로그.
+- [ ] QUIC/UDP+FEC 전송 프로토타입과 손실 시나리오 카탈로그.
+- [ ] Draco C++ 인프로세스 인코딩/디코딩 경로 및 rclcpp 기능 동등성 검증.
+- [ ] 텔레메트리 대시보드를 포함한 컨테이너 배포 파이프라인 자동화.
