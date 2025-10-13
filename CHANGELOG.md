@@ -5,3 +5,4 @@
 - Runtime stability hardening for the Python streaming stack (session state tracking,
   heartbeat-aware waits, shared-memory cleanup, control-plane retries, and saver
   watchdog).  No breaking changes.
+- Test bootstrap harmonised with ROS workspace layout: resolved `tests.*` namespace collisions, documented Pyright/Pylance path requirements, and added runbook coverage for the new workflow (`conftest.py`, `pytest.ini`, docs/*).
