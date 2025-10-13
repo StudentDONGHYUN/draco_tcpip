@@ -37,6 +37,7 @@ from draco_tools.core.encoder import (
     resolve_encoder_options,
 )
 from draco_roundtrip.analysis import pointcloud_metrics
+from draco_roundtrip.common.state_machine import StreamState, StreamStateMachine
 from draco_roundtrip.utils.config import resolve_data_layout, resolve_qos_override
 from draco_roundtrip.io.ply_codec import save_xyz
 from draco_roundtrip.utils.ply_io import (
@@ -139,6 +140,22 @@ async def _put_with_retry(
             return True
         except asyncio.QueueFull:
             await asyncio.sleep(0.05)
+
+
+async def _fail_and_signal(
+    lifecycle: StreamStateMachine,
+    stop_event: asyncio.Event,
+    reason: str,
+    *,
+    inflight_condition: asyncio.Condition | None = None,
+) -> None:
+    """Mark the lifecycle as failed and wake any waiters."""
+
+    lifecycle.fail(reason)
+    stop_event.set()
+    if inflight_condition is not None:
+        async with inflight_condition:
+            inflight_condition.notify_all()
 
 
 async def _signal_capture_stop(queue: "asyncio.PriorityQueue", count: int) -> None:
@@ -918,12 +935,14 @@ async def network_sender(
     use_binary: bool,
     control_plane: ControlPlane,
     ack_policy: "AckTimeoutPolicy",
+    lifecycle: StreamStateMachine,
 ) -> None:
     """Send encoded frames while respecting inflight limits."""
 
     encode_finished = 0
     eof_sent = False
     drain_deadline: float | None = None
+    streaming_started = lifecycle.state not in (StreamState.INIT, StreamState.HANDSHAKING)
 
     async def _wait_with_health(predicate: Callable[[], bool]) -> bool:
         timeout_s = 0.5
@@ -938,7 +957,12 @@ async def network_sender(
                         SessionState.DEGRADED,
                         "network sender heartbeat timeout",
                     )
-                    stop_event.set()
+                    await _fail_and_signal(
+                        lifecycle,
+                        stop_event,
+                        "network sender heartbeat timeout",
+                        inflight_condition=inflight_condition,
+                    )
                     break
         return not predicate()
 
@@ -970,6 +994,7 @@ async def network_sender(
                         await _send_control_message(control, sock, protocol, message)
                         await session.transition(SessionState.CLOSING, "EOF sent")
                         control_plane.on_eof_sent()
+                        lifecycle.transition(StreamState.DRAINING, reason="EOF sent")
                         pending_count = len(inflight)
                         pending_acks = len(acks_pending)
                         print(
@@ -982,7 +1007,12 @@ async def network_sender(
                             sock.shutdown(socket.SHUT_WR)
                     except Exception as exc:
                         print(f"[CLIENT] ERROR sending EOF marker: {exc}")
-                        stop_event.set()
+                        await _fail_and_signal(
+                            lifecycle,
+                            stop_event,
+                            f"send eof failed: {exc}",
+                            inflight_condition=inflight_condition,
+                        )
                         break
             if eof_sent:
                 if drain_deadline is not None and not stop_event.is_set():
@@ -994,12 +1024,19 @@ async def network_sender(
             continue
 
         encoded = item
+        if not streaming_started:
+            lifecycle.transition(StreamState.STREAMING, reason="first frame sent")
+            streaming_started = True
         async with inflight_condition:
             await _wait_with_health(lambda: len(acks_pending) >= window.limit())
             if session.state == SessionState.DEGRADED:
-                stop_event.set()
                 inflight_condition.notify_all()
                 network_queue.task_done()
+                await _fail_and_signal(
+                    lifecycle,
+                    stop_event,
+                    "session degraded",
+                )
                 break
         ack_timeout_s = ack_policy.compute(window.ema_rtt)
         control_plane.on_frame_sent(
@@ -1044,11 +1081,15 @@ async def network_sender(
                 traffic.record_send(len(fragment.payload))
         except Exception as exc:
             print(f"[CLIENT] ERROR sending {encoded.handle.name}: {exc}")
-            stop_event.set()
             with contextlib.suppress(Exception):
                 encoded.handle.on_aborted()
             async with inflight_condition:
                 inflight_condition.notify_all()
+            await _fail_and_signal(
+                lifecycle,
+                stop_event,
+                f"send failure: {exc}",
+            )
             network_queue.task_done()
             break
         _telemetry("send_complete", encoded.handle.name, size=len(encoded.payload))
@@ -1103,6 +1144,7 @@ async def reply_consumer(
     control_plane: ControlPlane,
     use_binary: bool,
     ack_timeout_strikes: int,
+    lifecycle: StreamStateMachine,
 ) -> None:
     """Process replies from the server and release inflight slots."""
 
@@ -1267,9 +1309,12 @@ async def reply_consumer(
                             SessionState.DEGRADED,
                             f"ack timeout x{timeout_strikes}",
                         )
-                        stop_event.set()
-                        async with inflight_condition:
-                            inflight_condition.notify_all()
+                        await _fail_and_signal(
+                            lifecycle,
+                            stop_event,
+                            f"ack timeout ({detail})",
+                            inflight_condition=inflight_condition,
+                        )
                         continue
                     print(
                         f"[CLIENT] WARN: ACK timeout strike {timeout_strikes}/{max_timeout_strikes}"
@@ -1284,9 +1329,12 @@ async def reply_consumer(
                     print("[CLIENT] ERROR: Heartbeat timeout detected")
                     control_plane.on_error(ErrorCode.TIMEOUT, "heartbeat timeout")
                     await session.transition(SessionState.DEGRADED, "heartbeat timeout")
-                    stop_event.set()
-                    async with inflight_condition:
-                        inflight_condition.notify_all()
+                    await _fail_and_signal(
+                        lifecycle,
+                        stop_event,
+                        "heartbeat timeout",
+                        inflight_condition=inflight_condition,
+                    )
                     continue
                 if heartbeat_timeout > 0 and heartbeat_watch.age() > heartbeat_timeout:
                     print(
@@ -1296,9 +1344,12 @@ async def reply_consumer(
                     await session.transition(
                         SessionState.DEGRADED, "reply heartbeat window expired"
                     )
-                    stop_event.set()
-                    async with inflight_condition:
-                        inflight_condition.notify_all()
+                    await _fail_and_signal(
+                        lifecycle,
+                        stop_event,
+                        "reply heartbeat window expired",
+                        inflight_condition=inflight_condition,
+                    )
                     continue
                 continue
 
@@ -1333,10 +1384,14 @@ async def reply_consumer(
                 await session.transition(
                     SessionState.DEGRADED, f"reply pump error ({channel})"
                 )
-                stop_event.set()
                 async with inflight_condition:
                     acks_pending.clear()
                     inflight_condition.notify_all()
+                await _fail_and_signal(
+                    lifecycle,
+                    stop_event,
+                    f"reply pump error ({channel})",
+                )
                 reply_queue.task_done()
                 break
             if event.kind == "closed":
@@ -1346,10 +1401,14 @@ async def reply_consumer(
                     ErrorCode.PROTOCOL_VIOLATION, "connection closed"
                 )
                 await session.transition(SessionState.DEGRADED, "connection closed")
-                stop_event.set()
                 async with inflight_condition:
                     acks_pending.clear()
                     inflight_condition.notify_all()
+                await _fail_and_signal(
+                    lifecycle,
+                    stop_event,
+                    f"connection closed ({channel})",
+                )
                 reply_queue.task_done()
                 break
             if event.kind != "message" or event.message is None:
@@ -1389,10 +1448,20 @@ async def reply_consumer(
                     window.observe_ack(ctx.payload_size, ack_latency)
                     try:
                         control_plane.on_ack(ctx.sequence)
+                        if control_plane.state == ControlState.TERMINATED:
+                            lifecycle.transition(
+                                StreamState.TERMINATED,
+                                reason="acks drained",
+                            )
                     except ControlPlaneError as exc:
                         print(f"[CLIENT] ERROR: {exc}")
                         control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
-                        stop_event.set()
+                        await _fail_and_signal(
+                            lifecycle,
+                            stop_event,
+                            f"ack processing error: {exc}",
+                            inflight_condition=inflight_condition,
+                        )
                     timeout_strikes = 0
                     if session.state == SessionState.SOFT_DEGRADED:
                         await session.transition(SessionState.OK, "ack recovered")
@@ -1413,6 +1482,9 @@ async def reply_consumer(
                 except ControlPlaneError as exc:
                     print(f"[CLIENT] ERROR: {exc}")
                     control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
+                lifecycle.transition(StreamState.DRAINING, reason="server EOF")
+                if control_plane.state == ControlState.TERMINATED:
+                    lifecycle.transition(StreamState.TERMINATED, reason="server EOF")
                 await session.transition(SessionState.CLOSING, "server EOF")
                 stop_event.set()
                 async with inflight_condition:
@@ -1457,9 +1529,15 @@ async def reply_consumer(
                 _telemetry("recv_error", address.name or str(ctx.sequence), detail=detail)
                 with contextlib.suppress(Exception):
                     ctx.handle.on_aborted()
-                await drain_ready()
+                await _fail_and_signal(
+                    lifecycle,
+                    stop_event,
+                    f"server error: {detail}",
+                    inflight_condition=inflight_condition,
+                )
+                await drain_ready(force=True)
                 reply_queue.task_done()
-                continue
+                break
 
             if use_binary and message.fragmented and ctx.sequence is not None:
                 bucket = fragment_buffer.setdefault(
@@ -1545,6 +1623,11 @@ async def reply_consumer(
         async with inflight_condition:
             acks_pending.clear()
             inflight_condition.notify_all()
+        await _fail_and_signal(
+            lifecycle,
+            stop_event,
+            f"reply consumer error: {exc}",
+        )
         raise
     finally:
         heartbeat_watch.touch()
@@ -1946,6 +2029,7 @@ async def run_client(args: argparse.Namespace) -> None:
         socket_buffer_autotune=args.socket_buffer_autotune,
     )
     control_plane = ControlPlane(role="client")
+    lifecycle = StreamStateMachine(role="client")
     session_tracker = SessionTracker()
     heartbeat_watch = HeartbeatWatch()
     start_time = time.monotonic()
@@ -1977,6 +2061,7 @@ async def run_client(args: argparse.Namespace) -> None:
                 f"[CLIENT] Connected to {args.server_host}:{args.server_port} using {protocol.name} protocol"
             )
             control_plane.on_connected(time.monotonic_ns())
+            lifecycle.transition(StreamState.HANDSHAKING, reason="connected")
 
             control_channel: ControlChannel | None = None
             control_sock: socket.socket | None = None
@@ -2119,6 +2204,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             use_binary=(protocol.name == "binary"),
                             control_plane=control_plane,
                             ack_policy=ack_policy,
+                            lifecycle=lifecycle,
                         )
                     )
                 )
@@ -2149,6 +2235,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             control_plane=control_plane,
                             use_binary=(protocol.name == "binary"),
                             ack_timeout_strikes=args.ack_timeout_strikes,
+                            lifecycle=lifecycle,
                         )
                     )
                 )
@@ -2171,8 +2258,13 @@ async def run_client(args: argparse.Namespace) -> None:
                     control_pump.start()
                 try:
                     await asyncio.gather(*tasks)
-                except Exception:
-                    stop_event.set()
+                except Exception as exc:
+                    await _fail_and_signal(
+                        lifecycle,
+                        stop_event,
+                        f"pipeline task error: {exc}",
+                        inflight_condition=inflight_condition,
+                    )
                     for task in tasks:
                         task.cancel()
                     await asyncio.gather(*tasks, return_exceptions=True)
@@ -2182,6 +2274,9 @@ async def run_client(args: argparse.Namespace) -> None:
                     for thread in (pump, control_pump):
                         if thread is not None and thread.is_alive():
                             thread.join(timeout=1.0)
+    except Exception as exc:
+        lifecycle.fail(f"client error: {exc}")
+        raise
     finally:
         session_summary = session_tracker.snapshot()
         if session_tracker.state not in (
@@ -2191,6 +2286,8 @@ async def run_client(args: argparse.Namespace) -> None:
         ):
             await session_tracker.transition(SessionState.CLOSING, "client shutdown")
         stop_event.set()
+        async with inflight_condition:
+            inflight_condition.notify_all()
         pending_inflight = len(inflight)
         pending_acks = len(acks_pending)
         for ctx in list(inflight.values()):
@@ -2255,8 +2352,16 @@ async def run_client(args: argparse.Namespace) -> None:
         label: (latency_percentiles[label] * 1000.0 if label in latency_percentiles else None)
         for label in ("p50", "p95", "p99")
     }
-    summary_line = {
+    frames_acked = max(0, frames_sent - max(pending_acks, control_pending))
+    shutdown_summary = {
+        "role": "client",
         "elapsed_sec": elapsed,
+        "state": lifecycle.state.value,
+        "state_reason": lifecycle.reason,
+        "control_state": control_plane.state.value,
+        "control_pending": control_pending,
+        "pending_inflight": pending_inflight,
+        "pending_acks": pending_acks,
         "bytes_out": traffic.sent,
         "bytes_in": traffic.received,
         "mbps": {
@@ -2264,22 +2369,22 @@ async def run_client(args: argparse.Namespace) -> None:
             "send_peak": throughput_peak_mbps,
             "recv_avg": receive_mbps,
         },
-        "frames_sent": frames_sent,
-        "frames_completed": frames_processed,
+        "frames": {
+            "sent": frames_sent,
+            "acked": frames_acked,
+            "completed": frames_processed,
+            "dropped": pipeline_stats.error_frames,
+            "skipped": pipeline_stats.skipped_frames,
+        },
         "latency_ms": latency_summary,
         "max_queue_depths": {
             "capture": traffic.capture_depth_peak,
             "network": traffic.network_depth_peak,
         },
-        "pending": pending_inflight,
-        "acks_pending": pending_acks,
-        "control_pending": control_pending,
-        "errors": pipeline_stats.error_frames,
-        "skipped": pipeline_stats.skipped_frames,
         "session_state": session_state,
         "session_reason": session_reason,
     }
-    print(json.dumps(summary_line, sort_keys=True))
+    print(f"[CLIENT] shutdown_summary {json.dumps(shutdown_summary, sort_keys=True)}")
 
     metrics_out_path = Path(args.metrics_out).expanduser()
     metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
