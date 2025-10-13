@@ -22,9 +22,10 @@ import threading
 import time
 from collections import deque
 from dataclasses import dataclass, field as dataclass_field
+from enum import Enum
 from multiprocessing import shared_memory
 from pathlib import Path
-from typing import Deque, Dict, Iterable, Optional, Protocol
+from typing import Callable, Deque, Dict, Iterable, Optional, Protocol
 
 import numpy as np
 
@@ -333,6 +334,86 @@ class TrafficStats:
         mbps = (payload_size * 8) / delta / 1e6
         self.send_mbps_samples.append(mbps)
         self._last_send_ts = now
+
+
+class SessionState(str, Enum):
+    """High level lifecycle markers for client/server coordination."""
+
+    OK = "ok"
+    DEGRADED = "degraded"
+    CLOSING = "closing"
+
+
+class SessionTracker:
+    """Record session state transitions with reasons for telemetry."""
+
+    def __init__(self) -> None:
+        self._state: SessionState = SessionState.OK
+        self._reason: str | None = None
+        self._lock = asyncio.Lock()
+        self._transitions: list[dict[str, str | None]] = [
+            {"state": self._state.value, "reason": None, "ts": f"{time.monotonic():.6f}"}
+        ]
+
+    @property
+    def state(self) -> SessionState:
+        return self._state
+
+    @property
+    def reason(self) -> str | None:
+        return self._reason
+
+    def snapshot(self) -> dict[str, object]:
+        return {
+            "state": self._state.value,
+            "reason": self._reason,
+            "transitions": list(self._transitions),
+        }
+
+    async def transition(self, target: SessionState, reason: str | None = None) -> SessionState:
+        async with self._lock:
+            if target == self._state:
+                if reason and reason != self._reason:
+                    self._reason = reason
+                    print(
+                        f"[CLIENT] Session state {self._state.value} (reason updated): {reason}"
+                    )
+                    self._transitions.append(
+                        {"state": self._state.value, "reason": reason, "ts": f"{time.monotonic():.6f}"}
+                    )
+                return self._state
+            if self._state == SessionState.CLOSING and target != SessionState.CLOSING:
+                return self._state
+            if self._state == SessionState.DEGRADED and target == SessionState.OK:
+                return self._state
+            previous = self._state
+            self._state = target
+            self._reason = reason
+            transition = {
+                "from": previous.value,
+                "state": target.value,
+                "reason": reason,
+                "ts": f"{time.monotonic():.6f}",
+            }
+            self._transitions.append(transition)
+            print(
+                f"[CLIENT] Session state {previous.value} → {target.value}"
+                + (f" ({reason})" if reason else "")
+            )
+            return self._state
+
+
+class HeartbeatWatch:
+    """Track the last observed server heartbeat or reply timestamp."""
+
+    def __init__(self) -> None:
+        self._last = time.monotonic()
+
+    def touch(self) -> None:
+        self._last = time.monotonic()
+
+    def age(self) -> float:
+        return max(0.0, time.monotonic() - self._last)
 
 
 @dataclass(slots=True)
@@ -677,8 +758,8 @@ async def encode_worker(
                 encoder_input,
                 work_dir,
                 encoder_options,
-                encoder_path,
-                False,
+                encoder_hint=encoder_path,
+                skip_existing=False,
             )
             drc_bytes = await asyncio.to_thread(result.output.read_bytes)
             await asyncio.to_thread(_safe_unlink, result.output)
@@ -743,6 +824,9 @@ async def network_sender(
     inflight_condition: asyncio.Condition,
     encode_workers: int,
     window: WindowController,
+    session: SessionTracker,
+    heartbeat_watch: HeartbeatWatch,
+    heartbeat_timeout: float,
     control: ControlChannel | None = None,
     fragment_size: int,
     use_binary: bool,
@@ -752,6 +836,24 @@ async def network_sender(
 
     encode_finished = 0
     eof_sent = False
+
+    async def _wait_with_health(predicate: Callable[[], bool]) -> bool:
+        timeout_s = 0.5
+        while predicate() and not stop_event.is_set():
+            try:
+                await asyncio.wait_for(inflight_condition.wait(), timeout=timeout_s)
+            except asyncio.TimeoutError:
+                if stop_event.is_set():
+                    break
+                if heartbeat_timeout > 0 and heartbeat_watch.age() > heartbeat_timeout:
+                    await session.transition(
+                        SessionState.DEGRADED,
+                        "network sender heartbeat timeout",
+                    )
+                    stop_event.set()
+                    break
+        return not predicate()
+
     while not stop_event.is_set():
         item = await network_queue.get()
         if item is None:
@@ -759,13 +861,18 @@ async def network_sender(
             network_queue.task_done()
             if encode_finished >= encode_workers and not eof_sent:
                 async with inflight_condition:
-                    # Ensure all inflight frames have been ACKed before closing the stream.
-                    while (inflight or acks_pending) and not stop_event.is_set():
-                        await inflight_condition.wait()
-                if not inflight and not acks_pending and not stop_event.is_set():
+                    await _wait_with_health(lambda: bool(inflight or acks_pending))
+                if (
+                    session.state == SessionState.OK
+                    and not inflight
+                    and not acks_pending
+                    and not stop_event.is_set()
+                ):
                     eof_payload = b""
                     if use_binary:
-                        eof_fragment = FrameFragment(sequence=None, payload=b"", control_code=ControlCode.EOF)
+                        eof_fragment = FrameFragment(
+                            sequence=None, payload=b"", control_code=ControlCode.EOF
+                        )
                         eof_payload = pack_frame_header(eof_fragment.header())
                     message = Message(
                         kind=MSG_EOF,
@@ -778,6 +885,7 @@ async def network_sender(
                     )
                     try:
                         await _send_control_message(control, sock, protocol, message)
+                        await session.transition(SessionState.CLOSING, "EOF sent")
                         control_plane.on_eof_sent()
                         print("[CLIENT] EOF sent to server")
                         _telemetry("send_eof", "all")
@@ -794,9 +902,12 @@ async def network_sender(
 
         encoded = item
         async with inflight_condition:
-            while len(acks_pending) >= window.limit() and not stop_event.is_set():
-                # Wait until the adaptive window controller permits another send.
-                await inflight_condition.wait()
+            await _wait_with_health(lambda: len(acks_pending) >= window.limit())
+            if session.state == SessionState.DEGRADED:
+                stop_event.set()
+                inflight_condition.notify_all()
+                network_queue.task_done()
+                break
         control_plane.on_frame_sent(encoded.sequence, now_ns=time.monotonic_ns())
         fragments: Iterable[FrameFragment]
         if use_binary:
@@ -872,6 +983,8 @@ async def reply_consumer(
     frame_counter: itertools.count,
     print_metrics: bool,
     heartbeat_timeout: float,
+    session: SessionTracker,
+    heartbeat_watch: HeartbeatWatch,
     control_plane: ControlPlane,
     use_binary: bool,
 ) -> None:
@@ -897,13 +1010,16 @@ async def reply_consumer(
         with contextlib.suppress(Exception):
             result.context.handle.on_consumed()
 
-    async def drain_ready(force: bool = False) -> None:
+    async def drain_ready(force: bool = False) -> tuple[int, int]:
         nonlocal next_sequence
+        flushed = 0
+        skipped = 0
         while True:
             if next_sequence in skipped_sequences:
                 detail = skipped_sequences.pop(next_sequence)
                 print(f"[CLIENT] Skipping frame seq={next_sequence}: {detail}")
                 stats.skipped_frames += 1
+                skipped += 1
                 next_sequence += 1
                 continue
             result = reorder_buffer.get(next_sequence)
@@ -912,229 +1028,303 @@ async def reply_consumer(
             reorder_buffer.pop(next_sequence, None)
             await emit_result(result)
             next_sequence += 1
+            flushed += 1
         if force:
             for sequence in sorted(reorder_buffer):
                 await emit_result(reorder_buffer[sequence])
+                flushed += 1
             reorder_buffer.clear()
             if skipped_sequences:
                 for sequence in sorted(skipped_sequences):
                     detail = skipped_sequences[sequence]
                     print(f"[CLIENT] Skipped pending seq={sequence}: {detail}")
                     stats.skipped_frames += 1
+                    skipped += 1
                 skipped_sequences.clear()
+        return flushed, skipped
 
     heartbeat_timeout = max(heartbeat_timeout, CONTROL_POLL_INTERVAL)
-    last_activity = time.monotonic()
+    heartbeat_watch.touch()
 
-    while not stop_event.is_set():
-        try:
-            event = await asyncio.wait_for(reply_queue.get(), timeout=CONTROL_POLL_INTERVAL)
-        except asyncio.TimeoutError:
-            if stop_event.is_set():
-                break
-            now_ns = time.monotonic_ns()
-            expired = control_plane.expired_sequences(now_ns=now_ns)
-            if expired:
-                detail = ",".join(str(seq) for seq in expired)
-                print(f"[CLIENT] ERROR: ACK timeout for sequences {detail}")
-                control_plane.on_error(ErrorCode.TIMEOUT, f"ack timeout ({detail})")
-                stop_event.set()
-                async with inflight_condition:
-                    inflight_condition.notify_all()
-                continue
-            if control_plane.heartbeat_timed_out(now_ns=now_ns):
-                print("[CLIENT] ERROR: Heartbeat timeout detected")
-                control_plane.on_error(ErrorCode.TIMEOUT, "heartbeat timeout")
-                stop_event.set()
-                async with inflight_condition:
-                    inflight_condition.notify_all()
-                continue
-            if time.monotonic() - last_activity > heartbeat_timeout:
-                print(
-                    "[CLIENT] WARN: No server reply within heartbeat window;"
-                    f" pending={len(inflight)} inflight"
-                )
-            continue
-
-        now = time.monotonic()
-        last_activity = now
-        if event.kind == "local_skip":
-            sequence = event.sequence
-            detail = event.detail or "local failure"
-            frame_name = event.frame or (str(sequence) if sequence is not None else "unknown")
-            if sequence is not None:
-                skipped_sequences[sequence] = detail
-                async with inflight_condition:
-                    acks_pending.discard(sequence)
-                    inflight_condition.notify_all()
-            print(f"[CLIENT] Local skip seq={sequence}: {frame_name} ({detail})")
-            stats.error_frames += 1
-            await drain_ready()
-            reply_queue.task_done()
-            continue
-        if event.kind == "error" and event.error:
-            channel = event.channel or DATA_CHANNEL
-            print(f"[CLIENT] ERROR from reply pump ({channel}): {event.error}")
-            control_plane.on_error(ErrorCode.INTERNAL_ERROR, str(event.error))
-            stop_event.set()
-            reply_queue.task_done()
-            break
-        if event.kind == "closed":
-            channel = event.channel or DATA_CHANNEL
-            print(f"[CLIENT] Connection closed by server on {channel} channel")
-            control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, "connection closed")
-            stop_event.set()
-            reply_queue.task_done()
-            break
-        if event.kind != "message" or event.message is None:
-            reply_queue.task_done()
-            continue
-
-        message = event.message
-        address = decode_frame_address(message.name)
-        header = None
-        body = message.payload
-        if use_binary:
+    try:
+        while not stop_event.is_set():
             try:
-                header = unpack_frame_header(message.payload)
-            except ValueError as exc:
-                print(f"[CLIENT] ERROR: invalid frame header: {exc}")
-                control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
-                stop_event.set()
+                event = await asyncio.wait_for(
+                    reply_queue.get(), timeout=CONTROL_POLL_INTERVAL
+                )
+            except asyncio.TimeoutError:
+                if stop_event.is_set():
+                    break
+                now_ns = time.monotonic_ns()
+                expired = control_plane.expired_sequences(now_ns=now_ns)
+                if expired:
+                    detail = ",".join(str(seq) for seq in expired)
+                    print(f"[CLIENT] ERROR: ACK timeout for sequences {detail}")
+                    control_plane.on_error(ErrorCode.TIMEOUT, f"ack timeout ({detail})")
+                    await session.transition(SessionState.DEGRADED, "ack timeout")
+                    stop_event.set()
+                    async with inflight_condition:
+                        inflight_condition.notify_all()
+                    continue
+                if control_plane.heartbeat_timed_out(now_ns=now_ns):
+                    print("[CLIENT] ERROR: Heartbeat timeout detected")
+                    control_plane.on_error(ErrorCode.TIMEOUT, "heartbeat timeout")
+                    await session.transition(SessionState.DEGRADED, "heartbeat timeout")
+                    stop_event.set()
+                    async with inflight_condition:
+                        inflight_condition.notify_all()
+                    continue
+                if heartbeat_timeout > 0 and heartbeat_watch.age() > heartbeat_timeout:
+                    print(
+                        "[CLIENT] WARN: No server reply within heartbeat window;",
+                        f" pending={len(inflight)} inflight",
+                    )
+                    await session.transition(
+                        SessionState.DEGRADED, "reply heartbeat window expired"
+                    )
+                    stop_event.set()
+                    async with inflight_condition:
+                        inflight_condition.notify_all()
+                    continue
+                continue
+
+            now = time.monotonic()
+            heartbeat_watch.touch()
+            if event.kind == "local_skip":
+                sequence = event.sequence
+                detail = event.detail or "local failure"
+                frame_name = event.frame or (
+                    str(sequence) if sequence is not None else "unknown"
+                )
+                if sequence is not None:
+                    skipped_sequences[sequence] = detail
+                    async with inflight_condition:
+                        acks_pending.discard(sequence)
+                        inflight_condition.notify_all()
+                print(f"[CLIENT] Local skip seq={sequence}: {frame_name} ({detail})")
+                stats.error_frames += 1
+                await drain_ready()
                 reply_queue.task_done()
                 continue
-            body = message.payload[FRAME_HEADER_SIZE:]
+            if event.kind == "error" and event.error:
+                channel = event.channel or DATA_CHANNEL
+                print(f"[CLIENT] ERROR from reply pump ({channel}): {event.error}")
+                control_plane.on_error(ErrorCode.INTERNAL_ERROR, str(event.error))
+                await session.transition(
+                    SessionState.DEGRADED, f"reply pump error ({channel})"
+                )
+                stop_event.set()
+                async with inflight_condition:
+                    acks_pending.clear()
+                    inflight_condition.notify_all()
+                reply_queue.task_done()
+                break
+            if event.kind == "closed":
+                channel = event.channel or DATA_CHANNEL
+                print(f"[CLIENT] Connection closed by server on {channel} channel")
+                control_plane.on_error(
+                    ErrorCode.PROTOCOL_VIOLATION, "connection closed"
+                )
+                await session.transition(SessionState.DEGRADED, "connection closed")
+                stop_event.set()
+                async with inflight_condition:
+                    acks_pending.clear()
+                    inflight_condition.notify_all()
+                reply_queue.task_done()
+                break
+            if event.kind != "message" or event.message is None:
+                reply_queue.task_done()
+                continue
 
-        if message.kind == MSG_HEARTBEAT:
-            control_plane.on_heartbeat(now_ns=time.monotonic_ns())
-            _telemetry("recv_heartbeat", address.name or "all")
-            async with inflight_condition:
-                inflight_condition.notify_all()
-            reply_queue.task_done()
-            continue
-
-        if message.kind == MSG_ACK:
-            sequence = address.sequence
-            if header is not None and header.sequence is not None:
-                sequence = header.sequence
-            if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
-                sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
-            ctx: FrameContext | None = None
-            async with inflight_condition:
-                if sequence is not None:
-                    ctx = inflight.get(sequence)
-                    acks_pending.discard(sequence)
-                inflight_condition.notify_all()
-            if ctx is None:
-                print(f"[CLIENT] WARN: ACK for unknown frame {message.name}")
-            else:
-                ctx.ack_at = now
-                ack_latency = max(0.0, ctx.ack_at - ctx.sent_at)
-                stats.record_ack(ack_latency)
-                window.observe_ack(ctx.payload_size, ack_latency)
+            message = event.message
+            address = decode_frame_address(message.name)
+            header = None
+            body = message.payload
+            if use_binary:
                 try:
-                    control_plane.on_ack(ctx.sequence)
+                    header = unpack_frame_header(message.payload)
+                except ValueError as exc:
+                    print(f"[CLIENT] ERROR: invalid frame header: {exc}")
+                    control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
+                    await session.transition(SessionState.DEGRADED, "invalid frame header")
+                    stop_event.set()
+                    async with inflight_condition:
+                        acks_pending.clear()
+                        inflight_condition.notify_all()
+                    reply_queue.task_done()
+                    continue
+                body = message.payload[FRAME_HEADER_SIZE:]
+
+            if message.kind == MSG_HEARTBEAT:
+                heartbeat_watch.touch()
+                control_plane.on_heartbeat(now_ns=time.monotonic_ns())
+                _telemetry("recv_heartbeat", address.name or "all")
+                async with inflight_condition:
+                    inflight_condition.notify_all()
+                reply_queue.task_done()
+                continue
+
+            if message.kind == MSG_ACK:
+                sequence = address.sequence
+                if header is not None and header.sequence is not None:
+                    sequence = header.sequence
+                if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
+                    sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
+                ctx: FrameContext | None = None
+                async with inflight_condition:
+                    if sequence is not None:
+                        ctx = inflight.get(sequence)
+                        acks_pending.discard(sequence)
+                    inflight_condition.notify_all()
+                if ctx is None:
+                    print(f"[CLIENT] WARN: ACK for unknown frame {message.name}")
+                else:
+                    ctx.ack_at = now
+                    ack_latency = max(0.0, ctx.ack_at - ctx.sent_at)
+                    stats.record_ack(ack_latency)
+                    window.observe_ack(ctx.payload_size, ack_latency)
+                    try:
+                        control_plane.on_ack(ctx.sequence)
+                    except ControlPlaneError as exc:
+                        print(f"[CLIENT] ERROR: {exc}")
+                        control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
+                        stop_event.set()
+                _telemetry(
+                    "recv_ack",
+                    address.name or (ctx.handle.name if ctx else "unknown"),
+                    seq=sequence,
+                    latency_ms=(ctx.ack_at - ctx.sent_at) * 1000.0 if ctx and ctx.ack_at else None,
+                )
+                reply_queue.task_done()
+                continue
+
+            if message.kind == MSG_EOF:
+                print("[CLIENT] EOF received from server")
+                try:
+                    control_plane.on_eof_received()
                 except ControlPlaneError as exc:
                     print(f"[CLIENT] ERROR: {exc}")
                     control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
-                    stop_event.set()
-                _telemetry(
-                    "recv_ack",
-                    address.name or ctx.handle.name,
-                    seq=ctx.sequence,
-                    latency_ms=ack_latency * 1000.0,
-                )
-            reply_queue.task_done()
-            continue
+                await session.transition(SessionState.CLOSING, "server EOF")
+                stop_event.set()
+                async with inflight_condition:
+                    acks_pending.clear()
+                    inflight_condition.notify_all()
+                _telemetry("recv_eof", "all")
+                await drain_ready(force=True)
+                reply_queue.task_done()
+                break
 
-        if message.kind == MSG_EOF:
-            print("[CLIENT] EOF received from server")
-            try:
-                control_plane.on_eof_received()
-            except ControlPlaneError as exc:
-                print(f"[CLIENT] ERROR: {exc}")
-                control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
-            stop_event.set()
             async with inflight_condition:
-                acks_pending.clear()
+                ctx = None
+                sequence = address.sequence
+                if sequence is not None:
+                    ctx = inflight.pop(sequence, None)
+                    acks_pending.discard(sequence)
+                if ctx is None:
+                    for key, candidate in list(inflight.items()):
+                        if candidate.handle.name == address.name or candidate.sequence == sequence:
+                            ctx = inflight.pop(key)
+                            acks_pending.discard(candidate.sequence)
+                            break
                 inflight_condition.notify_all()
-            _telemetry("recv_eof", "all")
-            await drain_ready(force=True)
-            reply_queue.task_done()
-            break
-
-        async with inflight_condition:
-            ctx = None
-            sequence = address.sequence
-            if sequence is not None:
-                ctx = inflight.pop(sequence, None)
-                acks_pending.discard(sequence)
             if ctx is None:
-                for key, candidate in list(inflight.items()):
-                    if candidate.handle.name == address.name or candidate.sequence == sequence:
-                        ctx = inflight.pop(key)
-                        acks_pending.discard(candidate.sequence)
-                        break
-            inflight_condition.notify_all()
-        if ctx is None:
-            print(f"[CLIENT] WARN: Received reply for unknown frame {message.name}")
-            reply_queue.task_done()
-            continue
-
-        if message.kind == MSG_ERROR:
-            if use_binary and header and header.control_code == ControlCode.ERROR and body:
-                code = ErrorCode(body[0]) if body[0] in ErrorCode._value2member_map_ else ErrorCode.INTERNAL_ERROR
-                detail = body[1:].decode("utf-8", errors="replace") if len(body) > 1 else code.name
-            else:
-                code = ErrorCode.INTERNAL_ERROR
-                detail = body.decode("utf-8", errors="replace") if body else code.name
-            print(f"[CLIENT] SERVER ERROR for seq={ctx.sequence}: {detail}")
-            stats.error_frames += 1
-            skipped_sequences[ctx.sequence] = detail
-            control_plane.on_error(code, detail)
-            _telemetry("recv_error", address.name or str(ctx.sequence), detail=detail)
-            with contextlib.suppress(Exception):
-                ctx.handle.on_aborted()
-            await drain_ready()
-            reply_queue.task_done()
-            continue
-
-        if use_binary and header is not None:
-            if header.more_fragments and ctx.sequence is not None:
-                fragment_buffer.setdefault(ctx.sequence, bytearray()).extend(body)
+                print(f"[CLIENT] WARN: Received reply for unknown frame {message.name}")
                 reply_queue.task_done()
                 continue
-            if ctx.sequence is not None and ctx.sequence in fragment_buffer:
-                bucket = fragment_buffer.pop(ctx.sequence)
-                bucket.extend(body)
-                body = bytes(bucket)
 
-        payload = body if body else message.payload
-        control_plane.on_first_data()
-        rtt = max(0.0, now - ctx.sent_at)
-        total_latency = max(0.0, now - ctx.captured_at)
-        stats.record_round_trip(total_latency, rtt)
-        if ctx.ack_at is None:
-            window.observe_ack(ctx.payload_size, rtt)
-        traffic.received += len(payload)
-        _telemetry("recv_data", address.name or ctx.handle.name, size=len(payload), seq=ctx.sequence)
-        result = DecodedResult(
-            sequence=ctx.sequence,
-            base_name=address.name or f"{ctx.handle.name}.decoded",
-            payload=payload,
-            context=ctx,
-            received_at=now,
-        )
-        if result.sequence is None:
-            await emit_result(result)
-        else:
-            if result.sequence < next_sequence:
-                print(f"[CLIENT] WARN: Late arrival for already published seq={result.sequence}, dropping")
+            if message.kind == MSG_ERROR:
+                if use_binary and header and header.control_code == ControlCode.ERROR and body:
+                    code = (
+                        ErrorCode(body[0])
+                        if body[0] in ErrorCode._value2member_map_
+                        else ErrorCode.INTERNAL_ERROR
+                    )
+                    detail = (
+                        body[1:].decode("utf-8", errors="replace")
+                        if len(body) > 1
+                        else code.name
+                    )
+                else:
+                    code = ErrorCode.INTERNAL_ERROR
+                    detail = body.decode("utf-8", errors="replace") if body else code.name
+                print(f"[CLIENT] SERVER ERROR for seq={ctx.sequence}: {detail}")
+                stats.error_frames += 1
+                skipped_sequences[ctx.sequence] = detail
+                control_plane.on_error(code, detail)
+                await session.transition(SessionState.DEGRADED, f"server error {code.name}")
+                _telemetry("recv_error", address.name or str(ctx.sequence), detail=detail)
+                with contextlib.suppress(Exception):
+                    ctx.handle.on_aborted()
+                await drain_ready()
+                reply_queue.task_done()
+                continue
+
+            if use_binary and header is not None:
+                if header.more_fragments and ctx.sequence is not None:
+                    fragment_buffer.setdefault(ctx.sequence, bytearray()).extend(body)
+                    reply_queue.task_done()
+                    continue
+                if ctx.sequence is not None and ctx.sequence in fragment_buffer:
+                    bucket = fragment_buffer.pop(ctx.sequence)
+                    bucket.extend(body)
+                    body = bytes(bucket)
+
+            payload = body if body else message.payload
+            control_plane.on_first_data()
+            rtt = max(0.0, now - ctx.sent_at)
+            total_latency = max(0.0, now - ctx.captured_at)
+            stats.record_round_trip(total_latency, rtt)
+            if ctx.ack_at is None:
+                window.observe_ack(ctx.payload_size, rtt)
+            traffic.received += len(payload)
+            _telemetry(
+                "recv_data",
+                address.name or ctx.handle.name,
+                size=len(payload),
+                seq=ctx.sequence,
+            )
+            result = DecodedResult(
+                sequence=ctx.sequence,
+                base_name=address.name or f"{ctx.handle.name}.decoded",
+                payload=payload,
+                context=ctx,
+                received_at=now,
+            )
+            if result.sequence is None:
+                await emit_result(result)
             else:
-                reorder_buffer[result.sequence] = result
-            await drain_ready()
-        reply_queue.task_done()
-
+                if result.sequence < next_sequence:
+                    print(
+                        f"[CLIENT] WARN: Late arrival for already published seq={result.sequence}, dropping"
+                    )
+                else:
+                    reorder_buffer[result.sequence] = result
+                await drain_ready()
+            reply_queue.task_done()
+    except asyncio.CancelledError:
+        await session.transition(SessionState.DEGRADED, "reply consumer cancelled")
+        flushed, skipped = await drain_ready(force=True)
+        if flushed or skipped:
+            print(
+                f"[CLIENT] Reply consumer cancelled; drained={flushed} skipped={skipped}"
+            )
+        async with inflight_condition:
+            acks_pending.clear()
+            inflight_condition.notify_all()
+        raise
+    except Exception as exc:
+        await session.transition(SessionState.DEGRADED, f"reply consumer error: {exc}")
+        flushed, skipped = await drain_ready(force=True)
+        print(
+            f"[CLIENT] ERROR in reply consumer tail drain: drained={flushed} skipped={skipped}"
+        )
+        async with inflight_condition:
+            acks_pending.clear()
+            inflight_condition.notify_all()
+        raise
+    finally:
+        heartbeat_watch.touch()
 
 async def monitor_process(
     proc: subprocess.Popen | None,
@@ -1166,7 +1356,7 @@ class SpoolWatcher:
     # NOTE: Bounded history prevents the previous unbounded processed set growth.
     _history_limit = 65536
 
-    def __init__(self, directory: Path, prefix: str):
+    def __init__(self, directory: Path, prefix: str, *, gc_window: int | None = None):
         self.directory = directory
         self.prefix = prefix
         self._inotify: Optional[INotify] = None
@@ -1174,6 +1364,8 @@ class SpoolWatcher:
         self._known: set[str] = set()
         self._retired: Deque[str] = deque(maxlen=self._history_limit)
         self._retired_set: set[str] = set()
+        self._known_order: Deque[str] = deque()
+        self._gc_window = max(0, gc_window or 0)
 
     def __enter__(self) -> "SpoolWatcher":
         if INotify is not None:
@@ -1203,7 +1395,18 @@ class SpoolWatcher:
         if name in self._known:
             return False
         self._known.add(name)
+        self._known_order.append(name)
+        self._gc_known()
         return True
+
+    def _gc_known(self) -> None:
+        if not self._gc_window:
+            return
+        while len(self._known) > self._gc_window and self._known_order:
+            candidate = self._known_order.popleft()
+            if candidate in self._retired_set:
+                continue
+            self._known.discard(candidate)
 
     def _discover_existing(self) -> list[Path]:
         paths = sorted(self.directory.glob(f"{self.prefix}_*.ply"))
@@ -1254,6 +1457,8 @@ class SpoolWatcher:
 
         name = path.name
         self._known.discard(name)
+        with contextlib.suppress(ValueError):
+            self._known_order.remove(name)
         if name in self._retired_set:
             return
         if len(self._retired) == self._retired.maxlen:
@@ -1306,6 +1511,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Base directory for generated artifacts (overrides profile/data root)')
     ap.add_argument('--ply-dir', default=None,
                     help='Override the spool directory for captured PLY frames')
+    ap.add_argument(
+        '--spool-gc-window',
+        type=int,
+        default=0,
+        help='Maximum number of discovered spool files to remember before pruning (0 disables)',
+    )
     add_encoder_arguments(
         ap,
         hint_option='--encoder',
@@ -1391,6 +1602,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 async def run_client(args: argparse.Namespace) -> None:
+    session_summary: dict[str, object] | None = None
     fragment_size = _validate_client_config(args)
     _log_effective_config(args, fragment_size)
     layout = resolve_data_layout(
@@ -1457,6 +1669,8 @@ async def run_client(args: argparse.Namespace) -> None:
         socket_buffer_autotune=args.socket_buffer_autotune,
     )
     control_plane = ControlPlane(role="client")
+    session_tracker = SessionTracker()
+    heartbeat_watch = HeartbeatWatch()
     start_time = time.monotonic()
 
     try:
@@ -1542,7 +1756,9 @@ async def run_client(args: argparse.Namespace) -> None:
             with contextlib.ExitStack() as stack:
                 frame_supplier: FilesystemFrameSupplier | SharedMemoryFrameSupplier
                 if args.capture_transport == 'filesystem':
-                    watcher = stack.enter_context(SpoolWatcher(ply_dir, args.prefix))
+                    watcher = stack.enter_context(
+                        SpoolWatcher(ply_dir, args.prefix, gc_window=args.spool_gc_window)
+                    )
                     frame_supplier = FilesystemFrameSupplier(watcher)
                 elif args.capture_transport == 'shared-memory':
                     shared_receiver = SharedMemoryReceiver()
@@ -1609,20 +1825,23 @@ async def run_client(args: argparse.Namespace) -> None:
                         network_sender(
                             sock,
                             protocol,
-                            network_queue,
-                            inflight,
-                            acks_pending,
-                            stats=pipeline_stats,
-                            traffic=traffic,
-                            stop_event=stop_event,
-                            inflight_condition=inflight_condition,
-                            encode_workers=args.encode_workers,
-                            window=window_controller,
-                            control=control_channel,
-                            fragment_size=fragment_size,
-                            use_binary=(protocol.name == "binary"),
-                            control_plane=control_plane,
-                        )
+                        network_queue,
+                        inflight,
+                        acks_pending,
+                        stats=pipeline_stats,
+                        traffic=traffic,
+                        stop_event=stop_event,
+                        inflight_condition=inflight_condition,
+                        encode_workers=args.encode_workers,
+                        window=window_controller,
+                        session=session_tracker,
+                        heartbeat_watch=heartbeat_watch,
+                        heartbeat_timeout=args.heartbeat_timeout,
+                        control=control_channel,
+                        fragment_size=fragment_size,
+                        use_binary=(protocol.name == "binary"),
+                        control_plane=control_plane,
+                    )
                     )
                 )
                 tasks.append(
@@ -1642,6 +1861,8 @@ async def run_client(args: argparse.Namespace) -> None:
                             frame_counter=frame_counter,
                             print_metrics=args.print_metrics,
                             heartbeat_timeout=args.heartbeat_timeout,
+                            session=session_tracker,
+                            heartbeat_watch=heartbeat_watch,
                             control_plane=control_plane,
                             use_binary=(protocol.name == "binary"),
                         )
@@ -1678,6 +1899,9 @@ async def run_client(args: argparse.Namespace) -> None:
                         if thread is not None and thread.is_alive():
                             thread.join(timeout=1.0)
     finally:
+        session_summary = session_tracker.snapshot()
+        if session_tracker.state not in (SessionState.DEGRADED, SessionState.CLOSING):
+            await session_tracker.transition(SessionState.CLOSING, "client shutdown")
         stop_event.set()
         pending_inflight = len(inflight)
         pending_acks = len(acks_pending)
@@ -1703,6 +1927,10 @@ async def run_client(args: argparse.Namespace) -> None:
     throughput_peak_mbps = max(traffic.send_mbps_samples or [throughput_avg_mbps])
     receive_mbps = (traffic.received * 8 / elapsed) / 1e6
 
+    session_snapshot = session_summary or session_tracker.snapshot()
+    session_state = session_snapshot.get("state", SessionState.OK.value)
+    session_reason = session_snapshot.get("reason")
+
     print('[CLIENT] ---- Transfer summary ----')
     print(f"  elapsed: {elapsed:.2f} s")
     print(f"  frames: {frames_processed}")
@@ -1713,6 +1941,7 @@ async def run_client(args: argparse.Namespace) -> None:
         for label in ("p50", "p95", "p99"):
             if label in latency_percentiles:
                 print(f"    {label}: {latency_percentiles[label] * 1000.0:.2f} ms")
+    print(f"  session: {session_state} reason={session_reason}")
     print('  stage metrics:')
     print(f"    capture→encode: {pipeline_stats.capture_to_encode.summary()}")
     print(f"    encode latency: {pipeline_stats.encode_time.summary()}")
@@ -1727,10 +1956,39 @@ async def run_client(args: argparse.Namespace) -> None:
     print(
         f"  queue peaks: capture={traffic.capture_depth_peak} network={traffic.network_depth_peak}"
     )
+    control_pending = control_plane.pending
     print(
         f"  drops/skipped: {pipeline_stats.skipped_frames} errors={pipeline_stats.error_frames}"
-        f" pending={pending_inflight} pending_acks={pending_acks} control_pending={control_plane.pending}"
+        f" pending={pending_inflight} pending_acks={pending_acks} control_pending={control_pending}"
     )
+
+    latency_summary = {
+        label: (latency_percentiles[label] * 1000.0 if label in latency_percentiles else None)
+        for label in ("p50", "p95", "p99")
+    }
+    summary_line = {
+        "elapsed_sec": elapsed,
+        "bytes_out": traffic.sent,
+        "bytes_in": traffic.received,
+        "mbps": {
+            "send_avg": throughput_avg_mbps,
+            "send_peak": throughput_peak_mbps,
+            "recv_avg": receive_mbps,
+        },
+        "latency_ms": latency_summary,
+        "max_queue_depths": {
+            "capture": traffic.capture_depth_peak,
+            "network": traffic.network_depth_peak,
+        },
+        "pending": pending_inflight,
+        "acks_pending": pending_acks,
+        "control_pending": control_pending,
+        "errors": pipeline_stats.error_frames,
+        "skipped": pipeline_stats.skipped_frames,
+        "session_state": session_state,
+        "session_reason": session_reason,
+    }
+    print(json.dumps(summary_line, sort_keys=True))
 
     metrics_out_path = Path(args.metrics_out).expanduser()
     metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1774,6 +2032,10 @@ async def run_client(args: argparse.Namespace) -> None:
         telemetry_payload = telemetry.build(
             control_plane=control_plane,
             metrics=metrics_block,
+            session_overrides={
+                "client_state": session_state,
+                "client_state_reason": session_reason,
+            },
             inflight_pending=pending_inflight,
         )
         metrics_out_path.write_text(json.dumps(telemetry_payload, indent=2), encoding='utf-8')

@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Mapping
 
-from draco_roundtrip.utils.stream_protocol import ControlPlane, ControlState
+from .stream_protocol import ControlPlane, ControlState
 
 __all__ = ["Telemetry", "percentiles_block"]
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import queue
 import socket
@@ -36,12 +37,32 @@ class SharedMemoryDescriptor:
 class SharedMemoryPublisher:
     """Send numpy arrays over a TCP side channel using shared memory."""
 
-    def __init__(self, host: str, port: int, *, connect_timeout: float = 5.0) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        *,
+        connect_timeout: float = 5.0,
+        enable_janitor: bool = False,
+        janitor_interval: float = 5.0,
+    ) -> None:
         self._host = host
         self._port = port
         self._connect_timeout = connect_timeout
         self._sock: Optional[socket.socket] = None
         self._lock = threading.Lock()
+        self._janitor_enabled = enable_janitor
+        self._janitor_interval = max(0.1, janitor_interval)
+        self._dangling: "queue.Queue[str]" = queue.Queue()
+        self._janitor_stop: threading.Event | None = threading.Event() if enable_janitor else None
+        self._janitor_thread: threading.Thread | None = None
+        if enable_janitor:
+            self._janitor_thread = threading.Thread(
+                target=self._janitor_loop,
+                name="SharedMemoryJanitor",
+                daemon=True,
+            )
+            self._janitor_thread.start()
 
     def _ensure_connection(self) -> socket.socket:
         if self._sock is not None:
@@ -50,6 +71,46 @@ class SharedMemoryPublisher:
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._sock = sock
         return sock
+
+    @staticmethod
+    def _try_unlink(name: str) -> bool:
+        if not name:
+            return True
+        try:
+            shm = shared_memory.SharedMemory(name=name)
+        except FileNotFoundError:
+            return True
+        except Exception:
+            return False
+        try:
+            shm.unlink()
+            return True
+        except FileNotFoundError:
+            return True
+        except Exception:
+            return False
+        finally:
+            with contextlib.suppress(Exception):
+                shm.close()
+
+    def _schedule_unlink(self, name: str) -> None:
+        if not name:
+            return
+        if self._try_unlink(name):
+            return
+        if self._janitor_enabled and self._janitor_stop is not None:
+            self._dangling.put_nowait(name)
+
+    def _janitor_loop(self) -> None:  # pragma: no cover - background maintenance
+        assert self._janitor_stop is not None
+        while not self._janitor_stop.is_set():
+            try:
+                name = self._dangling.get(timeout=self._janitor_interval)
+            except queue.Empty:
+                continue
+            if not name:
+                continue
+            self._try_unlink(name)
 
     def publish(self, frame: str, points: np.ndarray) -> SharedMemoryDescriptor:
         """Publish a point cloud through shared memory and notify the listener."""
@@ -60,16 +121,16 @@ class SharedMemoryPublisher:
             points = np.ascontiguousarray(points)
         size = int(points.nbytes)
         shape = tuple(int(v) for v in points.shape)
+        cleanup_name: str | None = None
+        segment: shared_memory.SharedMemory | None = None
         if size == 0:
             shm_name = ""
         else:
             shm_name = f"draco_stream_{uuid.uuid4().hex}"
             segment = shared_memory.SharedMemory(name=shm_name, create=True, size=size)
-            try:
-                buffer = np.ndarray(shape, dtype=np.float32, buffer=segment.buf)
-                buffer[...] = points
-            finally:
-                segment.close()
+            cleanup_name = shm_name
+            buffer = np.ndarray(shape, dtype=np.float32, buffer=segment.buf)
+            buffer[...] = points
         descriptor = SharedMemoryDescriptor(
             frame=frame,
             shm=shm_name,
@@ -89,10 +150,18 @@ class SharedMemoryPublisher:
             },
             separators=(",", ":"),
         ).encode("utf-8") + b"\n"
-        with self._lock:
-            sock = self._ensure_connection()
-            sock.sendall(payload)
-        return descriptor
+        try:
+            with self._lock:
+                sock = self._ensure_connection()
+                sock.sendall(payload)
+            cleanup_name = None
+            return descriptor
+        finally:
+            if segment is not None:
+                with contextlib.suppress(Exception):
+                    segment.close()
+            if cleanup_name:
+                self._schedule_unlink(cleanup_name)
 
     def close(self) -> None:
         with self._lock:
@@ -106,6 +175,11 @@ class SharedMemoryPublisher:
                 except OSError:
                     pass
                 self._sock = None
+        if self._janitor_enabled and self._janitor_stop is not None:
+            self._janitor_stop.set()
+            self._dangling.put_nowait("")
+            if self._janitor_thread is not None:
+                self._janitor_thread.join(timeout=1.0)
 
 
 class SharedMemoryReceiver:
