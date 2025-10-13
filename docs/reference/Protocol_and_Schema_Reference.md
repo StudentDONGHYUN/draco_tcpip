@@ -10,6 +10,24 @@ _마지막 업데이트: 2025-03-15_
 - [검증 체크리스트](#검증-체크리스트)
 
 ## 제어 플레인 메시지
+
+### TCP 제어 시퀀스 개요
+
+<!-- AUTODOC:TCP_CONTROL_SEQUENCE_SIMPLE -->
+<!-- AUTODOC:TCP_CONTROL_SEQUENCE_SIMPLE:BEGIN -->
+```mermaid
+sequenceDiagram
+  participant Sender as TCP Sender
+  participant Receiver as TCP Receiver
+  participant Control as Control Plane
+  Sender->>Receiver: DATA frame
+  Receiver-->>Sender: ACK (window update)
+  Control-->>Sender: Heartbeat timer
+  Sender-->>Control: EOF / Error signal
+  Control-->>Receiver: Close stream on EOF
+```
+<!-- AUTODOC:TCP_CONTROL_SEQUENCE_SIMPLE:END -->
+
 | 코드(16진) | 심볼 | 목적 | 페이로드 |
 |------------|--------|---------|---------|
 | `0x01` | `ACK` | 수신자가 데이터 프레임을 수락했음을 확인 | 8바이트 부호 없는 시퀀스(빅엔디언) |
@@ -78,67 +96,67 @@ _마지막 업데이트: 2025-03-15_
 
 ## 자동 생성 와이어 참조
 <!-- AUTODOC:PROTOCOL:BEGIN -->
-#### 바이너리 프레임 헤더
+#### Binary Frame Header
 
-| 프레임 헤더 필드 | 포맷 | 바이트 | 설명 |
+| Frame Header Field | Format | Bytes | Description |
 | - | - | - | - |
-| magic | 4s | 4 | 고정 ASCII 매직 b'DRTC' |
-| version | B | 1 | 프로토콜 버전(기대값 1) |
-| flags | B | 1 | 하위 4비트=FrameType, 상위 비트=조각화 플래그 |
-| sequence | I | 4 | 단조 증가 프레임 시퀀스 번호 |
-| name_len | H | 2 | 논리 이름/경로 메타데이터 길이 |
-| payload_len | I | 4 | 페이로드 바이트 길이 |
+| magic | 4s | 4 | Constant ASCII magic b'DRTC' |
+| version | B | 1 | Protocol version (expected 1) |
+| flags | B | 1 | Lower 4 bits = FrameType, upper bits = fragmentation flags |
+| sequence | I | 4 | Monotonic frame sequence number |
+| name_len | H | 2 | Length of logical name/path metadata |
+| payload_len | I | 4 | Length of payload bytes |
 | Total |  | 16 |  |
 
-#### 조각 메타데이터
+#### Fragment Metadata
 
-| 조각 정보 필드 | 포맷 | 바이트 | 설명 |
+| Fragment Info Field | Format | Bytes | Description |
 | - | - | - | - |
-| index | H | 2 | 0부터 시작하는 조각 인덱스 |
-| total | H | 2 | 전체 조각 수 |
-| frame_payload_len | I | 4 | 재조립된 페이로드 길이 |
+| index | H | 2 | Zero-based fragment index |
+| total | H | 2 | Total number of fragments |
+| frame_payload_len | I | 4 | Length of the reassembled payload |
 | Total |  | 8 |  |
 
-#### 제어 플레인 데이터 헤더
+#### Control Plane Data Headers
 
-| 데이터 헤더 필드 | 포맷 | 바이트 | 설명 |
+| Data Header Field | Format | Bytes | Description |
 | - | - | - | - |
-| kind | B | 1 | 페이로드 종류(DATA_KIND_DRACO) |
-| sequence | I | 4 | 프레임 시퀀스 번호 |
-| timestamp_ns | Q | 8 | 나노초 단위 캡처 타임스탬프 |
-| payload_len | I | 4 | 압축된 Draco 페이로드 크기 |
-| content_type | B | 1 | 콘텐츠 유형 힌트(CONTENT_TYPE_DRACO) |
+| kind | B | 1 | Payload kind (DATA_KIND_DRACO) |
+| sequence | I | 4 | Frame sequence number |
+| timestamp_ns | Q | 8 | Capture timestamp in nanoseconds |
+| payload_len | I | 4 | Compressed Draco payload size |
+| content_type | B | 1 | Content type hint (CONTENT_TYPE_DRACO) |
 | Total |  | 18 |  |
 
-| 응답 헤더 필드 | 포맷 | 바이트 | 설명 |
+| Response Header Field | Format | Bytes | Description |
 | - | - | - | - |
-| kind | B | 1 | 응답 종류(RESPONSE_KIND_DECODED_AND_METRICS) |
-| sequence | I | 4 | 프레임 시퀀스 번호 |
-| timestamp_ns | Q | 8 | 캡처 타임스탬프 에코 |
-| decoded_len | I | 4 | 디코드된 페이로드 길이 |
-| metrics_len | I | 4 | JSON 메트릭 페이로드 길이 |
-| decode_ms | H | 2 | 밀리초 단위 디코드 지연 |
+| kind | B | 1 | Response kind (RESPONSE_KIND_DECODED_AND_METRICS) |
+| sequence | I | 4 | Frame sequence number |
+| timestamp_ns | Q | 8 | Echoed capture timestamp |
+| decoded_len | I | 4 | Length of decoded payload |
+| metrics_len | I | 4 | Length of JSON metrics payload |
+| decode_ms | H | 2 | Decode latency in milliseconds |
 | Total |  | 23 |  |
 
-#### 열거형
+#### Enumerations
 
-| FrameType | 값 | 설명 |
+| FrameType | Value | Description |
 | - | - | - |
-| DATA | 0 | TCP 스트림에 다중화되는 프레임 종류 |
-| ACK | 1 | TCP 스트림에 다중화되는 프레임 종류 |
-| ERROR | 2 | TCP 스트림에 다중화되는 프레임 종류 |
-| HEARTBEAT | 3 | TCP 스트림에 다중화되는 프레임 종류 |
-| EOF | 4 | TCP 스트림에 다중화되는 프레임 종류 |
-| CONTROL | 5 | TCP 스트림에 다중화되는 프레임 종류 |
+| DATA | 0 | Enumerate frame kinds multiplexed over the TCP stream. |
+| ACK | 1 | Enumerate frame kinds multiplexed over the TCP stream. |
+| ERROR | 2 | Enumerate frame kinds multiplexed over the TCP stream. |
+| HEARTBEAT | 3 | Enumerate frame kinds multiplexed over the TCP stream. |
+| EOF | 4 | Enumerate frame kinds multiplexed over the TCP stream. |
+| CONTROL | 5 | Enumerate frame kinds multiplexed over the TCP stream. |
 
-| ControlCode | 값 | 설명 |
+| ControlCode | Value | Description |
 | - | - | - |
 | ACK | 1 | 제어 메시지 코드 (SSOT 참조). |
 | HEARTBEAT | 2 | 제어 메시지 코드 (SSOT 참조). |
 | EOF | 3 | 제어 메시지 코드 (SSOT 참조). |
 | ERROR | 4 | 제어 메시지 코드 (SSOT 참조). |
 
-| ErrorCode | 값 | 설명 |
+| ErrorCode | Value | Description |
 | - | - | - |
 | NONE | 0 | 오류 코드 정의 (docs/contracts/control_plane_contract.md). |
 | PROTOCOL_VIOLATION | 1 | 오류 코드 정의 (docs/contracts/control_plane_contract.md). |
@@ -146,9 +164,9 @@ _마지막 업데이트: 2025-03-15_
 | INTERNAL_ERROR | 3 | 오류 코드 정의 (docs/contracts/control_plane_contract.md). |
 | SHUTDOWN | 4 | 오류 코드 정의 (docs/contracts/control_plane_contract.md). |
 
-#### 타이밍 및 조각 한계
+#### Timing and Fragment Limits
 
-| 상수 | 값 |
+| Constant | Value |
 | - | - |
 | ACK_TIMEOUT_NS | 500000000 |
 | HEARTBEAT_INTERVAL_NS | 2000000000 |
@@ -165,54 +183,54 @@ _마지막 업데이트: 2025-03-15_
 ```mermaid
 stateDiagram-v2
   [*] --> INIT
-  INIT --> HANDSHAKING: on_connected() 호출
+  INIT --> HANDSHAKING: on_connected()
   HANDSHAKING --> STREAMING: on_first_data() / on_heartbeat()
   STREAMING --> DRAINING: on_eof_sent() / on_eof_received()
-  DRAINING --> TERMINATED: on_ack() && pending 없음
-  STREAMING --> FAILED: on_error() / 하트비트 타임아웃
+  DRAINING --> TERMINATED: on_ack() with no pending
+  STREAMING --> FAILED: on_error() / heartbeat timeout
   DRAINING --> FAILED: on_error()
   HANDSHAKING --> FAILED: on_error()
   TERMINATED --> [*]
   FAILED --> [*]
-  STREAMING --> STREAMING: on_frame_sent() / ACK 대기
-  DRAINING --> DRAINING: 남은 ACK 처리
+  STREAMING --> STREAMING: on_frame_sent() / ACK pending
+  DRAINING --> DRAINING: pending ACKs remain
 ```
 <!-- AUTODOC:STATE_MACHINE:END -->
 
 ## Auto-Generated Telemetry 필드 Map
 <!-- AUTODOC:TELEMETRY:BEGIN -->
-| 필드 | 유형 / 제약 | 생성 위치 | 시점 | 비고 |
+| Field | Type / Constraints | Produced By | When | Notes |
 | - | - | - | - | - |
-| metrics.ack_latency_ms.p50 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.ack_latency_ms.p95 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.ack_latency_ms.p99 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.frames.acked | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | ACK된 프레임 수 |
-| metrics.frames.dropped | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 드롭된 프레임 수 |
-| metrics.frames.sent | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 전송된 총 프레임 수 |
-| metrics.frames.skipped | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 품질 필터로 건너뛴 프레임 수 |
-| metrics.latency_ms.p50 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | PipelineStats에서 계산한 분위수 |
-| metrics.latency_ms.p95 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.latency_ms.p99 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.queues.capture_max | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 최대 캡처 큐 깊이 |
-| metrics.queues.decode_max | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 최대 디코드 큐 깊이 |
-| metrics.queues.encode_max | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 최대 인코드 큐 깊이 |
-| metrics.queues.pending | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 내보내기 시 대기 프레임 수(종료 시 0) |
-| metrics.rtt_ms.p50 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.rtt_ms.p95 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.rtt_ms.p99 | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 |  |
-| metrics.throughput_mbps.avg | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 총 전송 바이트와 경과 시간에서 집계 |
-| metrics.throughput_mbps.peak | number (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | 메트릭 정규화 | 현재 익스포터에서 avg와 동일 |
-| schema_doc | string (필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:171 (Telemetry.build) | 텔레메트리 출력 | 스키마 문서 경로 기준점 |
-| schema_version | string (enum=1.0.0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:171 (Telemetry.build) | 텔레메트리 출력 | Telemetry.SCHEMA_VERSION 상수 |
-| session.ended_at_ns | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | on_shutdown | 제어 플레인 완료 타임스탬프 |
-| session.error_code | integer (min=0) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 실패 시 출력 | state == FAILED일 때 채움 |
-| session.error_message | string | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 실패 시 출력 | 선택적 실패 컨텍스트 |
-| session.fragment_size | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 세션 생성 | TX 조각 설정 |
-| session.id | string (필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 세션 생성 | 역할/시간/PID에서 파생 |
-| session.protocol | string (enum=legacy,binary; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 세션 생성 | 프레이밍 프로토콜 이름 |
-| session.role | string (enum=client,server; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 세션 생성 | 텔레메트리에 전달된 CLI 역할 |
-| session.socket_buffer_autotune | boolean | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 세션 생성 | CLI 소켓 버퍼 플래그 반영 |
-| session.started_at_ns | integer (min=0; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | on_connected | 제어 플레인 타임스탬프 |
-| session.state | string (enum=TERMINATED,FAILED; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | export | ControlPlane.state 값 |
-| session.transport | string (enum=tcp,quic,udp_fec; 필수) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | 세션 생성 | 전송 인자 |
+| metrics.ack_latency_ms.p50 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.ack_latency_ms.p95 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.ack_latency_ms.p99 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.frames.acked | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Frames acknowledged |
+| metrics.frames.dropped | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Frames dropped |
+| metrics.frames.sent | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Total frames sent |
+| metrics.frames.skipped | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Frames skipped due to quality filters |
+| metrics.latency_ms.p50 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Percentiles computed from PipelineStats |
+| metrics.latency_ms.p95 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.latency_ms.p99 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.queues.capture_max | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Max capture queue depth |
+| metrics.queues.decode_max | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Max decode queue depth |
+| metrics.queues.encode_max | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Max encode queue depth |
+| metrics.queues.pending | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Pending frames at export (0 when terminated) |
+| metrics.rtt_ms.p50 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.rtt_ms.p95 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.rtt_ms.p99 | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization |  |
+| metrics.throughput_mbps.avg | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Aggregated from total bytes/elapsed |
+| metrics.throughput_mbps.peak | number (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:97 (Telemetry._normalize_metrics) | Metrics normalization | Same as avg in current exporter |
+| schema_doc | string (required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:171 (Telemetry.build) | Telemetry export | Anchors schema doc path |
+| schema_version | string (enum=1.0.0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:171 (Telemetry.build) | Telemetry export | Constant from Telemetry.SCHEMA_VERSION |
+| session.ended_at_ns | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | on_shutdown | ControlPlane completion timestamp |
+| session.error_code | integer (min=0) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Failure export | Filled when state == FAILED |
+| session.error_message | string | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Failure export | Optional failure context |
+| session.fragment_size | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Session creation | Tx fragment configuration |
+| session.id | string (required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Session creation | Derived from role/time/pid |
+| session.protocol | string (enum=legacy,binary; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Session creation | Framing protocol name |
+| session.role | string (enum=client,server; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Session creation | CLI role passed to Telemetry |
+| session.socket_buffer_autotune | boolean | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Session creation | Reflects CLI socket buffer flag |
+| session.started_at_ns | integer (min=0; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | on_connected | ControlPlane timestamp |
+| session.state | string (enum=TERMINATED,FAILED; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | export | ControlPlane.state value |
+| session.transport | string (enum=tcp,quic,udp_fec; required) | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:71 (Telemetry._session_block) | Session creation | Transport argument |
 <!-- AUTODOC:TELEMETRY:END -->

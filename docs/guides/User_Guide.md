@@ -125,141 +125,151 @@ SLAM 실험 이후에는 ROS 로그와 SLAM 결과를 `ros_logs/` 및 `artifacts
 
 ## 자동 생성 CLI 참조
 <!-- AUTODOC:CLI_FLAGS:BEGIN -->
-| 명령 | 플래그 | 기본값 | 설명 |
+| Command | Flag | Default | Description |
 | - | - | - | - |
-| encode_ply_to_draco | --in | ./ply_raw | 입력 PLY 디렉터리(기본: ./ply_raw) |
-| encode_ply_to_draco | --log-csv |  | 프레임별 인코딩 시간 로그 CSV |
-| encode_ply_to_draco | --name |  | 대상 접두어. 지정 시 '<name>_*.ply'만 인코딩 |
-| encode_ply_to_draco | --out | ./draco_out | 출력 DRC 디렉터리(기본: ./draco_out) |
+| encode_ply_to_draco | --in | ./ply_raw | 입력 PLY 디렉터리 (기본: ./ply_raw) |
+| encode_ply_to_draco | --log-csv |  | 프레임별 인코드 시간 로그 CSV |
+| encode_ply_to_draco | --name |  | 대상 접두어(prefix). 지정 시 '<name>_*.ply'만 인코딩 |
+| encode_ply_to_draco | --out | ./draco_out | 출력 DRC 디렉터리 (기본: ./draco_out) |
 | encode_ply_to_draco | --workers | os.cpu_count() or 4 | 병렬 작업 수 |
 | offline_pipeline | --bag |  | rosbag 디렉터리(메타/DB3 포함). 비우면 재생 안 함 |
-| offline_pipeline | --bag-args | [] | `ros2 bag play` 추가 인자 |
-| offline_pipeline | --bag-loop | False | bag 재생을 반복 실행 |
-| offline_pipeline | --bag-rate | 1.0 | bag 재생 속도 배수 |
-| offline_pipeline | --bag-remap |  | `ros2 bag play` remap 규칙 문자열 |
-| offline_pipeline | --bag-warmup-sec | 0.0 | 재생 시작 전 웜업 시간(초) |
-| offline_pipeline | --best-effort | False | QoS best_effort 모드를 활성화 |
-| offline_pipeline | --cl | DEFAULT_CL | Draco 압축 레벨 |
-| offline_pipeline | --data-root |  | 생성 아티팩트 기본 디렉터리(프로파일/데이터 루트 덮어씀) |
-| offline_pipeline | --decoded-dir |  | 임시 디코드 디렉터리 덮어쓰기 |
-| offline_pipeline | --decoder | draco_decoder | 사용할 `draco_decoder` 실행 파일 경로 |
-| offline_pipeline | --drc-dir |  | Draco 출력 디렉터리 덮어쓰기 |
-| offline_pipeline | --encoder-extra | [] | `draco_encoder`에 전달할 추가 인자 문자열(예: `--speed 10`) |
+| offline_pipeline | --bag-args | [] | ros2 bag play 추가 인자 |
+| offline_pipeline | --bag-loop | False |  |
+| offline_pipeline | --bag-rate | 1.0 |  |
+| offline_pipeline | --bag-remap |  | ros2 bag play의 remap 규칙 문자열 |
+| offline_pipeline | --bag-warmup-sec | 0.0 |  |
+| offline_pipeline | --best-effort | False |  |
+| offline_pipeline | --cl | DEFAULT_CL |  |
+| offline_pipeline | --data-root |  | Base directory for generated artifacts (overrides profile/data root) |
+| offline_pipeline | --decoded-dir |  | Override decoded temporary directory |
+| offline_pipeline | --decoder | draco_decoder |  |
+| offline_pipeline | --drc-dir |  | Override Draco output directory |
+| offline_pipeline | --encoder-extra | [] | draco_encoder에 넘길 추가 인자 문자열 (예: '--speed 10') |
 | offline_pipeline | --fast-preset | False | 30FPS 목표용 빠른 설정 적용 |
-| offline_pipeline | --force-tqdm | False | QA 단계에서 tqdm 진행률 표시 강제 |
-| offline_pipeline | --jobs | 1 | 병렬 작업자 수 |
-| offline_pipeline | --keep-decoded | False | QA 단계에서 디코드 PLY 삭제 금지 |
-| offline_pipeline | --layout-profile |  | 디렉터리 해석에 사용할 레이아웃 프로파일 이름/경로 |
-| offline_pipeline | --max-frames | 0 | 처리할 최대 프레임 수(0은 무제한) |
-| offline_pipeline | --no-qa | False | 품질 분석 단계를 건너뜀 |
-| offline_pipeline | --ply-dir |  | 원본 PLY 출력 디렉터리 덮어쓰기 |
-| offline_pipeline | --prefix |  | 결과 파일 접두어 |
-| offline_pipeline | --qg | DEFAULT_QG | Draco `quantization_bits[geom]` |
-| offline_pipeline | --qp | DEFAULT_QP | Draco `quantization_bits[pos]` |
-| offline_pipeline | --results-dir |  | 결과 집계 디렉터리 덮어쓰기 |
-| offline_pipeline | --reuse-drc | False | 기존 DRC 재사용(재인코딩 생략) |
-| offline_pipeline | --rmw-impl |  | 하위 프로세스에 전달할 `RMW_IMPLEMENTATION` |
-| offline_pipeline | --ros-domain-id |  | 하위 프로세스에 전달할 `ROS_DOMAIN_ID` |
-| offline_pipeline | --ros-localhost-only |  | 하위 프로세스에 전달할 `ROS_LOCALHOST_ONLY` 값(0 또는 1) |
-| offline_pipeline | --saver-timeout | 180.0 | `bag_to_ply` 단계의 전체 타임아웃(초). 0은 비활성 |
-| offline_pipeline | --saver-voxel-size | 0.0 | `bag_to_ply` 다운샘플링 보xel 크기(미터) |
-| offline_pipeline | --thresholds | [0.01, 0.03, 0.05] | 품질 임계값 목록 |
-| offline_pipeline | --topic |  | 입력 포인트 클라우드 토픽 |
-| stream_client | --ack-timeout | 0.5 | 적응 제어가 적용되기 전 기본 ACK 타임아웃(초) |
-| stream_client | --ack-timeout-max | 2.0 | 적응 ACK 타임아웃 상한(초) |
-| stream_client | --ack-timeout-min | 0.5 | 적응 ACK 타임아웃 하한(초) |
-| stream_client | --ack-timeout-strikes | 3 | 연속 ACK 타임아웃 허용 횟수 |
-| stream_client | --adaptive-window | False | RTT/처리량 기반 TX 윈도 적응 기능 활성화 |
-| stream_client | --bag |  | 재생할 rosbag 경로 |
-| stream_client | --best-effort | False | ROS QoS best_effort 모드 사용 |
-| stream_client | --capture-queue | 4 | 백프레셔 전까지 허용되는 캡처 큐 깊이 |
-| stream_client | --capture-transport | shared-memory | 캡처 백엔드 선택(파일 시스템 또는 공유 메모리) |
-| stream_client | --control-port | 0 | 전용 제어 플레인 TCP 포트(0은 비활성) |
-| stream_client | --data-root |  | 생성 아티팩트 기본 디렉터리(프로파일/데이터 루트 덮어씀) |
-| stream_client | --decoded-dir |  | 서버에서 받은 디코드 프레임 저장 디렉터리 |
-| stream_client | --encode-workers | 2 | 비동기 파이프라인의 인코더 워커 수 |
-| stream_client | --heartbeat-timeout | 10.0 | 이 시간(초) 동안 ACK/하트비트가 없으면 세션 실패 |
-| stream_client | --idle-timeout | 10.0 | 비활성 상태 감시 타임아웃(초) |
-| stream_client | --initial-inflight |  | 적응 제어가 조정하기 전 초기 TX 윈도 |
-| stream_client | --layout-profile |  | `configs/*.profile.{yaml,json}` 경로 또는 이름 |
-| stream_client | --max-frames | 0 | 처리할 최대 프레임 수(0은 무제한) |
-| stream_client | --max-inflight, --max-pending | 4 | ACK/디코드 응답을 기다리는 최대 동시 프레임 |
-| stream_client | --metrics-out, --telemetry-out | artifacts/perf/client_latest.json | 스키마 준수 텔레메트리 JSON 출력 경로 |
-| stream_client | --metrics-sample | 50000 | 클라이언트 메트릭 계산에 사용할 최대 포인트 수(0은 전체) |
-| stream_client | --no-save-decoded | False | 서버 응답을 디스크에 저장하지 않음 |
-| stream_client | --play-frame-id | lidar_link | 재생 시 사용할 `frame_id` |
-| stream_client | --play-hz | 10.0 | 재생 주파수(Hz) |
-| stream_client | --play-sample | 50000 | 재생 시 샘플링할 포인트 수 |
-| stream_client | --play-topic-prefix | stream_pair | 재생 시 게시할 토픽 접두어 |
-| stream_client | --ply-dir |  | 캡처한 PLY 스풀 디렉터리 덮어쓰기 |
-| stream_client | --prefix |  | 실행 식별 접두어 |
-| stream_client | --print-metrics | False | 재생 중 프레임별 지연/정확도 메트릭을 stdout에 출력 |
-| stream_client | --protocol | binary | 사용할 프레이밍 프로토콜(기본: binary). `protocol_help`에서 설명을 제공 |
-| stream_client | --qos-override |  | QoS 프로파일 파일 경로. 기본은 레이아웃 프로파일 또는 패키지 구성 |
-| stream_client | --quality-report-dir | artifacts/quality | 프레임별 품질 JSONL을 쓰는 디렉터리 |
-| stream_client | --quality-thresholds | {} | 품질 메트릭 허용 최대 편차를 정의하는 JSON 객체(빈 객체는 정보용) |
-| stream_client | --resp-format | ply | 서버가 반환하는 디코드 페이로드 형식(기본: ply) |
-| stream_client | --server-host | 127.0.0.1 | 서버 주소 |
-| stream_client | --server-port | 5000 | 서버 포트 |
-| stream_client | --socket-buffer-autotune | False | 커널 소켓 버퍼 자동 튜닝 요청(SO_SNDBUF/SO_RCVBUF=0) |
-| stream_client | --socket-buffer-kb | 0 | 고속 링크 포화를 위한 소켓 버퍼 크기(KiB) |
-| stream_client | --socket-timeout | 15.0 | 소켓 연산 타임아웃(초). 0은 보호 비활성 |
-| stream_client | --spool-gc-window | 0 | 파일 시스템 스풀 스캔 시 기억할 최대 항목 수(0은 무제한) |
-| stream_client | --tcp-nodelay | False | 대화형 재생 지연 감소를 위해 Nagle 비활성 |
-| stream_client | --topic |  | 입력 토픽 경로 |
-| stream_client | --transport | tcp | 데이터 평면 전송 계층 선택. 현재 tcp만 구현(추가 값은 예약) |
-| stream_client | --tx-fragment-size | 0 | 바이너리 프로토콜에서 MTU 안전 조각 크기(0은 비활성) |
-| stream_client | --window-ema-alpha | 0.2 | 적응형 윈도 텔레메트리 EMA 평활 계수(0–1) |
-| stream_client | --work-dir |  | 인코더 임시 데이터를 저장할 디렉터리 |
-| stream_collect_logs | --attach | [] | 아티팩트 디렉터리에 추가로 복사할 파일/디렉터리 목록 |
-| stream_collect_logs | --data-root |  | 데이터 루트 덮어쓰기 |
-| stream_collect_logs | --layout-profile |  | 레이아웃 프로파일 경로 |
-| stream_collect_logs | --metadata | [] | 매니페스트에 기록할 키=값 메타데이터 |
-| stream_collect_logs | --notes |  | `notes/README.txt`에 기록할 자유 형식 노트 |
-| stream_collect_logs | --ros-log | [] | 보관할 ROS 로그 디렉터리 경로 |
-| stream_collect_logs | run_id |  | 실행 식별자(디렉터리 이름으로 사용) |
-| stream_monitor | --decoded-dir | data/tmp_decoded_ply | 디코드 PLY 디렉터리 |
-| stream_monitor | --decoded-suffix | .decoded.ply | 디코드 파일 접미사 |
-| stream_monitor | --frame-id | lidar_link | 게시할 메시지의 `frame_id` |
-| stream_monitor | --hz | 10.0 | 재생 주파수(Hz) |
-| stream_monitor | --limit | 0 | 표시할 최대 프레임 수(0은 전체) |
-| stream_monitor | --loop | False | 끝나면 처음부터 반복 |
-| stream_monitor | --orig-dir | data/ply_raw | 원본 PLY 디렉터리 |
-| stream_monitor | --orig-suffix | .ply | 원본 파일 접미사 |
-| stream_monitor | --prefix | sample2 | 파일 접두어 |
-| stream_monitor | --sample | 50000 | 샘플링 포인트 수 |
-| stream_monitor | --topic-prefix | sample2_pair | 게시 토픽 접두어 |
-| stream_netem | --clear | False | 선택된 프로파일 적용 전 기존 netem qdisc 제거 |
-| stream_netem | --config |  | netem 프로파일 파일 경로 덮어쓰기 |
-| stream_netem | --dry-run | False | 명령을 실행하지 않고 출력만 표시 |
-| stream_netem | --iface | lo | 설정할 네트워크 인터페이스(기본: loopback) |
-| stream_netem | profile |  | 적용할 프로파일 이름 또는 `list`로 조회 |
-| stream_replay | --decoded-dir | data/tmp_decoded_ply | 디코드 PLY 디렉터리 |
+| offline_pipeline | --force-tqdm | False | QA 단계(analyze_draco_quality.py)에서 tqdm 강제 표시 |
+| offline_pipeline | --jobs | 1 |  |
+| offline_pipeline | --keep-decoded | False | QA 단계에서 디코드 PLY를 삭제하지 않음 |
+| offline_pipeline | --layout-profile |  | Name or path of a layout profile for directories |
+| offline_pipeline | --max-frames | 0 | 0=무제한 (bag 끝날 때까지) |
+| offline_pipeline | --no-qa | False | 품질 분석 단계 생략 |
+| offline_pipeline | --ply-dir |  | Override raw PLY output directory |
+| offline_pipeline | --prefix |  |  |
+| offline_pipeline | --qg | DEFAULT_QG |  |
+| offline_pipeline | --qp | DEFAULT_QP |  |
+| offline_pipeline | --results-dir |  | Override aggregated results directory |
+| offline_pipeline | --reuse-drc | False | 기존 DRC를 재사용(재인코딩 생략) |
+| offline_pipeline | --rmw-impl |  | 하위 프로세스에 전달할 RMW_IMPLEMENTATION 덮어쓰기 |
+| offline_pipeline | --ros-domain-id |  | 하위 프로세스에 전달할 ROS_DOMAIN_ID 덮어쓰기 |
+| offline_pipeline | --ros-localhost-only |  | 하위 프로세스에 전달할 ROS_LOCALHOST_ONLY 값 Choices: 0, 1 |
+| offline_pipeline | --saver-timeout | 180.0 | Global timeout (seconds) for bag_to_ply stage; 0 disables |
+| offline_pipeline | --saver-voxel-size | 0.0 | bag_to_ply voxel downsample 크기(m) |
+| offline_pipeline | --thresholds | [0.01, 0.03, 0.05] |  |
+| offline_pipeline | --topic |  |  |
+| stream_client | --ack-timeout | 0.5 | Base ACK timeout in seconds before adaptive adjustments (minimum clamp) |
+| stream_client | --ack-timeout-max | 2.0 | Upper bound for adaptive ACK timeout (seconds) |
+| stream_client | --ack-timeout-min | 0.5 | Lower bound for adaptive ACK timeout (seconds) |
+| stream_client | --ack-timeout-strikes | 3 | Number of consecutive ACK timeout strikes before failing the session |
+| stream_client | --adaptive-window | False | Enable RTT/throughput based TX window adaptation |
+| stream_client | --bag |  |  |
+| stream_client | --best-effort | False |  |
+| stream_client | --capture-queue | 4 | Maximum capture queue depth before applying backpressure |
+| stream_client | --capture-transport | shared-memory | Frame capture backend: filesystem spool (legacy) or shared-memory zero copy Choices: filesystem, shared-memory |
+| stream_client | --control-port | 0 | Optional TCP port for a dedicated control-plane connection (0 disables) |
+| stream_client | --data-root |  | Base directory for generated artifacts (overrides profile/data root) |
+| stream_client | --decoded-dir |  | Override directory where decoded frames from the server are stored |
+| stream_client | --encode-workers | 2 | Number of concurrent encoder workers for the async pipeline |
+| stream_client | --heartbeat-timeout | 10.0 | Fail the session if no ACK/heartbeat is observed within this many seconds |
+| stream_client | --idle-timeout | 10.0 |  |
+| stream_client | --initial-inflight |  | Initial TX window before adaptive control adjusts it (defaults to max) |
+| stream_client | --layout-profile |  | Name or path of a layout profile (configs/*.profile.{yaml,json}) |
+| stream_client | --max-frames | 0 |  |
+| stream_client | --max-inflight, --max-pending | 4 | Upper bound on in-flight frames awaiting ACK/decoded replies |
+| stream_client | --metrics-out, --telemetry-out | artifacts/perf/client_latest.json | 텔레메트리 JSON 출력 경로 (스키마 준수). |
+| stream_client | --metrics-sample | 50000 | Maximum number of points sampled for client-side metrics (0 means use all points) |
+| stream_client | --no-save-decoded | False | Do not persist decoded responses from the server to disk |
+| stream_client | --play-frame-id | lidar_link |  |
+| stream_client | --play-hz | 10.0 |  |
+| stream_client | --play-sample | 50000 |  |
+| stream_client | --play-topic-prefix | stream_pair |  |
+| stream_client | --ply-dir |  | Override the spool directory for captured PLY frames |
+| stream_client | --prefix |  |  |
+| stream_client | --print-metrics | False | Stream per-frame latency/accuracy metrics to stdout during playback |
+| stream_client | --protocol | binary | 'Framing protocol to use (default: %(default)s). Options: ' + ', '.join((f'{name}={desc}' for name, desc in protocol_help.items())) Choices: sorted(protocol_help.keys()) |
+| stream_client | --qos-override |  | Override QoS profile file. Defaults to layout profile or package configs |
+| stream_client | --quality-report-dir | artifacts/quality | Directory where per-frame quality JSONL reports are written |
+| stream_client | --quality-thresholds | {} | JSON object describing max deltas for quality metrics (empty for informational only) |
+| stream_client | --resp-format | ply | Expected format for decoded payloads returned by the server (default: %(default)s) Choices: ply, pcd |
+| stream_client | --server-host | 127.0.0.1 |  |
+| stream_client | --server-port | 5000 |  |
+| stream_client | --socket-buffer-autotune | False | 커널 소켓 버퍼 자동 튜닝을 요청한다 (SO_SNDBUF/SO_RCVBUF=0). |
+| stream_client | --socket-buffer-kb | 0 | Resize socket send/receive buffers (KiB) to better saturate fast links |
+| stream_client | --socket-timeout | 15.0 | Timeout (seconds) for socket operations; 0 disables the safeguard |
+| stream_client | --spool-gc-window | 0 | Maximum number of discovered spool files to remember before pruning (0 disables) |
+| stream_client | --tcp-nodelay | False | Disable Nagle aggregation to reduce latency for interactive playback |
+| stream_client | --topic |  |  |
+| stream_client | --transport | tcp | Transport layer for data plane. tcp만 구현되어 있으며 quic/udp_fec는 예약 상태입니다. Choices: tcp, quic, udp_fec |
+| stream_client | --tx-fragment-size | 0 | Binary 프로토콜에서 payload를 MTU 안전 조각으로 분할한다 (0은 비활성). |
+| stream_client | --window-ema-alpha | 0.2 | EMA smoothing factor for adaptive window telemetry (0-1) |
+| stream_client | --work-dir |  | Override temporary directory for encoder scratch data |
+| stream_collect_logs | --attach | [] | Additional files or directories to copy into artifacts/ |
+| stream_collect_logs | --data-root |  | Override base data root |
+| stream_collect_logs | --layout-profile |  | Layout profile used to resolve directories |
+| stream_collect_logs | --metadata | [] | Key=Value metadata to record in the manifest |
+| stream_collect_logs | --notes |  | Free-form note written into notes/README.txt |
+| stream_collect_logs | --ros-log | [] | Path(s) to ROS log directories to archive |
+| stream_collect_logs | run_id |  | Identifier for the experiment run (used as directory name) |
+| stream_monitor | --decoded-dir | data/tmp_decoded_ply |  |
+| stream_monitor | --decoded-suffix | .decoded.ply |  |
+| stream_monitor | --frame-id | lidar_link |  |
+| stream_monitor | --hz | 10.0 |  |
+| stream_monitor | --limit | 0 |  |
+| stream_monitor | --loop | False |  |
+| stream_monitor | --orig-dir | data/ply_raw |  |
+| stream_monitor | --orig-suffix | .ply |  |
+| stream_monitor | --prefix | sample2 |  |
+| stream_monitor | --sample | 50000 |  |
+| stream_monitor | --topic-prefix | sample2_pair |  |
+| stream_netem | --clear | False | Remove existing netem qdisc before applying the selected profile |
+| stream_netem | --config |  | Override path to netem profiles file |
+| stream_netem | --dry-run | False | Print commands without executing them |
+| stream_netem | --iface | lo | Network interface to configure (default: loopback) |
+| stream_netem | profile |  | Name of the profile to apply or 'list' to inspect available profiles |
+| stream_replay | --decoded-dir | data/tmp_decoded_ply | 디코드 PLY 디렉토리 |
 | stream_replay | --decoded-suffix | .decoded.ply | 디코드 파일 접미사 |
-| stream_replay | --frame-id | map | 게시할 메시지 `frame_id` |
-| stream_replay | --hz | 5.0 | 재생 주파수(Hz) |
-| stream_replay | --limit | 0 | 재생할 최대 프레임 수(0은 전체) |
-| stream_replay | --loop | False | 재생 완료 시 처음부터 반복 |
-| stream_replay | --orig-dir | data/ply_raw | 원본 PLY 디렉터리 |
+| stream_replay | --frame-id | map | header frame_id |
+| stream_replay | --hz | 5.0 | 재생 속도(Hz) |
+| stream_replay | --limit | 0 | 0=전체, 양수=앞에서 N개만 |
+| stream_replay | --loop | False | 끝나면 처음부터 반복 |
+| stream_replay | --orig-dir | data/ply_raw | 원본 PLY 디렉토리 |
 | stream_replay | --orig-suffix | .ply | 원본 파일 접미사 |
 | stream_replay | --prefix | sample2 | 파일 접두어 |
-| stream_replay | --topic-prefix | compare | 게시 토픽 접두어 |
-| stream_server | --control-port | 0 | 제어 플레인 전용 TCP 포트(0은 비활성) |
-| stream_server | --decode-timeout | 30.0 | 외부 디코더 최대 허용 시간(초) |
-| stream_server | --decode-workers | 2 | 비동기 파이프라인 디코드 워커 수 |
-| stream_server | --decoder |  | 사용할 `draco_decoder` 경로 |
-| stream_server | --heartbeat-interval | 2.0 | 하트비트 전송 간격(초). 0은 keepalive 비활성 |
-| stream_server | --host | 0.0.0.0 | 바인딩 주소 |
-| stream_server | --keep-artifacts | False | 디코드 아티팩트(.drc/.ply)를 정리하지 않고 유지 |
-| stream_server | --legacy-mode | False | 문제 해결용 동기식 레거시 루프로 폴백 |
-| stream_server | --max-inflight | 2 | 동시에 디코드할 최대 프레임 수 |
-| stream_server | --metrics-sample | 50000 | 품질 메트릭 계산에 사용할 최대 포인트 수(0은 전체) |
-| stream_server | --port | 5000 | 수신 포트 |
-| stream_server | --protocol | binary | 클라이언트가 사용할 프레이밍 프로토콜(기본: binary) |
-| stream_server | --resp-format | ply | 클라이언트에 반환할 디코드 페이로드 형식(기본: ply) |
-| stream_server | --socket-buffer-kb | 0 | 고처리량 링크를 위한 소켓 버퍼 크기(KiB) |
-| stream_server | --socket-timeout | 30.0 | 소켓 연산 타임아웃(초). 0은 보호 비활성 |
-| stream_server | --tcp-nodelay | False | 수락한 소켓에서 Nagle 비활성 |
-| stream_server | --work-dir | data/server_tmp | 서버 임시 디렉터리 |
-| stream_server | --zero-copy-reply | False | 디코드 PLY를 메모리 매핑해 전송 복사를 최소화 |
+| stream_replay | --topic-prefix | compare | 퍼블리시 토픽 접두어 |
+| stream_server | --control-port | 0 | Optional TCP port dedicated to control-plane messages (0 disables) |
+| stream_server | --decode-timeout | 30.0 | Fail decoding if the external tool exceeds this timeout (seconds) |
+| stream_server | --decode-workers | 2 | Number of concurrent decode workers in the async pipeline |
+| stream_server | --decoder |  | Path to draco_decoder |
+| stream_server | --heartbeat-interval | 2.0 | Interval (seconds) for control-plane heartbeat messages; 0 disables keepalive |
+| stream_server | --host | 0.0.0.0 |  |
+| stream_server | --keep-artifacts | False | Retain .drc/.ply decode artifacts for debugging (default cleans up) |
+| stream_server | --legacy-mode | False | Fallback to the synchronous legacy loop for troubleshooting |
+| stream_server | --max-inflight | 2 | Maximum number of frames to decode concurrently before backpressuring the client |
+| stream_server | --metrics-sample | 50000 | Maximum number of points sampled when computing quality metrics (0 disables sampling) |
+| stream_server | --port | 5000 |  |
+| stream_server | --protocol | binary | 'Framing protocol expected from clients (default: %(default)s). Options: ' + ', '.join((f'{name}={desc}' for name, desc in protocol_help.items())) Choices: sorted(protocol_help.keys()) |
+| stream_server | --queue-size | 0 | Maximum server queue depth before applying backpressure (0 uses --max-inflight) |
+| stream_server | --resp-format | ply | Format used for decoded payloads returned to the client (default: %(default)s) Choices: ply, pcd |
+| stream_server | --socket-buffer-kb | 0 | Resize socket send/receive buffers (KiB) for high-throughput links |
+| stream_server | --socket-timeout | 30.0 | Timeout (seconds) for socket operations; 0 disables the safeguard |
+| stream_server | --tcp-nodelay | False | Disable Nagle aggregation on accepted sockets for lower latency |
+| stream_server | --work-dir | data/server_tmp |  |
+| stream_server | --zero-copy-reply | False | Memory-map decoded PLY payloads to reduce copy overhead when sending replies |
 <!-- AUTODOC:CLI_FLAGS:END -->
+
+<!-- AUTODOC:TROUBLESHOOT:BEGIN -->
+| Symptom | Likely Cause | Recommended Fix | Source |
+| - | - | - | - |
+| Shared memory publish failed for <stem> | SharedMemoryPublisher backend unavailable or exhausted | Ensure shared memory daemon is running or disable --shared-memory-only | ros2_ws/src/draco_roundtrip/draco_roundtrip/io/bag_recorder.py:104 |
+| Telemetry validation failed: pending frames remain | Telemetry exported before ControlPlane reached TERMINATED | Drain outstanding ACKs or wait for on_eof handshake before exporting | ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/telemetry.py:146 |
+| ACK timeout strikes exceeded | Network congestion or control-plane heartbeat stalled | Increase --ack-timeout-max or investigate link health (check metrics logs) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:1798 |
+| No messages for idle-timeout. Shutting down. | Rosbag stream exhausted or topic inactive | Lower --idle-timeout or verify rosbag playback | ros2_ws/src/draco_roundtrip/draco_roundtrip/io/bag_recorder.py:82 |
+<!-- AUTODOC:TROUBLESHOOT:END -->

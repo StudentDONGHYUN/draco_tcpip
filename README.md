@@ -51,6 +51,24 @@ ros2 run draco_roundtrip stream_client \
 ```
 `stream_server`와 `stream_client`는 제한 큐, 바이너리 프로토콜, 텔레메트리 스키마를 공유하며, bringup 런치로 SLAM까지 통합 실행할 수 있습니다.
 
+### 엔드투엔드 데이터 흐름 요약
+
+<!-- AUTODOC:E2E_SEQUENCE_SIMPLE -->
+<!-- AUTODOC:E2E_SEQUENCE_SIMPLE:BEGIN -->
+```mermaid
+sequenceDiagram
+  participant Sensor as LiDAR Sensor
+  participant Encoder as Draco Encoder
+  participant Sender as TCP Sender
+  participant Bridge as ROS 2 Bridge
+  Sensor->>Encoder: Capture frame
+  Encoder->>Sender: Compressed Draco payload
+  Sender-->>Bridge: TCP DATA stream
+  Bridge->>Bridge: Decode + build PointCloud2
+  Bridge-->>Sender: ACK / flow control
+```
+<!-- AUTODOC:E2E_SEQUENCE_SIMPLE:END -->
+
 ### SLAM Bringup 및 네트워크 에뮬레이션
 통합 런치를 사용해 서버, 클라이언트, SLAM, 네트워크 프로파일을 동시에 구동할 수 있습니다.
 ```bash

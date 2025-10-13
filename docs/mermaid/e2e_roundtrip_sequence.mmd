@@ -1,16 +1,10 @@
 sequenceDiagram
-  participant Capture as 캡처 스레드
-  participant Encode as Draco 인코더
-  participant Tx as TCP 송신기
-  participant Rx as TCP 수신기
-  participant Decode as Draco 디코더
-  participant Publish as ROS 퍼블리셔
-  Capture->>Encode: FrameHandle + 메타데이터
-  Encode->>Tx: DATA[FrameHeader+DataHeader+Draco payload]
-  Tx-->>Rx: TCP 스트림(DATA 프레임)
-  Rx->>Decode: Draco payload(조각 재조립)
-  Decode->>Publish: PointCloud2 + 지표
-  Publish-->>Tx: compose_response_payload()
-  Tx-->>Rx: CONTROL ACK/EOF/Error(ControlPlane)
-  Rx-->>Tx: HEARTBEAT / ACK (흐름 제어)
-  Tx->>Capture: max_inflight 기반 백프레셔
+  participant Sensor as LiDAR Sensor
+  participant Encoder as Draco Encoder
+  participant Sender as TCP Sender
+  participant Bridge as ROS 2 Bridge
+  Sensor->>Encoder: Capture frame
+  Encoder->>Sender: Compressed Draco payload
+  Sender-->>Bridge: TCP DATA stream
+  Bridge->>Bridge: Decode + build PointCloud2
+  Bridge-->>Sender: ACK / flow control

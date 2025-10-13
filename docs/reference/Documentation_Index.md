@@ -32,5 +32,5 @@ Draco TCP/IP Roundtrip 문서를 범주별로 탐색할 수 있는 색인입니�
 
 ## 자동 생성 섹션 갱신 방법
 <!-- AUTODOC:HOWTO:BEGIN -->
-자동 생성 섹션을 갱신하려면 `python scripts/docsync/generate_docs.py --all`을 실행하세요. 스크립트는 멱등성이 보장되며 AUTODOC 앵커 내부만 다시 작성합니다.
+To refresh auto-generated sections run `python scripts/docsync/generate_docs.py --all`. The script is idempotent and rewrites only AUTODOC anchors.
 <!-- AUTODOC:HOWTO:END -->

@@ -47,6 +47,6 @@ _마지막 업데이트: 2025-03-15_
 ## 자동 생성 감사 업데이트
 <!-- AUTODOC:AUDIT:BEGIN -->
 ### 2025-10-13
-- `scripts/docsync/generate_docs.py --all`을 실행해 CLI, 프로토콜, 텔레메트리, 성능 참조를 갱신했습니다.
-- Mermaid 다이어그램과 텔레메트리 표를 재생성했습니다.
+- Ran `scripts/docsync/generate_docs.py --all` to refresh CLI, protocol, telemetry, and performance references.
+- Updated Mermaid diagrams and regenerated telemetry tables.
 <!-- AUTODOC:AUDIT:END -->

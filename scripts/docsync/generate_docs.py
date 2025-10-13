@@ -7,7 +7,7 @@ import datetime as _dt
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 import sys
 
@@ -47,9 +47,38 @@ from scripts.docsync.parsers.telemetry import (
 from scripts.docsync.renderers.markdown import TableColumn, format_table, format_bullet_list
 from scripts.docsync.renderers.mermaid import (
     render_control_state_diagram,
-    render_e2e_sequence,
+    render_e2e_sequence_detailed,
+    render_e2e_sequence_simple,
+    render_tcp_control_plane_sequence_detailed,
+    render_tcp_control_plane_sequence_simple,
 )
 from scripts.docsync.utils.fileio import AnchorUpdate, apply_updates, write_text
+
+
+ANCHOR_RENDERERS: dict[tuple[Path, str], Callable[[], str]] = {
+    (REPO_ROOT / "README.md", "AUTODOC:E2E_SEQUENCE_SIMPLE"): render_e2e_sequence_simple,
+    (
+        REPO_ROOT / "docs" / "architecture" / "Architectural_Design_and_Plan.md",
+        "AUTODOC:E2E_SEQUENCE",
+    ): render_e2e_sequence_detailed,
+    (
+        REPO_ROOT / "docs" / "reference" / "Protocol_and_Schema_Reference.md",
+        "AUTODOC:TCP_CONTROL_SEQUENCE_SIMPLE",
+    ): render_tcp_control_plane_sequence_simple,
+    (
+        REPO_ROOT / "docs" / "architecture" / "Control_Plane_Design.md",
+        "AUTODOC:TCP_CONTROL_SEQUENCE_DETAILED",
+    ): render_tcp_control_plane_sequence_detailed,
+}
+
+
+def _inject_mermaid_by_registry() -> None:
+    updates_by_file: dict[Path, list[AnchorUpdate]] = {}
+    for (path, anchor), renderer in ANCHOR_RENDERERS.items():
+        md = f"```mermaid\n{renderer()}\n```\n"
+        updates_by_file.setdefault(path, []).append(AnchorUpdate(name=anchor, content=md))
+    for path, updates in updates_by_file.items():
+        apply_updates(path, updates)
 
 
 @dataclass(slots=True)
@@ -246,7 +275,7 @@ def _write_mermaid(protocol_info: dict[str, object]) -> tuple[str, str]:
     state_diagram = render_control_state_diagram(protocol_info["transitions"])  # type: ignore[arg-type]
     state_path = REPO_ROOT / "docs" / "mermaid" / "tcp_control_plane_sequence.mmd"
     write_text(state_path, state_diagram + "\n")
-    e2e_diagram = render_e2e_sequence()
+    e2e_diagram = render_e2e_sequence_simple()
     e2e_path = REPO_ROOT / "docs" / "mermaid" / "e2e_roundtrip_sequence.mmd"
     write_text(e2e_path, e2e_diagram + "\n")
     return state_diagram, e2e_diagram
@@ -295,7 +324,7 @@ def _update_protocol_doc(protocol_info: dict[str, object], telemetry_table: str,
     )
     updates = [
         AnchorUpdate(name="AUTODOC:PROTOCOL", content=protocol_md),
-        AnchorUpdate(name="AUTODOC:STATE_MACHINE", content=f"```mermaid\n{state_diagram}\n````"),
+        AnchorUpdate(name="AUTODOC:STATE_MACHINE", content=f"```mermaid\n{state_diagram}\n```"),
         AnchorUpdate(name="AUTODOC:TELEMETRY", content=telemetry_table),
     ]
     apply_updates(REPO_ROOT / "docs" / "reference" / "Protocol_and_Schema_Reference.md", updates)
@@ -322,13 +351,6 @@ def _update_user_guide(cli_summary: str, troubleshooting_md: str) -> None:
         AnchorUpdate(name="AUTODOC:TROUBLESHOOT", content=troubleshooting_md),
     ]
     apply_updates(REPO_ROOT / "docs" / "guides" / "User_Guide.md", updates)
-
-
-def _update_architecture(e2e_diagram: str) -> None:
-    updates = [
-        AnchorUpdate(name="AUTODOC:E2E_SEQUENCE", content=f"```mermaid\n{e2e_diagram}\n````"),
-    ]
-    apply_updates(REPO_ROOT / "docs" / "architecture" / "Architectural_Design_and_Plan.md", updates)
 
 
 def _update_module_map(module_md: str) -> None:
@@ -402,7 +424,7 @@ def run_all() -> None:
     protocol_info = collect_protocol(REPO_ROOT)
     telemetry_fields = collect_telemetry(REPO_ROOT)
     telemetry_md = render_telemetry_table(telemetry_fields)
-    state_diagram, e2e_diagram = _write_mermaid(protocol_info)
+    state_diagram, _ = _write_mermaid(protocol_info)
 
     troubleshooting_md = _render_troubleshooting(_build_troubleshooting())
     traceability_md = _render_traceability(_build_traceability())
@@ -412,13 +434,13 @@ def run_all() -> None:
     _update_protocol_doc(protocol_info, telemetry_md, state_diagram)
     _update_configuration_doc(cli_table, config_table, env_table)
     _update_user_guide(cli_summary, troubleshooting_md)
-    _update_architecture(e2e_diagram)
     _update_module_map(module_map_md)
     _update_performance(performance_md)
     _update_traceability(traceability_md)
     _update_audit_log()
     _update_docs_index()
     _update_runtime_notes(config_entries)
+    _inject_mermaid_by_registry()
     _write_report(cli_arguments, config_entries, telemetry_fields)
 
 
