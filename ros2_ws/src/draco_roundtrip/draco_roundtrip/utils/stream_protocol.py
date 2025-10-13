@@ -91,7 +91,7 @@ class ControlState(enum.Enum):
 
 @dataclass(slots=True, frozen=True)
 class FrameHeader:
-    """바이너리 프레임 헤더 필드를 표현한다."""
+    """docs/contracts/control_plane_contract.md에서 정의한 프레임 헤더 표현."""
 
     version: int
     is_control: bool
@@ -102,7 +102,7 @@ class FrameHeader:
 
 @dataclass(slots=True)
 class FrameFragment:
-    """단일 프래그먼트 또는 제어 메시지 페이로드."""
+    """docs/contracts/control_plane_contract.md에 명시된 프래그먼트 구조."""
 
     sequence: int | None
     payload: bytes
@@ -120,7 +120,7 @@ class FrameFragment:
 
 
 def pack_frame_header(header: FrameHeader) -> bytes:
-    """FrameHeader → wire bytes."""
+    """docs/contracts/control_plane_contract.md 명세에 따라 헤더를 직렬화한다."""
 
     flags = 0
     control_code_value = 0
@@ -141,7 +141,7 @@ def pack_frame_header(header: FrameHeader) -> bytes:
 
 
 def unpack_frame_header(payload: bytes) -> FrameHeader:
-    """Wire bytes → FrameHeader (payload 앞부분이 헤더라고 가정)."""
+    """docs/contracts/control_plane_contract.md 규격의 헤더를 역직렬화한다."""
 
     if len(payload) < _HEADER_STRUCT.size:
         raise ValueError("payload shorter than frame header")
@@ -172,7 +172,7 @@ def iter_fragments(
     sequence: int,
     fragment_size: int,
 ) -> Iterator[FrameFragment]:
-    """Yield MTU-safe 프래그먼트를 생성한다."""
+    """docs/contracts/control_plane_contract.md에 정의된 MTU 안전 조각을 생성한다."""
 
     if fragment_size <= 0:
         yield FrameFragment(sequence=sequence, payload=payload, more_fragments=False)
@@ -196,7 +196,7 @@ def iter_fragments(
 
 
 def validate_fragment_size(value: int) -> int:
-    """0 또는 256~1400 범위를 강제한다."""
+    """docs/contracts/control_plane_contract.md의 프래그먼트 범위를 강제한다."""
 
     if value == 0:
         return 0
@@ -209,7 +209,7 @@ def validate_fragment_size(value: int) -> int:
 
 
 class ControlPlaneError(RuntimeError):
-    """제어 평면 상태 위반/타임아웃 등 오류."""
+    """docs/contracts/control_plane_contract.md 상태 머신 위반 시 발생."""
 
 
 class ControlPlane:
@@ -332,7 +332,7 @@ CONTROL_CHANNEL = "control"
 
 @dataclass(slots=True, frozen=True)
 class FrameAddress:
-    """Message.name 필드에 담기는 레거시 주소 메타데이터."""
+    """SSOT 레거시 주소 규칙(`docs/contracts/control_plane_contract.md`) 구현."""
 
     channel: str
     sequence: int | None
@@ -349,7 +349,7 @@ def encode_frame_address(
     *,
     channel: str = DATA_CHANNEL,
 ) -> str:
-    """채널/시퀀스 정보를 Message.name에 인코딩한다."""
+    """채널/시퀀스를 docs/contracts/control_plane_contract.md 규칙으로 인코딩."""
 
     base = name or ""
     token = base
@@ -362,7 +362,7 @@ def encode_frame_address(
 
 
 def decode_frame_address(raw: str | None) -> FrameAddress:
-    """Message.name에서 채널/시퀀스 메타데이터를 추출한다."""
+    """docs/contracts/control_plane_contract.md 규칙으로 주소 메타데이터를 복원."""
 
     if not raw:
         return FrameAddress(channel=DATA_CHANNEL, sequence=None, name="")

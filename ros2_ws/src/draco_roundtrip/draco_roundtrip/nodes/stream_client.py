@@ -108,12 +108,12 @@ def _validate_client_config(args: argparse.Namespace) -> int:
 
 
 def _log_effective_config(args: argparse.Namespace, fragment_size: int) -> None:
-    print("[CLIENT] ---- Effective configuration ----")
-    print(f"  transport={args.transport} protocol={args.protocol}")
-    print(f"  fragment_size={fragment_size} socket_buffer_autotune={args.socket_buffer_autotune}")
-    print(f"  socket_buffer_kb={args.socket_buffer_kb} tcp_nodelay={args.tcp_nodelay}")
-    print(f"  max_inflight={args.max_inflight} adaptive_window={args.adaptive_window}")
-    print(f"  metrics_out={args.metrics_out}")
+    config_summary = (
+        f"transport={args.transport} protocol={args.protocol} "
+        f"tx_fragment_size={fragment_size} metrics_out={args.metrics_out} "
+        f"socket_buffer_autotune={'on' if args.socket_buffer_autotune else 'off'}"
+    )
+    print(f"[CLIENT] config: {config_summary}")
 
 
 async def _put_with_retry(
@@ -1379,6 +1379,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Frame capture backend: filesystem spool (legacy) or shared-memory zero copy')
     ap.add_argument(
         '--metrics-out',
+        '--telemetry-out',
+        dest='metrics_out',
         default='artifacts/perf/client_latest.json',
         help='텔레메트리 JSON 출력 경로 (스키마 준수).',
     )
@@ -1733,11 +1735,21 @@ async def run_client(args: argparse.Namespace) -> None:
     metrics_out_path = Path(args.metrics_out).expanduser()
     metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        if pending_inflight != 0 or pending_acks != 0:
-            raise ValueError(
-                "pending frames remain at shutdown: "
-                f"inflight={pending_inflight} pending_acks={pending_acks}"
-            )
+        control_pending = control_plane.pending
+        control_state = control_plane.state
+        if control_state != ControlState.FAILED:
+            if pending_inflight != 0 or pending_acks != 0 or control_pending != 0:
+                raise ValueError(
+                    "pending frames remain at shutdown: "
+                    f"inflight={pending_inflight} pending_acks={pending_acks} "
+                    f"control_plane={control_pending}"
+                )
+            if control_state != ControlState.TERMINATED:
+                raise ValueError(
+                    "control plane must reach TERMINATED before telemetry export: "
+                    f"state={control_state.value}"
+                )
+        queue_pending = pending_inflight + control_pending if control_state == ControlState.FAILED else 0
         metrics_block = {
             "latency_ms": percentiles_block(latency_percentiles, scale=1000.0),
             "rtt_ms": percentiles_block(rtt_percentiles, scale=1000.0),
@@ -1750,7 +1762,7 @@ async def run_client(args: argparse.Namespace) -> None:
                 "capture_max": traffic.capture_depth_peak,
                 "encode_max": traffic.network_depth_peak,
                 "decode_max": 0,
-                "pending": 0,
+                "pending": queue_pending,
             },
             "frames": {
                 "sent": frames_processed,
@@ -1762,6 +1774,7 @@ async def run_client(args: argparse.Namespace) -> None:
         telemetry_payload = telemetry.build(
             control_plane=control_plane,
             metrics=metrics_block,
+            inflight_pending=pending_inflight,
         )
         metrics_out_path.write_text(json.dumps(telemetry_payload, indent=2), encoding='utf-8')
         print(f"[CLIENT] Wrote telemetry to {metrics_out_path}")
