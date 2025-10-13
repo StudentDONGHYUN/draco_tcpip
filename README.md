@@ -79,6 +79,13 @@ ros2 run draco_roundtrip stream_client \
 - 클라이언트와 서버는 바이너리 프로토콜에서 제어 채널(`control/…`)과 데이터 채널(`data/…`)을 구분하며, 데이터 프레임이 도착하면 즉시 ACK를
   돌려보내 송신 윈도우를 해제합니다. EOF/오류/하트비트 역시 제어 채널로 송수신되며, 로그에 `EOF sent/received`가 표시되면 모든 큐가 비워지고 안전하게 종료된 것입니다. 구형 서버와 연동해야 할 경우 `--protocol legacy`를 이용해 텍스트 프레이밍으로도 동일한 메시지를 주고받을 수 있습니다.
 
+#### 바이너리 전송 프로토콜 요약
+
+- 모든 메시지는 `docs/specs/binary_transport.md`에 정리된 단일 헤더(`MAGIC=DRTC`, version, flags, type, sequence, …)를 사용합니다. 헤더 다음의 페이로드는 순수 Draco 바이트(데이터) 또는 JSON 제어 메시지(ACK/ERROR/HEARTBEAT)입니다.
+- `--tx-fragment-size=0`은 조각내지 않은 전송을 의미하며, 양수로 설정하면 프레임이 메타데이터(`total_length/offset/chunk_length`)와 함께 여러 메시지로 쪼개집니다. 서버는 모든 조각을 재조립한 뒤에만 디코더를 호출합니다.
+- ACK/ERROR/HEARTBEAT는 동일한 헤더 형식을 공유하고 `{"seq":123,"msg":"…"}` 형태의 JSON으로 응답합니다. 구형 서버가 텍스트 오류만 반환하더라도 클라이언트는 경고를 남기고 세션을 유지합니다.
+- EOF는 HEARTBEAT 타입 + 예약 필드(`0x45`)로 전달되며, 양측 큐가 비워지면 `shutdown(SHUT_WR)`로 TCP를 정리합니다.
+
 ### 3. 배치 품질 분석
 ```bash
 ros2 run draco_tools encode_ply_to_draco --input data/ply_stream --out data/drc

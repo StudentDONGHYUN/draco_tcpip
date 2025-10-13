@@ -15,6 +15,15 @@ import struct
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
 
+from draco_roundtrip.protocol import (
+    HEADER_SIZE,
+    HeaderType,
+    SEQUENCE_NONE,
+    pack_header,
+    recv_exact,
+    unpack_header,
+)
+
 __all__ = [
     "Message",
     "ProtocolError",
@@ -35,18 +44,27 @@ _HEADER = struct.Struct("!I")
 _SIZE = struct.Struct("!Q")
 _SEPARATOR = ":"
 
-_BINARY_HEADER = struct.Struct("!BBH")  # version, kind, name length
-_BINARY_SIZE = struct.Struct("!Q")
-_BINARY_VERSION = 1
-
-_KIND_TO_CODE = {"data": 0, "error": 1, "eof": 2, "ack": 3, "heartbeat": 4}
-_CODE_TO_KIND = {value: key for key, value in _KIND_TO_CODE.items()}
-
 MSG_DATA = "data"
 MSG_ERROR = "error"
 MSG_EOF = "eof"
 MSG_ACK = "ack"
 MSG_HEARTBEAT = "heartbeat"
+
+_KIND_TO_TYPE = {
+    MSG_DATA: HeaderType.DATA,
+    MSG_ERROR: HeaderType.ERROR,
+    MSG_EOF: HeaderType.HEARTBEAT,
+    MSG_ACK: HeaderType.ACK,
+    MSG_HEARTBEAT: HeaderType.HEARTBEAT,
+}
+_TYPE_TO_KIND = {
+    HeaderType.DATA: MSG_DATA,
+    HeaderType.ERROR: MSG_ERROR,
+    HeaderType.ACK: MSG_ACK,
+    HeaderType.HEARTBEAT: MSG_HEARTBEAT,
+}
+
+_RESERVED_EOF = 0x45  # ASCII 'E'
 
 
 class ProtocolError(RuntimeError):
@@ -62,6 +80,13 @@ class Message:
     kind: str
     name: str
     payload: bytes
+    sequence: int | None = None
+    flags: int = 0
+    reserved: int = 0
+    version: int = 1
+
+    def header_type(self) -> HeaderType:
+        return _KIND_TO_TYPE.get(self.kind, HeaderType.DATA)
 
     def as_meta(self) -> str:
         return f"{self.kind}{_SEPARATOR}{self.name}" if self.name else self.kind
@@ -133,41 +158,58 @@ def _recv_text(sock: socket.socket) -> Optional[Message]:
 
 
 def _send_binary(sock: socket.socket, message: Message) -> None:
-    kind_code = _KIND_TO_CODE.get(message.kind, _KIND_TO_CODE[MSG_DATA])
     name_bytes = message.name.encode("utf-8") if message.name else b""
     if len(name_bytes) > 0xFFFF:
         raise ProtocolError("message name too long for binary framing")
-    header = _BINARY_HEADER.pack(_BINARY_VERSION, kind_code, len(name_bytes))
-    sock.sendall(header)
+    payload_len = len(message.payload)
+    sequence = message.sequence if message.sequence is not None else SEQUENCE_NONE
+    reserved = message.reserved
+    if message.kind == MSG_EOF and not reserved:
+        reserved = _RESERVED_EOF
+    header_bytes = pack_header(
+        flags=message.flags,
+        msg_type=message.header_type(),
+        sequence=sequence,
+        name_length=len(name_bytes),
+        payload_length=payload_len,
+        version=message.version,
+        reserved=reserved,
+    )
+    sock.sendall(header_bytes)
     if name_bytes:
         sock.sendall(name_bytes)
-    payload_len = len(message.payload)
-    sock.sendall(_BINARY_SIZE.pack(payload_len))
     if payload_len:
         _send_all(sock, message.payload)
 
 
 def _recv_binary(sock: socket.socket) -> Optional[Message]:
-    header = sock.recv(_BINARY_HEADER.size)
-    if not header:
-        return None
-    if len(header) != _BINARY_HEADER.size:
-        raise ProtocolError("incomplete binary header")
-    version, kind_code, name_len = _BINARY_HEADER.unpack(header)
-    if version != _BINARY_VERSION:
-        raise ProtocolError(f"unsupported binary protocol version {version}")
-    if name_len:
-        name_bytes = _read_exact(sock, name_len)
-        name = name_bytes.decode("utf-8")
-    else:
-        name = ""
-    (payload_len,) = _BINARY_SIZE.unpack(_read_exact(sock, _BINARY_SIZE.size))
-    payload = _read_exact(sock, payload_len) if payload_len else b""
     try:
-        kind = _CODE_TO_KIND[kind_code]
-    except KeyError as exc:  # pragma: no cover - only triggered by wire corruption.
-        raise ProtocolError(f"unknown message kind code {kind_code}") from exc
-    return Message(kind=kind, name=name, payload=payload)
+        header_bytes = recv_exact(sock, HEADER_SIZE)
+    except ConnectionError:
+        return None
+    header = unpack_header(header_bytes)
+    name = ""
+    if header.name_length:
+        name_bytes = recv_exact(sock, header.name_length)
+        name = name_bytes.decode("utf-8")
+    payload = recv_exact(sock, header.payload_length) if header.payload_length else b""
+    msg_type = header.type
+    try:
+        kind = _TYPE_TO_KIND[msg_type]
+    except KeyError:  # pragma: no cover
+        kind = MSG_DATA
+    if msg_type is HeaderType.HEARTBEAT and header.reserved == _RESERVED_EOF:
+        kind = MSG_EOF
+    sequence = header.sequence if header.sequence != SEQUENCE_NONE else None
+    return Message(
+        kind=kind,
+        name=name,
+        payload=payload,
+        sequence=sequence,
+        flags=header.flags,
+        reserved=header.reserved,
+        version=header.version,
+    )
 
 
 @dataclass(frozen=True)

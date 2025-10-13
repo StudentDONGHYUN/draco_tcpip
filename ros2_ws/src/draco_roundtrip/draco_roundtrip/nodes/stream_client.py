@@ -57,25 +57,28 @@ from draco_roundtrip.utils.protocol import (
 )
 from draco_roundtrip.shared_memory import SharedMemoryReceiver, SharedMemoryDescriptor
 from draco_roundtrip.ros.playback import start_playback_thread
+from draco_roundtrip.protocol import (
+    FLAGS_FRAGMENTED,
+    FLAGS_FRAGMENT_END,
+    FLAGS_FRAGMENT_START,
+    METADATA_SIZE,
+    iter_fragment_payloads,
+    pack_metadata,
+    unpack_metadata,
+)
 from draco_roundtrip.utils.stream_protocol import (
     ACK_TIMEOUT_NS,
     CONTROL_CHANNEL,
     CONTROL_POLL_INTERVAL,
-    ControlCode,
     ControlPlane,
     ControlPlaneError,
     ControlState,
     DATA_CHANNEL,
     ErrorCode,
-    FrameFragment,
-    pack_frame_header,
+    ACK_PAYLOAD_STRUCT,
     decode_frame_address,
     encode_frame_address,
-    iter_fragments,
     validate_fragment_size,
-    ACK_PAYLOAD_STRUCT,
-    unpack_frame_header,
-    FRAME_HEADER_SIZE,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
 
@@ -868,12 +871,6 @@ async def network_sender(
                     and not acks_pending
                     and not stop_event.is_set()
                 ):
-                    eof_payload = b""
-                    if use_binary:
-                        eof_fragment = FrameFragment(
-                            sequence=None, payload=b"", control_code=ControlCode.EOF
-                        )
-                        eof_payload = pack_frame_header(eof_fragment.header())
                     message = Message(
                         kind=MSG_EOF,
                         name=encode_frame_address(
@@ -881,7 +878,7 @@ async def network_sender(
                             "final",
                             channel=CONTROL_CHANNEL,
                         ),
-                        payload=eof_payload,
+                        payload=b"",
                     )
                     try:
                         await _send_control_message(control, sock, protocol, message)
@@ -909,33 +906,41 @@ async def network_sender(
                 network_queue.task_done()
                 break
         control_plane.on_frame_sent(encoded.sequence, now_ns=time.monotonic_ns())
-        fragments: Iterable[FrameFragment]
-        if use_binary:
-            fragments = iter_fragments(
-                encoded.payload,
-                sequence=encoded.sequence,
-                fragment_size=fragment_size,
-            )
-        else:
-            fragments = (FrameFragment(sequence=encoded.sequence, payload=encoded.payload),)
         try:
-            for fragment in fragments:
-                payload = (
-                    pack_frame_header(fragment.header()) + fragment.payload
-                    if use_binary
-                    else fragment.payload
-                )
-                message = Message(
-                    kind=MSG_DATA,
-                    name=encode_frame_address(
-                        fragment.sequence,
-                        encoded.handle.name,
-                        channel=DATA_CHANNEL,
-                    ),
-                    payload=payload,
-                )
-                await asyncio.to_thread(protocol.send, sock, message)
-                traffic.record_send(len(fragment.payload))
+            if use_binary and fragment_size > 0:
+                chunk_budget = max(fragment_size - METADATA_SIZE, 1)
+                if len(encoded.payload) > chunk_budget:
+                    for flags, chunk, meta in iter_fragment_payloads(
+                        encoded.payload,
+                        fragment_size=fragment_size,
+                    ):
+                        message = Message(
+                            kind=MSG_DATA,
+                            name=encode_frame_address(
+                                encoded.sequence,
+                                encoded.handle.name,
+                                channel=DATA_CHANNEL,
+                            ),
+                            payload=pack_metadata(meta) + chunk,
+                            sequence=encoded.sequence,
+                            flags=flags,
+                        )
+                        await asyncio.to_thread(protocol.send, sock, message)
+                        traffic.record_send(len(chunk))
+                    continue
+            message = Message(
+                kind=MSG_DATA,
+                name=encode_frame_address(
+                    encoded.sequence,
+                    encoded.handle.name,
+                    channel=DATA_CHANNEL,
+                ),
+                payload=encoded.payload,
+                sequence=encoded.sequence,
+                flags=0,
+            )
+            await asyncio.to_thread(protocol.send, sock, message)
+            traffic.record_send(len(encoded.payload))
         except Exception as exc:
             print(f"[CLIENT] ERROR sending {encoded.handle.name}: {exc}")
             stop_event.set()
@@ -992,8 +997,9 @@ async def reply_consumer(
 
     reorder_buffer: Dict[int, DecodedResult] = {}
     skipped_sequences: Dict[int, str] = {}
-    fragment_buffer: Dict[int, bytearray] = {}
+    fragment_buffer: Dict[int, Dict[str, object]] = {}
     next_sequence = 0
+    legacy_plaintext_warned = False
 
     async def emit_result(result: DecodedResult) -> None:
         base_name = result.base_name or result.context.handle.name
@@ -1138,22 +1144,9 @@ async def reply_consumer(
 
             message = event.message
             address = decode_frame_address(message.name)
-            header = None
             body = message.payload
-            if use_binary:
-                try:
-                    header = unpack_frame_header(message.payload)
-                except ValueError as exc:
-                    print(f"[CLIENT] ERROR: invalid frame header: {exc}")
-                    control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
-                    await session.transition(SessionState.DEGRADED, "invalid frame header")
-                    stop_event.set()
-                    async with inflight_condition:
-                        acks_pending.clear()
-                        inflight_condition.notify_all()
-                    reply_queue.task_done()
-                    continue
-                body = message.payload[FRAME_HEADER_SIZE:]
+            sequence_hint = message.sequence
+            flags = message.flags if use_binary else 0
 
             if message.kind == MSG_HEARTBEAT:
                 heartbeat_watch.touch()
@@ -1165,11 +1158,17 @@ async def reply_consumer(
                 continue
 
             if message.kind == MSG_ACK:
-                sequence = address.sequence
-                if header is not None and header.sequence is not None:
-                    sequence = header.sequence
-                if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
-                    sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
+                sequence = sequence_hint if sequence_hint is not None else address.sequence
+                if sequence is None and body:
+                    try:
+                        ack_json = json.loads(body.decode("utf-8"))
+                    except Exception:
+                        ack_json = None
+                    if isinstance(ack_json, dict) and "seq" in ack_json:
+                        with contextlib.suppress(Exception):
+                            sequence = int(ack_json.get("seq"))
+                    elif len(body) >= ACK_PAYLOAD_STRUCT.size:
+                        sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
                 ctx: FrameContext | None = None
                 async with inflight_condition:
                     if sequence is not None:
@@ -1234,20 +1233,34 @@ async def reply_consumer(
                 continue
 
             if message.kind == MSG_ERROR:
-                if use_binary and header and header.control_code == ControlCode.ERROR and body:
-                    code = (
-                        ErrorCode(body[0])
-                        if body[0] in ErrorCode._value2member_map_
-                        else ErrorCode.INTERNAL_ERROR
-                    )
-                    detail = (
-                        body[1:].decode("utf-8", errors="replace")
-                        if len(body) > 1
-                        else code.name
-                    )
-                else:
-                    code = ErrorCode.INTERNAL_ERROR
-                    detail = body.decode("utf-8", errors="replace") if body else code.name
+                code = ErrorCode.INTERNAL_ERROR
+                detail = None
+                seq_override: int | None = None
+                if body:
+                    try:
+                        parsed = json.loads(body.decode("utf-8"))
+                    except Exception:
+                        parsed = None
+                    if isinstance(parsed, dict):
+                        msg_field = parsed.get("msg") or parsed.get("detail")
+                        if isinstance(msg_field, str):
+                            detail = msg_field
+                        code_field = parsed.get("code")
+                        if isinstance(code_field, str) and code_field in ErrorCode.__members__:
+                            code = ErrorCode[code_field]
+                        seq_field = parsed.get("seq")
+                        if isinstance(seq_field, (int, float)):
+                            seq_override = int(seq_field)
+                    else:
+                        detail = body.decode("utf-8", errors="replace")
+                        if use_binary and not legacy_plaintext_warned:
+                            print(
+                                "[CLIENT] WARN: Received legacy plaintext error payload; proceeding"
+                            )
+                            legacy_plaintext_warned = True
+                detail = detail or code.name
+                if seq_override is not None and ctx.sequence is None:
+                    ctx.sequence = seq_override
                 print(f"[CLIENT] SERVER ERROR for seq={ctx.sequence}: {detail}")
                 stats.error_frames += 1
                 skipped_sequences[ctx.sequence] = detail
@@ -1260,15 +1273,45 @@ async def reply_consumer(
                 reply_queue.task_done()
                 continue
 
-            if use_binary and header is not None:
-                if header.more_fragments and ctx.sequence is not None:
-                    fragment_buffer.setdefault(ctx.sequence, bytearray()).extend(body)
-                    reply_queue.task_done()
-                    continue
-                if ctx.sequence is not None and ctx.sequence in fragment_buffer:
-                    bucket = fragment_buffer.pop(ctx.sequence)
-                    bucket.extend(body)
-                    body = bytes(bucket)
+            if use_binary:
+                if flags & FLAGS_FRAGMENTED:
+                    if ctx.sequence is None:
+                        print("[CLIENT] WARN: Fragmented payload without sequence; dropping")
+                        reply_queue.task_done()
+                        continue
+                    try:
+                        meta = unpack_metadata(body)
+                    except ValueError as exc:
+                        print(f"[CLIENT] ERROR: invalid fragment metadata for seq={ctx.sequence}: {exc}")
+                        reply_queue.task_done()
+                        continue
+                    chunk = body[METADATA_SIZE : METADATA_SIZE + meta.chunk_length]
+                    if len(chunk) != meta.chunk_length:
+                        print(
+                            f"[CLIENT] WARN: fragment chunk length mismatch seq={ctx.sequence}"
+                        )
+                        chunk = chunk[: meta.chunk_length]
+                    assembly = fragment_buffer.get(ctx.sequence)
+                    if assembly is None or flags & FLAGS_FRAGMENT_START:
+                        assembly = {
+                            "buffer": bytearray(meta.total_length),
+                            "expected": meta.total_length,
+                            "received": 0,
+                        }
+                        fragment_buffer[ctx.sequence] = assembly
+                    buffer = assembly["buffer"]
+                    if meta.offset + len(chunk) > len(buffer):
+                        new_size = max(len(buffer), meta.offset + len(chunk))
+                        buffer.extend(b"\x00" * (new_size - len(buffer)))
+                    buffer[meta.offset : meta.offset + len(chunk)] = chunk
+                    assembly["received"] = assembly.get("received", 0) + len(chunk)
+                    if not (flags & FLAGS_FRAGMENT_END):
+                        reply_queue.task_done()
+                        continue
+                    body = bytes(buffer[: meta.total_length])
+                    fragment_buffer.pop(ctx.sequence, None)
+                elif ctx.sequence is not None and ctx.sequence in fragment_buffer:
+                    fragment_buffer.pop(ctx.sequence, None)
 
             payload = body if body else message.payload
             control_plane.on_first_data()

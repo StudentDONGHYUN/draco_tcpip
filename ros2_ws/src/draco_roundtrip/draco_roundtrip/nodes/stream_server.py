@@ -22,6 +22,13 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable
 
 from draco_roundtrip.utils import ensure_directory, resolve_executable
+from draco_roundtrip.protocol import (
+    FLAGS_FRAGMENTED,
+    FLAGS_FRAGMENT_END,
+    FLAGS_FRAGMENT_START,
+    METADATA_SIZE,
+    unpack_metadata,
+)
 from draco_roundtrip.utils.protocol import (
     Message,
     MSG_ACK,
@@ -33,7 +40,6 @@ from draco_roundtrip.utils.protocol import (
     resolve_protocol,
 )
 from draco_roundtrip.utils.stream_protocol import (
-    ACK_PAYLOAD_STRUCT,
     CONTROL_CHANNEL,
     DATA_CHANNEL,
     ControlPlane,
@@ -290,6 +296,8 @@ async def _recv_loop(
     heartbeat_interval = max(0.0, heartbeat_interval)
     last_heartbeat = time.monotonic()
     control_down.clear()
+    use_binary = protocol.name == "binary"
+    fragment_buffer: Dict[int, Dict[str, object]] = {}
 
     async def send_control_with_retry(message: Message, label: str) -> bool:
         delay = 0.05
@@ -344,6 +352,8 @@ async def _recv_loop(
             break
         last_heartbeat = time.monotonic()
         address = decode_frame_address(message.name)
+        sequence = message.sequence if message.sequence is not None else address.sequence
+        name = address.name or "frame"
         if message.kind == MSG_HEARTBEAT:
             control_plane.on_heartbeat()
             _telemetry("recv_heartbeat", address.name or "all")
@@ -367,13 +377,53 @@ async def _recv_loop(
             print(f"[SERVER] WARN: Received data on control channel: {message.name}")
         if control_plane.state in (ControlState.INIT, ControlState.HANDSHAKING):
             control_plane.on_first_data()
+        payload_bytes = message.payload
+        if use_binary and message.flags & FLAGS_FRAGMENTED:
+            if sequence is None:
+                print("[SERVER] WARN: Fragmented frame missing sequence; dropping chunk")
+                continue
+            try:
+                meta = unpack_metadata(payload_bytes)
+            except ValueError as exc:
+                print(f"[SERVER] ERROR: Invalid fragment metadata for seq={sequence}: {exc}")
+                continue
+            chunk = payload_bytes[METADATA_SIZE : METADATA_SIZE + meta.chunk_length]
+            if len(chunk) != meta.chunk_length:
+                print(f"[SERVER] WARN: Fragment length mismatch for seq={sequence}")
+                chunk = chunk[: meta.chunk_length]
+            assembly = fragment_buffer.get(sequence)
+            if assembly is None or message.flags & FLAGS_FRAGMENT_START:
+                assembly = {
+                    "buffer": bytearray(meta.total_length),
+                    "expected": meta.total_length,
+                    "received": 0,
+                    "name": name,
+                }
+                fragment_buffer[sequence] = assembly
+            buffer = assembly["buffer"]
+            if meta.offset + len(chunk) > len(buffer):
+                new_size = max(len(buffer), meta.offset + len(chunk))
+                buffer.extend(b"\x00" * (new_size - len(buffer)))
+            buffer[meta.offset : meta.offset + len(chunk)] = chunk
+            assembly["received"] = assembly.get("received", 0) + len(chunk)
+            if not (message.flags & FLAGS_FRAGMENT_END):
+                continue
+            payload_bytes = bytes(buffer[: meta.total_length])
+            name = assembly.get("name", name)
+            fragment_buffer.pop(sequence, None)
+        elif sequence is not None and sequence in fragment_buffer:
+            fragment_buffer.pop(sequence, None)
         job = DecodeJob(
-            sequence=address.sequence,
-            name=address.name or "frame",
-            payload=message.payload,
+            sequence=sequence,
+            name=name,
+            payload=payload_bytes,
             received_at=time.monotonic(),
         )
-        totals["bytes_in"] += len(message.payload)
+        totals["bytes_in"] += len(payload_bytes)
+        first8 = payload_bytes[:8].hex()
+        print(
+            f"[SERVER] DEBUG: enqueue seq={sequence} name={name} len={len(payload_bytes)} first8={first8}"
+        )
         await decode_queue.put(job)
         _telemetry(
             "recv_data",
@@ -382,15 +432,12 @@ async def _recv_loop(
             depth=decode_queue.qsize(),
             seq=job.sequence,
         )
-        ack_payload = (
-            ACK_PAYLOAD_STRUCT.pack(job.sequence)
-            if job.sequence is not None
-            else b""
-        )
+        ack_payload = json.dumps({"seq": job.sequence}).encode("utf-8") if job.sequence is not None else b""
         ack_message = Message(
             kind=MSG_ACK,
             name=encode_frame_address(job.sequence, job.name, channel=CONTROL_CHANNEL),
             payload=ack_payload,
+            sequence=job.sequence,
         )
         if not await send_control_with_retry(ack_message, f"ack-{job.sequence}"):
             producer_done.set()
@@ -418,6 +465,10 @@ async def _decode_worker(
             break
         decode_start = time.monotonic()
         stats.recv_to_decode.record(decode_start - job.received_at)
+        first8 = job.payload[:8].hex()
+        print(
+            f"[SERVER] DEBUG: decode worker={worker_id} seq={job.sequence} name={job.name} len={len(job.payload)} first8={first8}"
+        )
         _telemetry(
             "decode_start",
             job.name,
@@ -447,7 +498,10 @@ async def _decode_worker(
             )
             await send_queue.put(PipelineResult(job=job, decoded_at=decoded_at, artifact=artifact))
         except Exception as exc:
-            print(f"[SERVER] ERROR decoding {job.name}: {exc}")
+            print(
+                f"[SERVER] ERROR decoding {job.name}: {exc}"
+                f" seq={job.sequence} payload_len={len(job.payload)} first8={first8}"
+            )
             _telemetry("decode_error", job.name, worker=worker_id, seq=job.sequence)
             await send_queue.put(
                 PipelineResult(job=job, decoded_at=time.monotonic(), error=str(exc))
@@ -481,7 +535,10 @@ async def _send_loop(
         result = item
         send_start = time.monotonic()
         if result.artifact is None or result.error:
-            payload = (result.error or "decode failed").encode()
+            error_detail = result.error or "decode failed"
+            payload = json.dumps(
+                {"seq": result.job.sequence, "msg": error_detail}
+            ).encode("utf-8")
             message = Message(
                 kind=MSG_ERROR,
                 name=encode_frame_address(
@@ -490,10 +547,11 @@ async def _send_loop(
                     channel=CONTROL_CHANNEL,
                 ),
                 payload=payload,
+                sequence=result.job.sequence,
             )
             stage_label = "send_error"
             if control_plane.state != ControlState.FAILED:
-                control_plane.on_error(ErrorCode.INTERNAL_ERROR, result.error)
+                control_plane.on_error(ErrorCode.INTERNAL_ERROR, error_detail)
         else:
             name = result.job.name
             reply_name = name if name.endswith(".decoded") else f"{name}.decoded"
@@ -505,6 +563,7 @@ async def _send_loop(
                     channel=DATA_CHANNEL,
                 ),
                 payload=result.artifact.payload,
+                sequence=result.job.sequence,
             )
             stage_label = "send_data"
         try:
