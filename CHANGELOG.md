@@ -5,3 +5,6 @@
 - Runtime stability hardening for the Python streaming stack (session state tracking,
   heartbeat-aware waits, shared-memory cleanup, control-plane retries, and saver
   watchdog).  No breaking changes.
+- Fix: Restored deterministic pytest collection by installing an in-repo `tests`
+  meta-path finder and constraining discovery to `tests/`, unblocking the Python
+  regression suite.
