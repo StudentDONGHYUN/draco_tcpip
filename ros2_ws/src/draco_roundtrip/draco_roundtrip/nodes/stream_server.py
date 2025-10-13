@@ -107,6 +107,18 @@ async def _queue_get(
                 raise QueueStopped
 
 
+def _drain_queue(queue: "asyncio.Queue[object]") -> None:
+    """Remove any pending items so join() observers do not hang on shutdown."""
+
+    while True:
+        try:
+            queue.get_nowait()
+        except asyncio.QueueEmpty:
+            return
+        else:
+            queue.task_done()
+
+
 @dataclass(slots=True)
 class StageStats:
     count: int = 0
@@ -717,6 +729,7 @@ async def _decode_worker(
         try:
             job = await _queue_get(decode_queue, stop_event=stop_event)
         except QueueStopped:
+            _drain_queue(decode_queue)
             break
         if job is None:
             decode_queue.task_done()
@@ -790,6 +803,7 @@ async def _decode_worker(
                 stop_event=stop_event,
             )
             stop_event.set()
+            _drain_queue(decode_queue)
             break
         finally:
             decode_queue.task_done()
