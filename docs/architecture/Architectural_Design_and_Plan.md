@@ -56,6 +56,98 @@ _Last updated: 2025-03-15_
 
 Outstanding actions include QUIC/UDP-FEC evaluation, adaptive bitrate controllers, and automated deployment of low-latency kernel tuning. Track individual tasks in the [Development Process](../development/Development_Process.md).
 
+## Sequence Diagrams
+The diagrams below reflect the current hybrid pipeline with bounded queues, ACK-based flow control, and the control/data channel split.
+
+See also [Async Pipeline Design](../designs/async_pipeline_design.md), [Control Plane Contract](../contracts/control_plane_contract.md), and [Codebase Overview](../references/codebase_overview.md).
+
+```mermaid
+sequenceDiagram
+    title Draco TCP/IP Roundtrip — End-to-End Data Flow
+    participant U as User/CLI
+    participant BAG as ros2 bag play (proc)
+    participant CLI as StreamClient (stream_client.py)
+    participant ENC as Draco Encoder (proc)
+    participant SRV as StreamServer (stream_server.py)
+    participant DEC as Draco Decoder (proc)
+    participant ROS as ROS 2 Topic (/stream_pair/decoded)
+
+    %% Data channel uses binary framing; control channel carries ACK/HEARTBEAT/EOF (see control_plane_contract.md)
+    %% Queues are bounded; TX path honors max_inflight (see async_pipeline_design.md)
+
+    U->>SRV: Start server (listen)
+    U->>CLI: Start client
+
+    BAG-->>CLI: Publish PointCloud2 (capture)
+    Note right of CLI: Capture queue (bounded)
+
+    CLI->>ENC: Encode PLY → Draco (.drc)
+    Note right of ENC: External process call
+
+    ENC-->>CLI: Encoded bytes
+    CLI->>SRV: Send framed DATA over TCP (binary protocol)
+    Note right of CLI: Network queue (bounded)\nTX loop with max_inflight
+
+    SRV-->>CLI: ACK(seq) on control channel
+    Note right of CLI: in_flight -= 1
+
+    SRV->>DEC: Decode Draco → PLY
+    Note right of DEC: External process call
+
+    DEC-->>SRV: Decoded cloud (PLY/PCD)
+    SRV-->>ROS: Publish decoded cloud
+
+    SRV-->>CLI: (optional) Metrics/summary for frame
+
+    %% Graceful end
+    CLI-->>SRV: EOF (control channel)
+    SRV-->>CLI: EOF (after pending=0)
+    SRV-xROS: Close session
+    CLI-xBAG: Stop capture; close session
+```
+
+```mermaid
+sequenceDiagram
+    title Draco TCP/IP Roundtrip — TCP Control Plane
+    participant CLI as StreamClient
+    participant SRV as StreamServer
+
+    %% Control plane kinds: ACK(0x01), HEARTBEAT(0x02), EOF(0x03), ERROR(0x04)
+    %% Data vs Control channel separation per contract
+
+    rect rgb(245,245,245)
+      CLI->>SRV: TCP connect (data)
+      CLI-->>SRV: (optional) TCP connect (control)
+    end
+
+    par Streaming
+      CLI->>SRV: DATA Frame (seq=1)  %% data channel
+      SRV-->>CLI: ACK(seq=1)         %% control channel
+      Note right of CLI: in_flight ≤ max_inflight\nACK frees one slot
+
+      CLI->>SRV: DATA Frame (seq=2)
+      SRV-->>CLI: ACK(seq=2)
+      CLI->>SRV: DATA Frame (seq=3)
+      SRV-->>CLI: ACK(seq=3)
+    and Heartbeat
+      loop idle
+        SRV-->>CLI: HEARTBEAT
+      end
+    end
+
+    opt Error path
+      CLI->>SRV: DATA Frame (seq=4)
+      SRV-->>CLI: ERROR{code=TIMEOUT,msg="ACK overdue"}
+      CLI-xSRV: Close sockets; state=FAILED
+    end
+
+    opt Graceful shutdown
+      CLI-->>SRV: EOF
+      SRV-->>CLI: EOF (after pending=0)
+      CLI-xSRV: Close sockets; state=TERMINATED
+    end
+```
+
 ## Observability and Telemetry
 - Record timestamps on enqueue/dequeue for each stage to derive stage latency histograms.
 - Maintain RTT, ACK latency, throughput, and queue depth metrics per session. Persist results to `artifacts/perf/*.json` with the schema documented in the [Protocol and Schema Reference](../reference/Protocol_and_Schema_Reference.md).
