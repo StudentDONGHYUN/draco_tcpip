@@ -68,8 +68,8 @@ from draco_roundtrip.utils.stream_protocol import (
     ControlPlane,
     ControlPlaneError,
     ControlState,
-    DataHeader,
     ResponseHeader,
+    CONTENT_TYPE_DRACO,
     DATA_CHANNEL,
     ErrorCode,
     FrameFragment,
@@ -78,7 +78,6 @@ from draco_roundtrip.utils.stream_protocol import (
     iter_fragments,
     validate_fragment_size,
     ACK_PAYLOAD_STRUCT,
-    compose_request_payload,
     parse_response_payload,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
@@ -238,12 +237,12 @@ class FrameContext:
 
     sequence: int
     handle: "FrameHandle"
-    header: DataHeader
     captured_at: float
     encoded_at: float
     sent_at: float
     payload_size: int
     encode_ms: float
+    timestamp_ns: int
     ack_at: float | None = None
     ack_timeout: float = 0.0
     orig_metrics: dict[str, object] | None = None
@@ -277,7 +276,8 @@ class EncodedFrame:
     sequence: int
     handle: "FrameHandle"
     payload: bytes
-    header: DataHeader
+    timestamp_ns: int
+    content_type: int
     captured_at: float
     encoded_at: float
     encode_ms: float
@@ -690,27 +690,6 @@ class ReplyPump(threading.Thread):
                 return
 
 
-@dataclass(slots=True)
-class ControlChannel:
-    """Optional dedicated control-plane socket used when multiplexing is enabled."""
-
-    sock: socket.socket
-    protocol: ProtocolHandler
-
-
-async def _send_control_message(
-    control: ControlChannel | None,
-    fallback_sock: socket.socket,
-    fallback_protocol: ProtocolHandler,
-    message: Message,
-) -> None:
-    """Send a control-plane message using the dedicated channel when available."""
-
-    target_sock = control.sock if control is not None else fallback_sock
-    target_protocol = control.protocol if control is not None else fallback_protocol
-    await asyncio.to_thread(target_protocol.send, target_sock, message)
-
-
 class FrameHandle(Protocol):
     name: str
 
@@ -972,16 +951,13 @@ async def encode_worker(
                     prefix=f"[CLIENT][ENCODER:{worker_id}]",
                 )
             )
-            header, packed_payload = compose_request_payload(
-                sequence,
-                drc_bytes,
-                timestamp_ns=time.monotonic_ns(),
-            )
+            timestamp_ns = time.monotonic_ns()
             encoded = EncodedFrame(
                 sequence=sequence,
                 handle=handle,
-                payload=packed_payload,
-                header=header,
+                payload=drc_bytes,
+                timestamp_ns=timestamp_ns,
+                content_type=CONTENT_TYPE_DRACO,
                 captured_at=captured_at,
                 encoded_at=encoded_at,
                 encode_ms=result.duration * 1000.0,
@@ -1037,7 +1013,6 @@ async def network_sender(
     session: SessionTracker,
     heartbeat_watch: HeartbeatWatch,
     heartbeat_timeout: float,
-    control: ControlChannel | None = None,
     fragment_size: int,
     use_binary: bool,
     control_plane: ControlPlane,
@@ -1105,7 +1080,7 @@ async def network_sender(
                         payload=eof_payload,
                     )
                     try:
-                        await _send_control_message(control, sock, protocol, message)
+                        await asyncio.to_thread(protocol.send, sock, message)
                         await session.transition(SessionState.CLOSING, "EOF sent")
                         control_plane.on_eof_sent()
                         lifecycle.transition(StreamState.DRAINING, reason="EOF sent")
@@ -1193,6 +1168,8 @@ async def network_sender(
                     fragments_total=fragment.total,
                     frame_payload_len=fragment.frame_payload_len,
                 )
+                message.timestamp_ns = encoded.timestamp_ns
+                message.content_type = encoded.content_type
                 await asyncio.to_thread(protocol.send, sock, message)
                 traffic.record_send(len(fragment.payload))
         except Exception as exc:
@@ -1215,12 +1192,12 @@ async def network_sender(
         ctx = FrameContext(
             sequence=encoded.sequence,
             handle=encoded.handle,
-            header=encoded.header,
             captured_at=encoded.captured_at,
             encoded_at=encoded.encoded_at,
             sent_at=sent_at,
             payload_size=len(encoded.payload),
             encode_ms=encoded.encode_ms,
+            timestamp_ns=encoded.timestamp_ns,
             ack_timeout=ack_timeout_s,
         )
         async with inflight_condition:
@@ -2165,7 +2142,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--control-port",
         type=int,
         default=0,
-        help="Optional TCP port for a dedicated control-plane connection (0 disables)",
+        help="[DEPRECATED] Ignored; control-plane messages share the data connection",
     )
     ap.add_argument("--play-frame-id", default="lidar_link")
     ap.add_argument("--play-topic-prefix", default="stream_pair")
@@ -2322,6 +2299,11 @@ async def run_client(args: argparse.Namespace) -> None:
     session_summary: dict[str, object] | None = None
     fragment_size = _validate_client_config(args)
     _log_effective_config(args, fragment_size)
+    if args.control_port:
+        logger.warning(
+            "[CLIENT] --control-port is deprecated and ignored; using single data channel"
+        )
+        args.control_port = 0
     layout = resolve_data_layout(
         {
             "ply_dir": "ply_stream",
@@ -2453,44 +2435,6 @@ async def run_client(args: argparse.Namespace) -> None:
             control_plane.on_connected(time.monotonic_ns())
             lifecycle.transition(StreamState.HANDSHAKING, reason="connected")
 
-            control_channel: ControlChannel | None = None
-            control_sock: socket.socket | None = None
-            if args.control_port > 0:
-                control_sock = conn_stack.enter_context(
-                    socket.create_connection(
-                        (args.server_host, args.control_port),
-                        timeout=(
-                            args.socket_timeout if args.socket_timeout > 0 else None
-                        ),
-                    )
-                )
-                if args.socket_timeout > 0:
-                    control_sock.settimeout(args.socket_timeout)
-                if args.tcp_nodelay:
-                    with contextlib.suppress(OSError):
-                        control_sock.setsockopt(
-                            socket.IPPROTO_TCP, socket.TCP_NODELAY, 1
-                        )
-                if args.socket_buffer_kb > 0:
-                    buf_size = args.socket_buffer_kb * 1024
-                    for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
-                        with contextlib.suppress(OSError):
-                            control_sock.setsockopt(socket.SOL_SOCKET, opt, buf_size)
-                elif args.socket_buffer_autotune:
-                    for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
-                        with contextlib.suppress(OSError):
-                            control_sock.setsockopt(socket.SOL_SOCKET, opt, 0)
-                control_protocol = resolve_protocol(args.protocol)
-                control_channel = ControlChannel(
-                    sock=control_sock, protocol=control_protocol
-                )
-                logger.info(
-                    "[CLIENT] Control channel connected to %s:%d using %s protocol",
-                    args.server_host,
-                    args.control_port,
-                    control_protocol.name,
-                )
-
             loop = asyncio.get_running_loop()
             reply_queue: "asyncio.Queue[ReplyEvent]" = asyncio.Queue()
             pump_stop = threading.Event()
@@ -2502,16 +2446,6 @@ async def run_client(args: argparse.Namespace) -> None:
                 loop,
                 channel=DATA_CHANNEL,
             )
-            control_pump: ReplyPump | None = None
-            if control_channel is not None:
-                control_pump = ReplyPump(
-                    control_channel.sock,
-                    reply_queue,
-                    pump_stop,
-                    control_channel.protocol,
-                    loop,
-                    channel=CONTROL_CHANNEL,
-                )
 
             with contextlib.ExitStack() as stack:
                 frame_supplier: FilesystemFrameSupplier | SharedMemoryFrameSupplier
@@ -2602,7 +2536,6 @@ async def run_client(args: argparse.Namespace) -> None:
                             session=session_tracker,
                             heartbeat_watch=heartbeat_watch,
                             heartbeat_timeout=args.heartbeat_timeout,
-                            control=control_channel,
                             fragment_size=fragment_size,
                             use_binary=(protocol.name == "binary"),
                             control_plane=control_plane,
@@ -2662,8 +2595,6 @@ async def run_client(args: argparse.Namespace) -> None:
                     saver_done.set()
 
                 pump.start()
-                if control_pump is not None:
-                    control_pump.start()
                 try:
                     await asyncio.gather(*tasks)
                 except Exception as exc:
@@ -2679,9 +2610,8 @@ async def run_client(args: argparse.Namespace) -> None:
                     raise
                 finally:
                     pump_stop.set()
-                    for thread in (pump, control_pump):
-                        if thread is not None and thread.is_alive():
-                            thread.join(timeout=1.0)
+                    if pump.is_alive():
+                        pump.join(timeout=1.0)
     except Exception as exc:
         lifecycle.fail(f"client error: {exc}")
         raise

@@ -1,6 +1,6 @@
 # 프로토콜 및 스키마 참조
 Draco Roundtrip 스트리밍 세션을 제어하는 제어 플레인 메시지, 상태 기계, 텔레메트리 스키마를 정의합니다.
-_마지막 업데이트: 2025-03-15_
+_마지막 업데이트: 2025-03-16_
 
 **목차**
 - [제어 플레인 메시지](#제어-플레인-메시지)
@@ -28,12 +28,22 @@ sequenceDiagram
 ```
 <!-- AUTODOC:TCP_CONTROL_SEQUENCE_SIMPLE:END -->
 
+> v2 프로토콜부터는 **단일 TCP 연결**만 사용한다. DATA/ACK/HEARTBEAT/EOF/ERROR
+> 프레임은 모두 동일한 스트림 위에서 순서대로 전송되며, `FrameType` 값으로
+> 논리적 역할을 구분한다. 기존 제어 포트는 유지보수를 위해 파싱만 할 뿐,
+> 새 연결에서는 개설되지 않는다.
+
 | 코드(16진) | 심볼 | 목적 | 페이로드 |
 |------------|--------|---------|---------|
 | `0x01` | `ACK` | 수신자가 데이터 프레임을 수락했음을 확인 | 8바이트 부호 없는 시퀀스(빅엔디언) |
 | `0x02` | `HEARTBEAT` | 유휴 구간 동안 송신자가 살아 있음을 알림 | 선택적 8바이트 단조 증가 타임스탬프 |
 | `0x03` | `EOF` | 모든 프레임 전송이 완료되었음을 알림 | 없음 |
 | `0x04` | `ERROR` | 비정상 종료를 보고 | 1바이트 오류 코드 + UTF-8 메시지 |
+
+> **헤더 버전**
+> - 기본 헤더는 `magic=b"DRC0"`, `version=2`이며, 타임스탬프(`timestamp_ns`)와 콘텐츠 타입(`content_type`)을 포함한다.
+> - 레거시 모드(`--legacy-mode`)가 활성화된 경우에만 `magic=b"DRTC"`, `version=1` 프레임을 허용하며, 해당 프레임은 추가 메타데이터 없이 16바이트다.
+> - 조각화가 활성화되면 `FLAG_FRAGMENTED`/`FLAG_MORE_FRAGMENTS` 플래그와 함께 8바이트 프래그먼트 메타데이터(인덱스/총합/프레임 길이)가 이어진다.
 
 ### 오류 코드
 | 코드 | 식별자 | 설명 |
@@ -59,8 +69,16 @@ sequenceDiagram
 - `ACK_TIMEOUT_S = 0.5`: RTT EMA가 조정되기 전 초기 ACK 마감 시간.
 - `HEARTBEAT_INTERVAL_S = 2.0`: 해당 간격 동안 데이터 프레임이 없으면 하트비트를 전송.
 - `HEARTBEAT_LIVENESS_S = 6.0`: 임계값을 초과해 하트비트가 누락되면 `TIMEOUT` 코드의 `ERROR` 발생.
-- `CONTROL_POLL_INTERVAL_S = 0.05`: 제어 소켓 폴링 주기.
-- 조각화: `--tx-fragment-size` > 0이면 페이로드를 256–1400바이트 조각으로 나누고 `more_fragments` 플래그를 설정합니다. 수신 측은 ACK 전 조각을 재조립합니다.
+- `CONTROL_POLL_INTERVAL_S = 0.05`: 제어 워커 슬립 간격. 단일 소켓에서도 동일하게 사용됩니다.
+- 조각화: `--tx-fragment-size` > 0이면 페이로드를 256–1400바이트 조각으로 나누고 `FLAG_FRAGMENTED`/`FLAG_MORE_FRAGMENTS` 플래그를 설정합니다. 수신 측은 ACK 전 조각을 재조립합니다.
+- 프래그먼트 GC: 서버는 `FRAGMENT_TTL_SEC = 300`, `FRAGMENT_GC_INTERVAL = 60`을 사용해 유휴 조각을 삭제합니다. 누적 메모리가 `FRAGMENT_BUFFER_MAX_BYTES = 134217728`(128 MiB)을 넘으면 가장 오래된 항목부터 제거하고 경고를 기록합니다.
+
+### 텍스트 프로토콜 제한
+
+- `MAX_TEXT_NAME_LEN = 4096`: 텍스트 프로토콜에서 허용되는 메타 필드 최대 길이.
+- `MAX_TEXT_PAYLOAD_LEN = 104857600`(100 MiB): 텍스트 페이로드 상한. 초과 시 세션을 즉시 종료.
+- 제한을 위반하면 경고 로그와 함께 소켓을 닫고 `_text_limit_drops` 카운터를 증가시킨다. 전송자 측에서도 연결 종료를 감지해야 한다.
+- 클라이언트와 서버 모두 v2 바이너리 프로토콜을 기본값으로 사용하며, 텍스트 모드는 레거시 호환성 전용이다.
 
 ## 텔레메트리 스키마
 텔레메트리 JSON에는 다음 필드가 포함되어야 하며 스키마 버전은 `1.0.0`입니다.
@@ -72,7 +90,7 @@ sequenceDiagram
 | `session.id` | string | 고유 세션 식별자 |
 | `session.role` | string | `"client"` 또는 `"server"` |
 | `session.transport` | string | `--transport` 플래그와 동일 |
-| `session.protocol` | string | `legacy` 또는 `binary` |
+| `session.protocol` | string | `binary`, `text`, `legacy` 중 하나 |
 | `session.fragment_size` | integer | `--tx-fragment-size` 값 |
 | `session.socket_buffer_autotune` | boolean | CLI 플래그와 동일 |
 | `session.started_at_ns` / `session.ended_at_ns` | integer | 단조 증가 타임스탬프(나노초) |
@@ -96,47 +114,48 @@ sequenceDiagram
 
 ## 자동 생성 와이어 참조
 <!-- AUTODOC:PROTOCOL:BEGIN -->
-#### Binary Frame Header
+#### Binary Frame Header (v2)
 
-| Frame Header Field | Format | Bytes | Description |
+| 필드 | 포맷 | 바이트 | 설명 |
 | - | - | - | - |
-| magic | 4s | 4 | Constant ASCII magic b'DRTC' |
-| version | B | 1 | Protocol version (expected 1) |
-| flags | B | 1 | Lower 4 bits = FrameType, upper bits = fragmentation flags |
-| sequence | I | 4 | Monotonic frame sequence number |
-| name_len | H | 2 | Length of logical name/path metadata |
-| payload_len | I | 4 | Length of payload bytes |
-| Total |  | 16 |  |
+| `magic` | `4s` | 4 | 고정 ASCII 매직 `b"DRC0"` |
+| `version` | `B` | 1 | 헤더 버전 (현재 `2`) |
+| `flags` | `B` | 1 | 하위 4비트 = `FrameType`, 상위 비트 = 조각화 플래그 |
+| `sequence` | `I` | 4 | 모노톤 uint32 프레임 시퀀스 |
+| `name_len` | `H` | 2 | UTF-8 이름 길이 |
+| `payload_len` | `I` | 4 | 페이로드 바이트 길이 |
+| `timestamp_ns` | `Q` | 8 | 캡처 타임스탬프(나노초) |
+| `content_type` | `H` | 2 | 콘텐츠 타입 힌트 (`CONTENT_TYPE_DRACO` 등) |
+| **합계** |  | **26** |  |
+
+#### Legacy Frame Header (v1)
+
+| 필드 | 포맷 | 바이트 | 설명 |
+| - | - | - | - |
+| `magic` | `4s` | 4 | 레거시 매직 `b"DRTC"` |
+| `version` | `B` | 1 | 버전 `1` (레거시 모드 전용) |
+| `flags` | `B` | 1 | `FrameType` / 조각화 비트 |
+| `sequence` | `I` | 4 | 프레임 시퀀스 |
+| `name_len` | `H` | 2 | 이름 길이 |
+| `payload_len` | `I` | 4 | 페이로드 길이 |
+| **합계** |  | **16** |  |
+
+> `--legacy-mode`가 활성화된 경우에만 v1 헤더를 허용한다. 새 클라이언트는
+> 항상 v2 헤더를 전송해야 하며, 레거시 클라이언트에서 수신된 타임스탬프와
+> 콘텐츠 타입은 프레임 페이로드 내부(텍스트 헤더)에서 파생된다.
 
 #### Fragment Metadata
 
-| Fragment Info Field | Format | Bytes | Description |
+| 필드 | 포맷 | 바이트 | 설명 |
 | - | - | - | - |
-| index | H | 2 | Zero-based fragment index |
-| total | H | 2 | Total number of fragments |
-| frame_payload_len | I | 4 | Length of the reassembled payload |
-| Total |  | 8 |  |
+| `index` | `H` | 2 | 0 기반 조각 인덱스 |
+| `total` | `H` | 2 | 전체 조각 수 |
+| `frame_payload_len` | `I` | 4 | 재조립된 페이로드 길이 |
+| **합계** |  | **8** |  |
 
-#### Control Plane Data Headers
-
-| Data Header Field | Format | Bytes | Description |
-| - | - | - | - |
-| kind | B | 1 | Payload kind (DATA_KIND_DRACO) |
-| sequence | I | 4 | Frame sequence number |
-| timestamp_ns | Q | 8 | Capture timestamp in nanoseconds |
-| payload_len | I | 4 | Compressed Draco payload size |
-| content_type | B | 1 | Content type hint (CONTENT_TYPE_DRACO) |
-| Total |  | 18 |  |
-
-| Response Header Field | Format | Bytes | Description |
-| - | - | - | - |
-| kind | B | 1 | Response kind (RESPONSE_KIND_DECODED_AND_METRICS) |
-| sequence | I | 4 | Frame sequence number |
-| timestamp_ns | Q | 8 | Echoed capture timestamp |
-| decoded_len | I | 4 | Length of decoded payload |
-| metrics_len | I | 4 | Length of JSON metrics payload |
-| decode_ms | H | 2 | Decode latency in milliseconds |
-| Total |  | 23 |  |
+> v2에서는 별도의 `DataHeader` 구조가 삭제되었다. 타임스탬프와 콘텐츠 타입
+> 메타데이터는 프레임 헤더에 직접 포함되며, 응답(`compose_response_payload`)
+> 역시 동일한 헤더 레이아웃을 사용한다.
 
 #### Enumerations
 

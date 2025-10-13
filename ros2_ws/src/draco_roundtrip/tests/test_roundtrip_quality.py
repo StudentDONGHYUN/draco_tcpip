@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 
-import numpy as np
 import pytest
+
+np = pytest.importorskip("numpy")
 
 from draco_roundtrip.analysis import pointcloud_metrics
 from draco_roundtrip.io.ply_codec import save_xyz
@@ -44,14 +45,9 @@ def test_roundtrip_quality_pipeline(tmp_path: Path):
     save_xyz(decoded_path, orig_points)
     decoded_bytes = decoded_path.read_bytes()
 
-    request_header, request_payload = stream_protocol.compose_request_payload(
-        sequence=1,
-        draco_bytes=b"fake-draco",
-        timestamp_ns=42,
-    )
-    parsed_header, draco_payload = stream_protocol.parse_request_payload(request_payload)
-    assert draco_payload == b"fake-draco"
-    assert parsed_header.sequence == request_header.sequence
+    sequence = 1
+    timestamp_ns = 42
+    draco_payload = b"fake-draco"
 
     server_metrics = pointcloud_metrics.compute(
         orig_points,
@@ -65,8 +61,8 @@ def test_roundtrip_quality_pipeline(tmp_path: Path):
     metrics_json = json.dumps(server_metrics).encode("utf-8")
 
     _, response_payload = stream_protocol.compose_response_payload(
-        sequence=request_header.sequence,
-        timestamp_ns=request_header.timestamp_ns,
+        sequence=sequence,
+        timestamp_ns=timestamp_ns,
         decoded_payload=decoded_bytes,
         metrics_json=metrics_json,
         decode_ms=server_metrics["decode_ms"],

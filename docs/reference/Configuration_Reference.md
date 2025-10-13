@@ -1,6 +1,6 @@
 # 구성 참조
 Draco Roundtrip 노드·도구·런치 파일에서 사용하는 실행 프로파일, 디렉터리 구조, CLI 기본값을 한곳에 정리합니다.
-_마지막 업데이트: 2025-03-15_
+_마지막 업데이트: 2025-03-16_
 
 **목차**
 - [구성 검색 규칙](#구성-검색-규칙)
@@ -43,7 +43,7 @@ _마지막 업데이트: 2025-03-15_
 | Flag | Client Default | Server Default | 설명 | Primary Reference |
 |------|----------------|----------------|-------------|-------------------|
 | `--transport {tcp,quic,udp_fec}` | `tcp` | `tcp` | 전송 백엔드를 선택합니다. 현재는 `tcp`만 활성화되어 있으며 다른 값은 `NotImplementedError`를 발생시킵니다. | [아키텍처 설계 및 지연 시간 계획](../architecture/Architectural_Design_and_Plan.md) |
-| `--protocol {legacy,binary}` | `binary` | `binary` | 프레이밍 형식을 선택합니다. `binary`는 제어 플레인 계약에 따라 MTU 안전 헤더와 제한 큐를 사용합니다. | [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md) |
+| `--protocol {binary,text,legacy}` | `binary` | `binary` | 프레이밍 형식을 선택합니다. `binary`는 단일 헤더(v2)를 사용하며, `text`는 크기 제한(4096 B/100 MiB)을 따릅니다. | [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md) |
 | `--tx-fragment-size` | `0` (비활성) | `0` | MTU 안전 조각 크기(바이트). 허용 범위 256–1400. | [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md) |
 | `--ack-timeout` | `0.5` s | n/a | RTT EMA가 수렴하기 전 기본 ACK 타임아웃. | [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md) |
 | `--ack-timeout-min` | `0.5` s | n/a | 적응형 ACK 타임아웃 하한. | [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md) |
@@ -53,6 +53,11 @@ _마지막 업데이트: 2025-03-15_
 | `--metrics-out` | `artifacts/perf/client_latest.json` | `artifacts/perf/server_latest.json` | 스키마를 준수해야 하는 텔레메트리 JSON 출력 경로. | [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md) |
 
 새 플래그를 도입할 때는 이 매트릭스를 갱신하고 CLI 기본값, 도움말, 회귀 문서를 코드 변경과 함께 맞춰야 합니다.
+
+> **주의**
+> - `--control-port`는 더 이상 별도 소켓을 열지 않고 경고만 출력합니다. 제어 메시지는 모두 단일 TCP 연결에서 `FrameType`으로 구분됩니다.
+> - `--legacy-mode`는 레거시 헤더(`magic=b"DRTC"`, `version=1`)를 수신할 때만 사용하며, 새 세션은 기본적으로 v2 헤더(`magic=b"DRC0"`)를 전송해야 합니다.
+> - 텍스트 프로토콜은 이름/페이로드 크기 제한(4096 B/100 MiB)을 초과하면 즉시 연결을 종료합니다.
 
 ## 사용 예시
 명시적인 레이아웃 프로파일과 QoS 오버라이드로 클라이언트를 설정합니다.
@@ -126,7 +131,7 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | stream_client | --best-effort | bool | False | no |  | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2136 |
 | stream_client | --capture-queue | int | 4 | no | Maximum capture queue depth before applying backpressure | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2272 |
 | stream_client | --capture-transport | str | shared-memory | no | Frame capture backend: filesystem spool (legacy) or shared-memory zero copy Choices: filesystem, shared-memory | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2300 |
-| stream_client | --control-port | int | 0 | no | Optional TCP port for a dedicated control-plane connection (0 disables) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2164 |
+| stream_client | --control-port | int | 0 | no | **Deprecated.** 경고만 출력하며 단일 TCP 소켓을 재사용합니다. | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2164 |
 | stream_client | --data-root | str |  | no | Base directory for generated artifacts (overrides profile/data root) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2111 |
 | stream_client | --decoded-dir | str |  | no | Override directory where decoded frames from the server are stored | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2142 |
 | stream_client | --encode-workers | int | 2 | no | Number of concurrent encoder workers for the async pipeline | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py:2278 |
@@ -196,7 +201,7 @@ bringup 런치는 동일한 헬퍼를 사용하므로 `layout_profile:=client.pr
 | stream_replay | --orig-suffix | str | .ply | no | 원본 파일 접미사 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:79 |
 | stream_replay | --prefix | str | sample2 | no | 파일 접두어 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:78 |
 | stream_replay | --topic-prefix | str | compare | no | 퍼블리시 토픽 접두어 | ros2_ws/src/draco_roundtrip/draco_roundtrip/tools/replay.py:81 |
-| stream_server | --control-port | int | 0 | no | Optional TCP port dedicated to control-plane messages (0 disables) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:400 |
+| stream_server | --control-port | int | 0 | no | **Deprecated.** 제어 메시지는 데이터 포트에서 `FrameType`으로 다중화됩니다. | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:400 |
 | stream_server | --decode-timeout | float | 30.0 | no | Fail decoding if the external tool exceeds this timeout (seconds) | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:408 |
 | stream_server | --decode-workers | int | 2 | no | Number of concurrent decode workers in the async pipeline | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:443 |
 | stream_server | --decoder | str |  | no | Path to draco_decoder | ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_server.py:406 |

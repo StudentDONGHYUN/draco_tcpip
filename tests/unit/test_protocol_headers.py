@@ -1,4 +1,5 @@
 import json
+import struct
 import sys
 from pathlib import Path
 
@@ -13,19 +14,23 @@ import pytest
 from draco_roundtrip.draco_roundtrip.utils import stream_protocol
 
 
-def test_request_header_round_trip():
+def test_legacy_request_payload_round_trip():
     payload = b"draco-bytes"
-    header, packed = stream_protocol.compose_request_payload(
-        sequence=42,
-        draco_bytes=payload,
-        timestamp_ns=123456789,
+    buffer = struct.pack(
+        "!BIQIB",
+        stream_protocol.DATA_KIND_DRACO,
+        42,
+        123456789,
+        len(payload),
+        stream_protocol.CONTENT_TYPE_DRACO,
+    ) + payload
+    sequence, timestamp_ns, content_type, parsed_payload = (
+        stream_protocol.parse_legacy_request_payload(buffer)
     )
-    assert header.payload_len == len(payload)
-    parsed_header, parsed_payload = stream_protocol.parse_request_payload(packed)
     assert parsed_payload == payload
-    assert parsed_header.sequence == 42
-    assert parsed_header.timestamp_ns == 123456789
-    assert parsed_header.content_type == stream_protocol.CONTENT_TYPE_DRACO
+    assert sequence == 42
+    assert timestamp_ns == 123456789
+    assert content_type == stream_protocol.CONTENT_TYPE_DRACO
 
 
 def test_response_header_round_trip():

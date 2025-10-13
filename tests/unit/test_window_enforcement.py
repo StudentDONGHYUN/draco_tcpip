@@ -15,8 +15,8 @@ from draco_roundtrip.draco_roundtrip.nodes.stream_client import (
     network_sender,
 )
 from draco_roundtrip.draco_roundtrip.utils.stream_protocol import (
-    DataHeader,
     ControlPlane,
+    CONTENT_TYPE_DRACO,
 )
 
 
@@ -57,14 +57,12 @@ async def test_network_sender_respects_window_limit():
     protocol = _RecordingProtocol()
 
     for seq in range(8):
-        header = DataHeader(
-            kind=0, sequence=seq, timestamp_ns=0, payload_len=1, content_type=0
-        )
         frame = EncodedFrame(
             sequence=seq,
             handle=_StubHandle(f"frame{seq}"),
             payload=b"x",
-            header=header,
+            timestamp_ns=0,
+            content_type=CONTENT_TYPE_DRACO,
             captured_at=0.0,
             encoded_at=0.0,
             encode_ms=0.0,

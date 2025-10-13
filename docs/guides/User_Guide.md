@@ -1,6 +1,6 @@
 # Draco Roundtrip 사용자 가이드
 Draco Roundtrip은 결정적 제어 플레인 핸드셰이크와 공유 구성 헬퍼를 기반으로 LiDAR 포인트 클라우드를 TCP 위에서 스트리밍합니다. 이 가이드는 운영자와 개발자를 위해 환경 설정, 스트리밍, 모니터링, 로그 수집 흐름을 순서대로 제시합니다.
-_마지막 업데이트: 2025-03-15_
+_마지막 업데이트: 2025-03-16_
 
 **목차**
 - [환경 설정](#환경-설정)
@@ -48,8 +48,10 @@ ros2 launch slam_stream_bridge bringup.launch.py \
    ```bash
    ros2 run draco_roundtrip stream_server --port 5000
    ```
-   - `--protocol`(`legacy` 또는 `binary`), `--resp-format`, `--metrics-out`, `--socket-buffer-autotune` 등을 지원하며 기본값은 [구성 참조](../reference/Configuration_Reference.md)에서 확인할 수 있습니다.
-   - 로그와 텔레메트리는 [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md)의 제어 플레인 계약과 스키마를 따릅니다.
+    - `--protocol`(`binary`, `text`, `legacy`), `--resp-format`, `--metrics-out`, `--socket-buffer-autotune` 등을 지원하며 기본값은 [구성 참조](../reference/Configuration_Reference.md)에서 확인할 수 있습니다.
+    - 로그와 텔레메트리는 [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md)의 제어 플레인 계약과 스키마를 따릅니다.
+    - `--control-port`는 더 이상 별도 소켓을 열지 않고 경고만 출력합니다. 모든 제어 메시지는 단일 TCP 연결에서 `FrameType`으로 다중화되며, 서버는 프래그먼트를 TTL(300 초)과 128 MiB 상한으로 관리합니다.
+    - v2 기본 헤더(`magic=b"DRC0"`, `version=2`)에는 타임스탬프와 콘텐츠 타입이 포함되며, `--legacy-mode`를 켜면 레거시 헤더(`b"DRTC"`, `version=1`) 수신만 허용합니다.
 
 2. **클라이언트를 연결하기 전에 네트워크 에뮬레이션을 선택적으로 적용합니다.**
    ```bash
@@ -69,9 +71,10 @@ ros2 launch slam_stream_bridge bringup.launch.py \
        --data-root ./data \
        --quality-thresholds '{"centroid_l2": 0.05}'
    ```
-   - 핸드셰이크: `MSG_ACK`, `MSG_HEARTBEAT`, `MSG_EOF`가 제한 큐와 세션 종료를 관리하며, RTT 윈도는 `--ack-timeout*` 플래그로 조정됩니다.
+    - 핸드셰이크: `FrameType.ACK`, `FrameType.HEARTBEAT`, `FrameType.EOF`가 제한 큐와 세션 종료를 관리하며, RTT 윈도는 `--ack-timeout*` 플래그로 조정됩니다.
    - 디렉터리/QoS 해석, 프로파일 검색 순서, CLI 기본값은 [구성 참조](../reference/Configuration_Reference.md)에 정의되어 있습니다.
    - 품질 JSONL 메트릭은 `quality_report_dir/<prefix>_quality.jsonl`에 기록됩니다. 서버의 `--keep-artifacts`, 클라이언트의 `--no-save-decoded`로 Draco 아티팩트 유지 여부를 제어합니다.
+    - `--control-port` 옵션은 경고 후 무시되며, 텍스트 프로토콜(`--protocol text`)을 사용할 때는 이름/페이로드 상한(4096 B/100 MiB)을 넘지 않도록 주의해야 합니다. 제한을 위반하면 연결이 즉시 닫히고 `_text_limit_drops` 카운터가 증가합니다.
 
 4. **3D SLAM 스트리밍**: bringup 런치를 사용하지 않을 경우, HDL Graph SLAM을 직접 실행하고 `/stream_pair/decoded`를 구독합니다. 클라이언트의 `--play-frame-id`가 SLAM 프레임과 일치하는지 확인하십시오(기본값 `lidar_link`).
 
