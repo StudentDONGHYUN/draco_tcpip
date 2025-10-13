@@ -19,8 +19,7 @@ sequenceDiagram
     par 스트리밍
       CLI->>SRV: DATA 프레임(seq=1)  %% 데이터 채널
       SRV-->>CLI: ACK(seq=1)          %% 제어 채널
-      Note right of CLI: in_flight ≤ max_inflight
-ACK가 슬롯 해제
+      Note right of CLI: in_flight ≤ max_inflight<br/>ACK가 슬롯 해제
 
       CLI->>SRV: DATA 프레임(seq=2)
       SRV-->>CLI: ACK(seq=2)
