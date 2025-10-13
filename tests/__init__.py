@@ -25,4 +25,13 @@ if str(ROOT) not in sys.path:
 
 SRC = ROOT / "ros2_ws" / "src"
 if str(SRC) not in sys.path:
-    sys.path.append(str(SRC))
+    try:
+        root_index = sys.path.index(str(ROOT))
+    except ValueError:
+        # ``ROOT`` may have been removed or re-ordered by external tooling.
+        # Fall back to keeping the ROS workspace near the front so that the
+        # working tree wins over any installed packages.
+        insertion_index = 0
+    else:
+        insertion_index = root_index + 1
+    sys.path.insert(insertion_index, str(SRC))
