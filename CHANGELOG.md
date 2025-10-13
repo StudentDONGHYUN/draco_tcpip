@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- ACK 타임아웃을 최소 힙 스케줄러로 전환하여 폴링 없이 만료를 감지하고, 해당 보조 유틸리티와 단위 테스트를 추가했습니다.
 - 스트리밍 클라이언트/서버가 공유하는 상태 머신을 도입하고 EOF 처리 멱등성과 일관된 취소 경로를 확보하여 예외 발생 시 교착 없이 종료되도록 개선했습니다.
 - Control-plane alignment & Perf gate: control-plane constants synced with `docs/contracts/control_plane_contract.md`, telemetry gating aligned with `docs/specs/telemetry_schema.md`, and latency regression harness (`tests/perf/test_latency_gate.py`, `scripts/ci/run_perf_gate.sh`) added.
 - Runtime stability hardening for the Python streaming stack (session state tracking,
