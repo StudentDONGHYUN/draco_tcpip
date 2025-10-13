@@ -33,26 +33,35 @@ def _subsample(points: np.ndarray, sample: int | None) -> np.ndarray:
     return points[::step][:sample]
 
 
-def _nearest_distances(points: np.ndarray, query: np.ndarray) -> np.ndarray:
+def _nearest_distances(
+    points: np.ndarray, query: np.ndarray, *, skip_self: bool = False
+) -> np.ndarray:
     if len(points) == 0 or len(query) == 0:
         return np.empty(0, dtype=np.float32)
     if _HAVE_SCIPY:
         tree = cKDTree(points)
-        distances, _ = tree.query(query, k=2)
+        k = 2 if skip_self and len(points) > 1 else 1
+        distances, _ = tree.query(query, k=k)
+        if k == 1:
+            return np.atleast_1d(np.asarray(distances, dtype=np.float32))
         if distances.ndim == 1:
-            return distances
-        return distances[:, 1]
+            return np.asarray(distances[1:], dtype=np.float32)
+        return np.asarray(distances[:, 1], dtype=np.float32)
     diffs = query[:, None, :] - points[None, :, :]
     norms = np.linalg.norm(diffs, axis=2)
-    norms.sort(axis=1)
-    return norms[:, 1]
+    if skip_self:
+        norms.sort(axis=1)
+        if norms.shape[1] <= 1:
+            return np.zeros(len(query), dtype=np.float32)
+        return norms[:, 1].astype(np.float32, copy=False)
+    return np.min(norms, axis=1).astype(np.float32, copy=False)
 
 
 def _avg_nn_distance(points: np.ndarray, sample: int | None) -> float:
     if len(points) <= 1:
         return 0.0
     sampled = _subsample(points, sample)
-    dists = _nearest_distances(points, sampled)
+    dists = _nearest_distances(points, sampled, skip_self=True)
     if dists.size == 0:
         return 0.0
     return float(np.mean(dists))
