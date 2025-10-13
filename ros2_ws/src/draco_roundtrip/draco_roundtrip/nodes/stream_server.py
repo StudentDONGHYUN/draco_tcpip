@@ -23,6 +23,7 @@ from typing import Callable, Dict, Iterable
 import numpy as np
 
 from draco_roundtrip.analysis import pointcloud_metrics
+from draco_roundtrip.common.state_machine import StreamState, StreamStateMachine
 
 from draco_roundtrip.utils import ensure_directory, resolve_executable
 from draco_roundtrip.utils.ply_io import load_points_from_bytes
@@ -211,6 +212,15 @@ async def _send_control_message(
     await asyncio.to_thread(protocol.send, target, message)
 
 
+async def _fail_and_signal(
+    lifecycle: StreamStateMachine,
+    stop_event: asyncio.Event,
+    reason: str,
+) -> None:
+    lifecycle.fail(reason)
+    stop_event.set()
+
+
 def _points_to_pcd_bytes(points: np.ndarray) -> bytes:
     header = (
         "# .PCD v0.7 - Point Cloud Data file format\n"
@@ -361,6 +371,7 @@ async def _recv_loop(
     heartbeat_interval: float,
     control_plane: ControlPlane,
     control_down: asyncio.Event,
+    lifecycle: StreamStateMachine,
 ) -> None:
     heartbeat_interval = max(0.0, heartbeat_interval)
     last_heartbeat = time.monotonic()
@@ -408,17 +419,21 @@ async def _recv_loop(
                 if await send_control_with_retry(heartbeat, "heartbeat"):
                     _telemetry("send_heartbeat", "all")
                 else:
-                    stop_event.set()
+                    await _fail_and_signal(
+                        lifecycle,
+                        stop_event,
+                        "heartbeat send failure",
+                    )
                     break
                 last_heartbeat = time.monotonic()
             continue
         except Exception as exc:
             print(f"[SERVER] ERROR receiving frame: {exc}")
-            stop_event.set()
+            await _fail_and_signal(lifecycle, stop_event, f"recv error: {exc}")
             break
         if message is None:
             print("[SERVER] Client closed connection")
-            stop_event.set()
+            await _fail_and_signal(lifecycle, stop_event, "client closed connection")
             break
         last_heartbeat = time.monotonic()
         address = decode_frame_address(message.name)
@@ -430,12 +445,19 @@ async def _recv_loop(
             detail = message.payload.decode("utf-8", errors="ignore") if message.payload else ""
             print(f"[SERVER] ERROR from client: {detail or 'unspecified'}")
             control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, detail or None)
-            stop_event.set()
+            await _fail_and_signal(
+                lifecycle,
+                stop_event,
+                f"client error: {detail or 'unspecified'}",
+            )
             break
         if message.kind == MSG_EOF:
             print("[SERVER] Received EOF marker from client")
             _telemetry("recv_eof", "all")
             control_plane.on_eof_received()
+            lifecycle.transition(StreamState.DRAINING, reason="client EOF")
+            if control_plane.state == ControlState.TERMINATED:
+                lifecycle.transition(StreamState.TERMINATED, reason="client EOF")
             producer_done.set()
             break
         if message.kind != MSG_DATA:
@@ -445,6 +467,7 @@ async def _recv_loop(
             print(f"[SERVER] WARN: Received data on control channel: {message.name}")
         if control_plane.state in (ControlState.INIT, ControlState.HANDSHAKING):
             control_plane.on_first_data()
+            lifecycle.transition(StreamState.STREAMING, reason="first frame")
         sequence = message.sequence if message.sequence is not None else address.sequence
         frame_name = address.name or "frame"
         payload_bytes = message.payload
@@ -519,7 +542,11 @@ async def _recv_loop(
         )
         if not await send_control_with_retry(ack_message, f"ack-{job.sequence}"):
             producer_done.set()
-            stop_event.set()
+            await _fail_and_signal(
+                lifecycle,
+                stop_event,
+                f"ack send failure seq={job.sequence}",
+            )
             break
         _telemetry("send_ack", job.name, seq=job.sequence)
         await decode_queue.put(job)
@@ -613,6 +640,8 @@ async def _send_loop(
     producer_done: asyncio.Event,
     worker_count: int,
     control_plane: ControlPlane,
+    lifecycle: StreamStateMachine,
+    resp_format: str,
 ) -> None:
     finished_workers = 0
     eof_sent = False
@@ -626,6 +655,8 @@ async def _send_loop(
             continue
         result = item
         send_start = time.monotonic()
+        fatal_reason: str | None = None
+        should_break = False
         if result.artifact is None or result.error:
             payload = (result.error or "decode failed").encode()
             message = Message(
@@ -641,12 +672,13 @@ async def _send_loop(
             stage_label = "send_error"
             if control_plane.state != ControlState.FAILED:
                 control_plane.on_error(ErrorCode.INTERNAL_ERROR, result.error)
+            fatal_reason = result.error or "decode failed"
         else:
             name = result.job.name
             reply_name = (
                 name
-                if name.endswith(f".decoded.{args.resp_format}")
-                else f"{name}.decoded.{args.resp_format}"
+                if name.endswith(f".decoded.{resp_format}")
+                else f"{name}.decoded.{resp_format}"
             )
             metrics_json = json.dumps(result.artifact.metrics, sort_keys=True).encode("utf-8")
             seq_for_header = result.job.sequence if result.job.sequence is not None else 0
@@ -676,7 +708,11 @@ async def _send_loop(
                 await _send_control_message(control, protocol, conn, message)
         except Exception as exc:
             print(f"[SERVER] ERROR sending {message.name or result.job.name}: {exc}")
-            stop_event.set()
+            await _fail_and_signal(
+                lifecycle,
+                stop_event,
+                f"send failure: {exc}",
+            )
         else:
             if message.kind == MSG_DATA and result.artifact is not None:
                 totals["bytes_out"] += reply_payload_len
@@ -689,6 +725,13 @@ async def _send_loop(
                 )
             else:
                 _telemetry(stage_label, result.job.name, seq=result.job.sequence)
+            if fatal_reason is not None:
+                await _fail_and_signal(
+                    lifecycle,
+                    stop_event,
+                    f"pipeline error: {fatal_reason}",
+                )
+                should_break = True
         finally:
             if result.artifact is not None:
                 try:
@@ -698,9 +741,12 @@ async def _send_loop(
                         f"[SERVER] WARN: Failed to cleanup artifact for {result.job.name}: {cleanup_exc}"
                     )
             send_queue.task_done()
+            if should_break:
+                break
     if not eof_sent and producer_done.is_set():
         if control_plane.state not in (ControlState.FAILED, ControlState.TERMINATED):
             control_plane.on_eof_sent()
+        lifecycle.transition(StreamState.DRAINING, reason="EOF sent")
         try:
             await _send_control_message(
                 control,
@@ -771,6 +817,8 @@ async def handle_connection(
 
         control_plane = ControlPlane(role="server")
         control_plane.on_connected(time.monotonic_ns())
+        lifecycle = StreamStateMachine(role="server")
+        lifecycle.transition(StreamState.HANDSHAKING, reason="connected")
 
         max_inflight = max(1, args.max_inflight)
         if args.decode_workers <= 0:
@@ -793,6 +841,7 @@ async def handle_connection(
                 args.heartbeat_interval,
                 control_plane,
                 control_path_down,
+                lifecycle,
             )
         )
         worker_tasks = [
@@ -822,14 +871,20 @@ async def handle_connection(
                 producer_done,
                 args.decode_workers,
                 control_plane,
+                lifecycle,
+                args.resp_format,
             )
         )
 
         tasks: Iterable[asyncio.Task[None]] = [recv_task, *worker_tasks, send_task]
         try:
             await recv_task
-        except Exception:
-            stop_event.set()
+        except Exception as exc:
+            await _fail_and_signal(
+                lifecycle,
+                stop_event,
+                f"recv loop failure: {exc}",
+            )
             raise
         finally:
             producer_done.set()
@@ -845,6 +900,12 @@ async def handle_connection(
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         control_plane.on_shutdown()
+        if (
+            control_plane.state == ControlState.TERMINATED
+            and lifecycle.state != StreamState.FAILED
+        ):
+            lifecycle.transition(StreamState.TERMINATED, reason="session complete")
+        setattr(control_plane, "lifecycle", lifecycle)
         return control_plane
 
 
@@ -908,6 +969,7 @@ async def run_server(args: argparse.Namespace) -> None:
 
     elapsed = max(time.monotonic() - start_time, 1e-6)
     if control_plane is not None:
+        lifecycle: StreamStateMachine | None = getattr(control_plane, "lifecycle", None)
         _export_server_telemetry(
             control_plane,
             stats,
@@ -915,6 +977,28 @@ async def run_server(args: argparse.Namespace) -> None:
             protocol=args.protocol,
             elapsed=elapsed,
         )
+        shutdown_summary = {
+            "role": "server",
+            "elapsed_sec": elapsed,
+            "state": lifecycle.state.value if lifecycle else control_plane.state.value,
+            "state_reason": lifecycle.reason if lifecycle else control_plane.error_message,
+            "control_state": control_plane.state.value,
+            "control_pending": control_plane.pending,
+            "pending_inflight": control_plane.pending,
+            "frames": {
+                "processed": stats.decode_time.count,
+                "dropped": 0,
+                "sent": stats.decode_time.count,
+            },
+            "bytes_in": totals["bytes_in"],
+            "bytes_out": totals["bytes_out"],
+            "latency": {
+                "recv_to_decode": stats.recv_to_decode.summary(),
+                "decode_time": stats.decode_time.summary(),
+                "decode_to_send": stats.decode_to_send.summary(),
+            },
+        }
+        print(f"[SERVER] shutdown_summary {json.dumps(shutdown_summary, sort_keys=True)}")
     print("[SERVER] ---- Bandwidth summary ----")
     print(f"  elapsed: {elapsed:.2f} s")
     print(
