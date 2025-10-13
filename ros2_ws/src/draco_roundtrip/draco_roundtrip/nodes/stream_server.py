@@ -129,6 +129,9 @@ class DecodedArtifact:
     def close(self) -> None:
         try:
             self.cleanup()
+        except Exception:
+            # Best-effort cleanup; swallow errors to avoid crashing the server
+            return
 
 
 @dataclass(slots=True)
