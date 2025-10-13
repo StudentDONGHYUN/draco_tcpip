@@ -6,3 +6,4 @@
   heartbeat-aware waits, shared-memory cleanup, control-plane retries, and saver
   watchdog).  No breaking changes.
 - Test bootstrap harmonised with ROS workspace layout: resolved `tests.*` namespace collisions, documented Pyright/Pylance path requirements, and added runbook coverage for the new workflow (`conftest.py`, `pytest.ini`, docs/*).
+- Draco-only upstream pipeline: client now transmits Draco bytes with a binary `DataHeader`, server responds with decoded cloud + metrics (`ResponseHeader`), and client-side quality checks persist JSONL reports and threshold breaches. See `pointcloud_metrics` module, updated CLI flags, and new tests under `tests/unit/test_metrics.py` and `ros2_ws/src/draco_roundtrip/tests/test_roundtrip_quality.py`.

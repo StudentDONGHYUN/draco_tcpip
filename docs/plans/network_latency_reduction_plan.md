@@ -37,6 +37,7 @@ _Last updated: 2025-02-14_
 ### 2. 네트워크 프로토콜 및 전송 개선
 - **바이너리 프레이밍 프로토콜**: JSON 제어 메시지를 구조체 기반의 컴팩트한 바이너리 헤더로 교체해 파싱 오버헤드와 페이로드 크기를 줄입니다.
   - ✅ `stream_client.py`와 `stream_server.py`에 선택 가능한 `binary` 프로토콜을 추가해 왕복 syscalls을 줄였습니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/stream_protocol.py†L1-L120】
+- **응답 페이로드 최적화**: 클라이언트는 Draco 바이트만 전송하고, 서버는 디코딩된 포인트클라우드 + 메트릭(JSON)을 묶어 반환합니다. 기본 PLY 응답 외에 `--resp-format=pcd`나 "metrics-only" 실험 모드를 도입해 왕복 페이로드 크기를 관리해야 합니다.
 - **지속 연결 다중화**: 제어/데이터 채널을 하나의 TCP 연결에서 다중화하거나, 손실과 지연에 강한 QUIC을 도입해 핸드셰이크 지연을 줄이고 혼잡 제어를 내장합니다.
 - **선택적 UDP/QUIC 고속 경로**: FEC(Forward Error Correction)를 포함한 UDP 기반 전송을 실험해 손실이 허용되는 환경에서 재전송으로 인한 지연 스파이크를 최소화합니다.
 - **동적 MTU 튜닝**: PMTU 탐지를 구현하고 소켓 송수신 버퍼 크기를 조정해 고대역 링크에서 단편화 없이 최대 처리량을 확보합니다.

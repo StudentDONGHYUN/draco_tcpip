@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import mmap
 import socket
 import subprocess
 import sys
@@ -21,7 +20,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable
 
+import numpy as np
+
+from draco_roundtrip.analysis import pointcloud_metrics
+
 from draco_roundtrip.utils import ensure_directory, resolve_executable
+from draco_roundtrip.utils.ply_io import load_points_from_bytes
 from draco_roundtrip.utils.protocol import (
     Message,
     MSG_ACK,
@@ -38,9 +42,12 @@ from draco_roundtrip.utils.stream_protocol import (
     DATA_CHANNEL,
     ControlPlane,
     ControlState,
+    DataHeader,
     ErrorCode,
+    compose_response_payload,
     decode_frame_address,
     encode_frame_address,
+    parse_request_payload,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
 
@@ -86,6 +93,7 @@ class DecodeJob:
     frame_payload_len: int | None = None
     fragments: int = 1
     flags: int | None = None
+    data_header: DataHeader | None = None
 
 
 @dataclass(slots=True)
@@ -110,18 +118,17 @@ class FragmentAssembly:
 
 @dataclass(slots=True)
 class DecodedArtifact:
-    payload: bytes | memoryview
+    payload: bytes
+    points: "np.ndarray"
+    metrics: dict[str, object]
+    timestamp_ns: int
+    draco_bytes: int
+    decode_ms: float
     cleanup: Callable[[], None]
 
     def close(self) -> None:
         try:
             self.cleanup()
-        finally:
-            if isinstance(self.payload, memoryview):
-                try:
-                    self.payload.release()
-                except Exception:
-                    pass
 
 
 @dataclass(slots=True)
@@ -201,6 +208,24 @@ async def _send_control_message(
     await asyncio.to_thread(protocol.send, target, message)
 
 
+def _points_to_pcd_bytes(points: np.ndarray) -> bytes:
+    header = (
+        "# .PCD v0.7 - Point Cloud Data file format\n"
+        "VERSION 0.7\n"
+        "FIELDS x y z\n"
+        "SIZE 4 4 4\n"
+        "TYPE F F F\n"
+        "COUNT 1 1 1\n"
+        f"WIDTH {points.shape[0]}\n"
+        "HEIGHT 1\n"
+        "VIEWPOINT 0 0 0 1 0 0 0\n"
+        f"POINTS {points.shape[0]}\n"
+        "DATA binary\n"
+    )
+    body = points.astype("<f4", copy=False).tobytes()
+    return header.encode("ascii") + body
+
+
 def decode_drc(
     decoder: Path,
     drc_bytes: bytes,
@@ -210,6 +235,12 @@ def decode_drc(
     timeout: float | None = None,
     keep_artifacts: bool = False,
     zero_copy: bool = False,
+    resp_format: str = "ply",
+    metrics_sample: int | None = None,
+    frame_id: str | None = None,
+    draco_bytes_len: int | None = None,
+    timestamp_ns: int | None = None,
+    encode_ms: float | None = None,
 ) -> DecodedArtifact:
     ensure_directory(out_dir)
     drc_path = out_dir / f"{stem}.drc"
@@ -217,7 +248,8 @@ def decode_drc(
     drc_path.write_bytes(drc_bytes)
     cmd = [str(decoder), "-i", str(drc_path), "-o", str(ply_path)]
     cleanup_files = not keep_artifacts
-    mmap_obj: mmap.mmap | None = None
+    if zero_copy:
+        print("[SERVER] WARN: zero-copy replies are not supported in metrics mode; using copy path")
     try:
         proc = subprocess.run(
             cmd,
@@ -230,27 +262,40 @@ def decode_drc(
                 f"draco_decoder failed (rc={proc.returncode}):\n"
                 f"STDOUT: {proc.stdout.strip()}\nSTDERR: {proc.stderr.strip()}"
             )
-        if zero_copy:
-            with ply_path.open("rb") as fh:
-                mmap_obj = mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ)
-            payload = memoryview(mmap_obj)
-
-            def cleanup() -> None:
-                if mmap_obj is not None:
-                    mmap_obj.close()
-                if cleanup_files:
-                    with suppress(FileNotFoundError):
-                        ply_path.unlink()
-
-            return DecodedArtifact(payload=payload, cleanup=cleanup)
-        data = ply_path.read_bytes()
+        decoded_ply = ply_path.read_bytes()
+        points = load_points_from_bytes(decoded_ply)
+        if resp_format == "pcd":
+            payload = _points_to_pcd_bytes(points)
+        else:
+            payload = decoded_ply
 
         def cleanup() -> None:
             if cleanup_files:
                 with suppress(FileNotFoundError):
                     ply_path.unlink()
 
-        return DecodedArtifact(payload=data, cleanup=cleanup)
+        metrics = pointcloud_metrics.compute(
+            points,
+            sample=metrics_sample,
+            frame_id=frame_id,
+            bits_per_point=(
+                (draco_bytes_len * 8) / max(points.shape[0], 1)
+                if draco_bytes_len is not None
+                else None
+            ),
+            encode_ms=encode_ms,
+        )
+        metrics["extra"]["resp_format"] = resp_format
+        artifact = DecodedArtifact(
+            payload=payload,
+            points=points,
+            metrics=metrics,
+            timestamp_ns=timestamp_ns or time.monotonic_ns(),
+            draco_bytes=draco_bytes_len or len(drc_bytes),
+            decode_ms=0.0,
+            cleanup=cleanup,
+        )
+        return artifact
     except subprocess.TimeoutExpired as exc:  # pragma: no cover - depends on external tool
         raise RuntimeError(
             f"draco_decoder timed out after {exc.timeout:.1f}s"
@@ -283,6 +328,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='Number of concurrent decode workers in the async pipeline')
     ap.add_argument('--keep-artifacts', action='store_true',
                     help='Retain .drc/.ply decode artifacts for debugging (default cleans up)')
+    ap.add_argument('--resp-format', choices=('ply', 'pcd'), default='ply',
+                    help='Format used for decoded payloads returned to the client (default: %(default)s)')
+    ap.add_argument('--metrics-sample', type=int, default=50000,
+                    help='Maximum number of points sampled when computing quality metrics (0 disables sampling)')
     ap.add_argument('--zero-copy-reply', action='store_true',
                     help='Memory-map decoded PLY payloads to reduce copy overhead when sending replies')
     ap.add_argument('--legacy-mode', action='store_true',
@@ -425,14 +474,34 @@ async def _recv_loop(
                 continue
             payload_bytes = state.assemble()
             fragment_states.pop(sequence, None)
+        try:
+            data_header, draco_payload = parse_request_payload(payload_bytes)
+        except ValueError as exc:
+            detail = f"invalid payload: {exc}"
+            print(f"[SERVER] ERROR parsing frame {frame_name}: {detail}")
+            error_message = Message(
+                kind=MSG_ERROR,
+                name=encode_frame_address(sequence, frame_name, channel=CONTROL_CHANNEL),
+                payload=str(detail).encode(),
+                sequence=sequence,
+            )
+            await send_control_with_retry(error_message, f"parse-error-{sequence}")
+            continue
+        if sequence is None:
+            sequence = data_header.sequence
+        elif sequence != data_header.sequence:
+            print(
+                f"[SERVER] WARN: Sequence mismatch header={data_header.sequence} message={sequence}"
+            )
         job = DecodeJob(
             sequence=sequence,
             name=frame_name,
-            payload=payload_bytes,
+            payload=draco_payload,
             received_at=time.monotonic(),
-            frame_payload_len=message.frame_payload_len,
+            frame_payload_len=len(draco_payload),
             fragments=message.fragments_total or 1,
             flags=message.flags,
+            data_header=data_header,
         )
         await decode_queue.put(job)
         _telemetry(
@@ -498,9 +567,16 @@ async def _decode_worker(
                 timeout=args.decode_timeout,
                 keep_artifacts=args.keep_artifacts,
                 zero_copy=args.zero_copy_reply,
+                resp_format=args.resp_format,
+                metrics_sample=getattr(args, "metrics_sample", None),
+                frame_id=job.name,
+                draco_bytes_len=(job.data_header.payload_len if job.data_header else len(job.payload)),
+                timestamp_ns=(job.data_header.timestamp_ns if job.data_header else None),
             )
             decoded_at = time.monotonic()
             stats.decode_time.record(decoded_at - decode_start)
+            artifact.decode_ms = (decoded_at - decode_start) * 1000.0
+            artifact.metrics["decode_ms"] = artifact.decode_ms
             _telemetry(
                 "decode_complete",
                 job.name,
@@ -564,7 +640,21 @@ async def _send_loop(
                 control_plane.on_error(ErrorCode.INTERNAL_ERROR, result.error)
         else:
             name = result.job.name
-            reply_name = name if name.endswith(".decoded") else f"{name}.decoded"
+            reply_name = (
+                name
+                if name.endswith(f".decoded.{args.resp_format}")
+                else f"{name}.decoded.{args.resp_format}"
+            )
+            metrics_json = json.dumps(result.artifact.metrics, sort_keys=True).encode("utf-8")
+            seq_for_header = result.job.sequence if result.job.sequence is not None else 0
+            _, packed_payload = compose_response_payload(
+                sequence=seq_for_header,
+                timestamp_ns=result.artifact.timestamp_ns,
+                decoded_payload=result.artifact.payload,
+                metrics_json=metrics_json,
+                decode_ms=result.artifact.decode_ms,
+            )
+            reply_payload_len = len(packed_payload)
             message = Message(
                 kind=MSG_DATA,
                 name=encode_frame_address(
@@ -572,7 +662,7 @@ async def _send_loop(
                     reply_name,
                     channel=DATA_CHANNEL,
                 ),
-                payload=result.artifact.payload,
+                payload=packed_payload,
                 sequence=result.job.sequence,
             )
             stage_label = "send_data"
@@ -586,12 +676,12 @@ async def _send_loop(
             stop_event.set()
         else:
             if message.kind == MSG_DATA and result.artifact is not None:
-                totals["bytes_out"] += len(result.artifact.payload)
+                totals["bytes_out"] += reply_payload_len
                 stats.decode_to_send.record(send_start - result.decoded_at)
                 _telemetry(
                     stage_label,
                     result.job.name,
-                    size=len(result.artifact.payload),
+                    size=reply_payload_len,
                     seq=result.job.sequence,
                 )
             else:
