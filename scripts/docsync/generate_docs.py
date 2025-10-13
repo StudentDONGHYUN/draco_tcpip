@@ -77,7 +77,11 @@ _NOTE_PATTERN = re.compile(r"^\s*Note\s+(?:over|left of|right of)\s+\w+:\s*")
 _COMMAND_PREFIX = re.compile(
     r"^\s*(?:%%|participant\b|autonumber\b|loop\b|end\b|alt\b|else\b|par\b|and\b|opt\b|rect\b|activate\b|deactivate\b|critical\b|break\b|box\b|link\b|click\b|title\b)"
 )
-_MESSAGE_PREFIX = re.compile(r"^\s*[\w$][^:]*:\s*")
+_PARTICIPANT_PATTERN = r'(?:"[^"]+"|\'[^\']+\'|\[[^\]]+\]|[\w$][^\s:]*)'
+_ARROW_PATTERN = r'(?:[-=.()+ox<>/~]+)'
+_MESSAGE_PREFIX = re.compile(
+    rf"^\s*{_PARTICIPANT_PATTERN}\s*{_ARROW_PATTERN}\s*{_PARTICIPANT_PATTERN}\s*:\s*"
+)
 
 
 def _normalize_mermaid(src: str) -> str:
