@@ -18,9 +18,9 @@
 새로운 소비자가 추가될 때에는 위에서 정리한 심볼을 통해 가져오고, `draco_roundtrip.net`, `draco_roundtrip.io`, `draco_roundtrip.analysis` 등 하위 패키지를 직접 참조하지 않는 것이 좋습니다. 이렇게 하면 디렉터리 구조가 바뀌어도 모든 호출 코드를 일일이 수정할 필요가 없습니다.
 
 ## 연관 문서
-- 네트워크 프로토콜 설계: `../designs/async_pipeline_design.md`
-- 설정/레이아웃 참조: `config_reference.md`, `layout_profiles.md`
-- 스트리밍 가이드: `../guides/HOWTO.md`
-- 로그 수집: `../guides/logging_guidelines.md`
+- 네트워크 및 지연 설계: `../architecture/Architectural_Design_and_Plan.md`
+- 설정/레이아웃 참조: `Configuration_Reference.md`
+- 사용자 시나리오: `../guides/User_Guide.md`
+- 로그 수집 및 템플릿: `../reports/results_template.md`
 
 유틸리티 모듈을 확장하거나 이동할 때에는 위 표를 업데이트해 최신 사용처를 기록해 주세요.

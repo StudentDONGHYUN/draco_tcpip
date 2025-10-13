@@ -59,4 +59,4 @@
 - `ros2_ws/src/draco_roundtrip/tests/`: 프로토콜, 파이프라인, 도구에 대한 단위 테스트와 엔드투엔드 셸 스크립트가 위치합니다.
 - GitHub Actions CI는 `ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh`를 실행해 numpy 기반 스텁 인코더로 회귀를 검증합니다.
 
-이 개요는 다른 문서를 읽을 때 공통 맥락을 제공하도록 작성되었습니다. 구체적인 절차는 `../guides/`, 체크리스트는 `../checklists/`, 계획/보고서는 각각의 하위 폴더에서 확인하세요.
+이 개요는 다른 문서를 읽을 때 공통 맥락을 제공하도록 작성되었습니다. 구체적인 절차는 `../guides/`에서, 개발 워크플로는 `../development/Development_Process.md`와 `../development/Performance_Test_Plan.md`에서, 보고서는 `../reports/` 하위 문서에서 확인하세요.
