@@ -285,9 +285,32 @@ async def _recv_loop(
     totals: Dict[str, int],
     heartbeat_interval: float,
     control_plane: ControlPlane,
+    control_down: asyncio.Event,
 ) -> None:
     heartbeat_interval = max(0.0, heartbeat_interval)
     last_heartbeat = time.monotonic()
+    control_down.clear()
+
+    async def send_control_with_retry(message: Message, label: str) -> bool:
+        delay = 0.05
+        attempts = 3
+        for attempt in range(1, attempts + 1):
+            try:
+                await _send_control_message(control, protocol, conn, message)
+                if control_down.is_set():
+                    print(f"[SERVER] Control channel for {label} recovered")
+                    control_down.clear()
+                return True
+            except Exception as exc:
+                print(
+                    f"[SERVER] WARN: Failed to send {label} attempt {attempt}/{attempts}: {exc}"
+                )
+                await asyncio.sleep(delay)
+                delay = min(delay * 2.0, 0.5)
+        print(f"[SERVER] ERROR: Control channel down while sending {label}")
+        control_down.set()
+        return False
+
     while not stop_event.is_set():
         try:
             message = await asyncio.to_thread(protocol.recv, conn)
@@ -295,28 +318,21 @@ async def _recv_loop(
             if producer_done.is_set():
                 break
             if heartbeat_interval > 0 and (time.monotonic() - last_heartbeat) >= heartbeat_interval:
-                try:
-                    await _send_control_message(
-                        control,
-                        protocol,
-                        conn,
-                        Message(
-                            kind=MSG_HEARTBEAT,
-                            name=encode_frame_address(
-                                None,
-                                "server-heartbeat",
-                                channel=CONTROL_CHANNEL,
-                            ),
-                            payload=b"",
-                        ),
-                    )
+                heartbeat = Message(
+                    kind=MSG_HEARTBEAT,
+                    name=encode_frame_address(
+                        None,
+                        "server-heartbeat",
+                        channel=CONTROL_CHANNEL,
+                    ),
+                    payload=b"",
+                )
+                if await send_control_with_retry(heartbeat, "heartbeat"):
                     _telemetry("send_heartbeat", "all")
-                except Exception as exc:
-                    print(f"[SERVER] WARN: Failed to send heartbeat: {exc}")
+                else:
                     stop_event.set()
                     break
-                finally:
-                    last_heartbeat = time.monotonic()
+                last_heartbeat = time.monotonic()
             continue
         except Exception as exc:
             print(f"[SERVER] ERROR receiving frame: {exc}")
@@ -358,7 +374,6 @@ async def _recv_loop(
             received_at=time.monotonic(),
         )
         totals["bytes_in"] += len(message.payload)
-        # ``asyncio.Queue`` enforces the backpressure window shared with decode/send stages.
         await decode_queue.put(job)
         _telemetry(
             "recv_data",
@@ -367,29 +382,22 @@ async def _recv_loop(
             depth=decode_queue.qsize(),
             seq=job.sequence,
         )
-        try:
-            ack_payload = (
-                ACK_PAYLOAD_STRUCT.pack(job.sequence)
-                if job.sequence is not None
-                else b""
-            )
-            await _send_control_message(
-                control,
-                protocol,
-                conn,
-                Message(
-                    kind=MSG_ACK,
-                    name=encode_frame_address(job.sequence, job.name, channel=CONTROL_CHANNEL),
-                    payload=ack_payload,
-                ),
-            )
-            _telemetry("send_ack", job.name, seq=job.sequence)
-        except Exception as exc:
-            print(f"[SERVER] WARN: Failed to send ACK for {job.name}: {exc}")
+        ack_payload = (
+            ACK_PAYLOAD_STRUCT.pack(job.sequence)
+            if job.sequence is not None
+            else b""
+        )
+        ack_message = Message(
+            kind=MSG_ACK,
+            name=encode_frame_address(job.sequence, job.name, channel=CONTROL_CHANNEL),
+            payload=ack_payload,
+        )
+        if not await send_control_with_retry(ack_message, f"ack-{job.sequence}"):
+            producer_done.set()
             stop_event.set()
             break
+        _telemetry("send_ack", job.name, seq=job.sequence)
     producer_done.set()
-
 
 async def _decode_worker(
     worker_id: int,
@@ -609,6 +617,7 @@ async def handle_connection(
         send_queue: "asyncio.Queue[PipelineResult | None]" = asyncio.Queue(maxsize=max_inflight)
         stop_event = asyncio.Event()
         producer_done = asyncio.Event()
+        control_path_down = asyncio.Event()
 
         recv_task = asyncio.create_task(
             _recv_loop(
@@ -621,6 +630,7 @@ async def handle_connection(
                 totals,
                 args.heartbeat_interval,
                 control_plane,
+                control_path_down,
             )
         )
         worker_tasks = [

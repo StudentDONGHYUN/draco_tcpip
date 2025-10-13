@@ -11,11 +11,14 @@ import argparse
 import csv
 import math
 import os
+import queue
 import shlex
 import signal
 import subprocess as sp
 import sys
+import threading
 import time
+from collections import deque
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -36,15 +39,25 @@ def _popen(cmd, **kwargs):
     _print("[RUN]", " ".join(cmd))
     return sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, bufsize=1, **kwargs)
 
-def _read_lines(proc, tag):
-    """yield line; break if proc ends"""
-    assert proc.stdout is not None
-    for line in proc.stdout:
-        line = line.rstrip("\n")
-        print(f"[{tag}] {line}")
-        sys.stdout.flush()
-        yield line
-    # drain ended
+class OutputTail:
+    """Capture the last N bytes of streaming output for diagnostics."""
+
+    def __init__(self, limit_bytes: int = 1024) -> None:
+        self._limit = max(1, limit_bytes)
+        self._buffer: deque[str] = deque()
+        self._total = 0
+
+    def append(self, line: str) -> None:
+        encoded = line.encode("utf-8", errors="replace")
+        length = len(encoded) + 1  # account for newline separators
+        self._buffer.append(line)
+        self._total += length
+        while self._buffer and self._total > self._limit:
+            removed = self._buffer.popleft()
+            self._total -= len(removed.encode("utf-8", errors="replace")) + 1
+
+    def snapshot(self) -> str:
+        return "\n".join(self._buffer)
 
 def _terminate(proc, name, sig=signal.SIGINT, wait_sec=3.0):
     """send sig then wait; fall back to kill"""
@@ -211,6 +224,12 @@ def main():
     ap.add_argument("--reuse-drc", action="store_true", help="기존 DRC를 재사용(재인코딩 생략)")
     ap.add_argument("--saver-voxel-size", type=float, default=0.0,
                     help="bag_to_ply voxel downsample 크기(m)")
+    ap.add_argument(
+        "--saver-timeout",
+        type=float,
+        default=180.0,
+        help="Global timeout (seconds) for bag_to_ply stage; 0 disables",
+    )
     ap.add_argument("--encoder-extra", action="append", default=[],
                     help="draco_encoder에 넘길 추가 인자 문자열 (예: '--speed 10')")
     ap.add_argument("--fast-preset", action="store_true", help="30FPS 목표용 빠른 설정 적용")
@@ -312,31 +331,64 @@ def main():
     saver_proc = _popen(saver_cmd)
 
     # saver 진행 감시
-    reason = None  # "max", "idle", "proc_end"
+    reason = None  # "max", "idle", "proc_end", "timeout", "stream_end"
+    saver_tail = ""
+    saver_rc: Optional[int] = None
+    tail = OutputTail(limit_bytes=1024)
+    line_queue: "queue.Queue[str | None]" = queue.Queue()
+
+    def _pump_saver_output() -> None:
+        assert saver_proc.stdout is not None
+        for raw in saver_proc.stdout:
+            line = raw.rstrip("\n")
+            print(f"[PLY] {line}")
+            sys.stdout.flush()
+            tail.append(line)
+            line_queue.put(line)
+        line_queue.put(None)
+
+    reader = threading.Thread(target=_pump_saver_output, name="bag_to_ply_stdout", daemon=True)
+    reader.start()
+    timeout = max(0.0, args.saver_timeout)
+    deadline = time.time() + timeout if timeout > 0 else None
     try:
-        for line in _read_lines(saver_proc, "PLY"):
+        while True:
+            try:
+                line = line_queue.get(timeout=0.2)
+            except queue.Empty:
+                if deadline and time.time() >= deadline:
+                    reason = "timeout"
+                    break
+                if saver_proc.poll() is not None:
+                    reason = reason or "proc_end"
+                    break
+                continue
+            if line is None:
+                if saver_proc.poll() is None:
+                    reason = reason or "stream_end"
+                else:
+                    reason = reason or "proc_end"
+                break
             if "Reached max_frames" in line:
                 reason = "max"
                 break
             if "No messages for idle-timeout" in line:
                 reason = "idle"
                 break
-        # 루프 종료 후에도 프로세스가 끝났는지 확인
+        reader.join(timeout=0.5)
+        saver_tail = tail.snapshot()
         saver_rc = saver_proc.poll()
         if saver_rc is not None and reason is None:
             reason = "proc_end"
     except KeyboardInterrupt:
         reason = "kbd"
     finally:
-        # rosbag 먼저 정리
         if bag_proc and bag_proc.poll() is None:
             _print("[PIPELINE] idle-timeout/rosbag_end → stopping ros2 bag first…")
             _terminate(bag_proc, "ros2 bag play", sig=signal.SIGINT, wait_sec=3.0)
 
-        # saver 종료 확인 (이미 끝났으면 신호 보내지 않음)
         saver_rc = saver_proc.poll()
         if saver_rc is None:
-            # 아직 살아있으면만 종료 신호
             _terminate(saver_proc, "bag_to_ply", sig=signal.SIGINT, wait_sec=2.0)
             saver_rc = saver_proc.poll()
 
@@ -344,15 +396,21 @@ def main():
     # - 정상 종료(rc == 0) → OK
     # - 위에서 우리가 SIGINT 보낸 경우 rc < 0 일 수 있으나,
     #   idle/max/proc_end 등의 reason이 있으면 OK 로 간주
+    if reason is None:
+        reason = "unknown"
+
     saver_ok = False
     if saver_rc == 0:
         saver_ok = True
-    elif reason in ("idle", "max", "proc_end"):
-        # 자연 종료 후 스트림 끊기는 과정에서 returncode가 None→음수로 바뀌는 경우 대비
+    elif reason in ("idle", "max", "proc_end", "stream_end"):
         saver_ok = True
+
+    _print(f"[PIPELINE] bag_to_ply exit rc={saver_rc} reason={reason}")
 
     if not saver_ok:
         _eprint(f"[FAIL] PLY 저장 단계 실패 (rc={saver_rc})")
+        if saver_tail:
+            _eprint("[TAIL] Recent bag_to_ply output:\n" + saver_tail)
         sys.exit(1)
 
     # 3) Draco 인코딩

@@ -4,8 +4,8 @@ import json
 import time
 from pathlib import Path
 
-from draco_roundtrip.utils.stream_protocol import ControlPlane
-from draco_roundtrip.utils.telemetry import Telemetry
+from draco_roundtrip.draco_roundtrip.utils.stream_protocol import ControlPlane
+from draco_roundtrip.draco_roundtrip.utils.telemetry import Telemetry
 
 
 def test_minimal_telemetry_export(tmp_path: Path) -> None:
