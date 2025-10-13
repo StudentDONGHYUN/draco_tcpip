@@ -29,9 +29,6 @@ __all__ = [
     "MIN_FRAGMENT_SIZE",
     "MAX_FRAGMENT_SIZE",
     "ACK_PAYLOAD_STRUCT",
-    "FRAME_HEADER_SIZE",
-    "pack_frame_header",
-    "unpack_frame_header",
     "iter_fragments",
     "validate_fragment_size",
     "FrameAddress",
@@ -102,68 +99,17 @@ class FrameHeader:
 
 @dataclass(slots=True)
 class FrameFragment:
-    """docs/contracts/control_plane_contract.md에 명시된 프래그먼트 구조."""
+    """Fragment chunk metadata used by the binary data plane."""
 
-    sequence: int | None
+    sequence: int
     payload: bytes
-    control_code: ControlCode | None = None
-    more_fragments: bool = False
+    index: int = 0
+    total: int = 1
+    frame_payload_len: int | None = None
 
-    def header(self) -> FrameHeader:
-        return FrameHeader(
-            version=FRAME_VERSION,
-            is_control=self.control_code is not None,
-            more_fragments=self.more_fragments,
-            control_code=self.control_code,
-            sequence=self.sequence,
-        )
-
-
-def pack_frame_header(header: FrameHeader) -> bytes:
-    """docs/contracts/control_plane_contract.md 명세에 따라 헤더를 직렬화한다."""
-
-    flags = 0
-    control_code_value = 0
-    if header.is_control:
-        flags |= FLAG_CONTROL
-        if header.control_code is None:
-            raise ValueError("control frames must have a control code")
-        control_code_value = int(header.control_code)
-    if header.more_fragments:
-        flags |= FLAG_MORE_FRAGMENTS
-    sequence = header.sequence if header.sequence is not None else _NO_SEQUENCE
-    return _HEADER_STRUCT.pack(
-        header.version,
-        flags,
-        control_code_value,
-        sequence,
-    )
-
-
-def unpack_frame_header(payload: bytes) -> FrameHeader:
-    """docs/contracts/control_plane_contract.md 규격의 헤더를 역직렬화한다."""
-
-    if len(payload) < _HEADER_STRUCT.size:
-        raise ValueError("payload shorter than frame header")
-    version, flags, control_code_value, sequence = _HEADER_STRUCT.unpack_from(payload)
-    if version != FRAME_VERSION:
-        raise ValueError(f"unsupported frame version {version}")
-    is_control = bool(flags & FLAG_CONTROL)
-    more_fragments = bool(flags & FLAG_MORE_FRAGMENTS)
-    control_code: ControlCode | None = None
-    if is_control:
-        try:
-            control_code = ControlCode(control_code_value)
-        except ValueError as exc:
-            raise ValueError(f"unknown control code {control_code_value}") from exc
-    sequence_value = None if sequence == _NO_SEQUENCE else int(sequence)
-    return FrameHeader(
-        version=version,
-        is_control=is_control,
-        more_fragments=more_fragments,
-        control_code=control_code,
-        sequence=sequence_value,
-    )
+    @property
+    def more_fragments(self) -> bool:
+        return self.index < self.total - 1
 
 
 def iter_fragments(
@@ -172,27 +118,37 @@ def iter_fragments(
     sequence: int,
     fragment_size: int,
 ) -> Iterator[FrameFragment]:
-    """docs/contracts/control_plane_contract.md에 정의된 MTU 안전 조각을 생성한다."""
+    """Generate payload chunks honouring the configured fragment size."""
 
-    if fragment_size <= 0:
-        yield FrameFragment(sequence=sequence, payload=payload, more_fragments=False)
+    total_len = len(payload)
+    if fragment_size <= 0 or total_len <= fragment_size:
+        yield FrameFragment(
+            sequence=sequence,
+            payload=payload,
+            index=0,
+            total=1,
+            frame_payload_len=total_len,
+        )
         return
     fragment_size = validate_fragment_size(fragment_size)
-    if fragment_size <= _HEADER_STRUCT.size:
-        raise ValueError("fragment size too small for frame header")
-    chunk_payload = fragment_size - _HEADER_STRUCT.size
-    total = len(payload)
+    if total_len == 0:
+        yield FrameFragment(sequence=sequence, payload=b"", index=0, total=1, frame_payload_len=0)
+        return
+    total_fragments = max(1, (total_len + fragment_size - 1) // fragment_size)
     offset = 0
-    while offset < total:
-        end = min(offset + chunk_payload, total)
+    index = 0
+    while offset < total_len:
+        end = min(offset + fragment_size, total_len)
         chunk = payload[offset:end]
-        offset = end
-        more = offset < total
         yield FrameFragment(
             sequence=sequence,
             payload=chunk,
-            more_fragments=more,
+            index=index,
+            total=total_fragments,
+            frame_payload_len=total_len,
         )
+        offset = end
+        index += 1
 
 
 def validate_fragment_size(value: int) -> int:
