@@ -1,3 +1,5 @@
+<!-- Path: docs/tests/perf/latency_benchmark_plan.md -->
+
 ---
 benchmark: "rosbag regression gate"
 dataset: "sample_bag/pointcloud_latency.bag"

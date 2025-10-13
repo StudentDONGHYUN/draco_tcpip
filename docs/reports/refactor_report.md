@@ -1,3 +1,5 @@
+<!-- Path: docs/reports/refactor_report.md -->
+
 # Draco TCP/IP Roundtrip 리팩토링 요약 보고서
 
 본 문서는 `refac.md`에 정리된 목표를 완료한 뒤, 핵심 변경 사항과 운영 전환 지침을 요약한 보고서입니다. 세부 경로와 추가 문서는 `../references/codebase_overview.md`에서 빠르게 찾을 수 있습니다.

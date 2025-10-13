@@ -1,3 +1,5 @@
+<!-- Path: docs/contracts/control_plane_contract.md -->
+
 # Draco 스트리밍 제어 평면 계약서
 
 본 문서는 `draco_roundtrip` 스트리밍 클라이언트와 서버가 공통으로 준수해야 하는

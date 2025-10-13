@@ -1,3 +1,5 @@
+<!-- Path: docs/references/layout_profiles.md -->
+
 # 레이아웃 프로필과 데이터 디렉터리 가이드
 
 `draco_roundtrip.utils.config` 모듈은 스트리밍 도구와 배치 파이프라인이 작업 디렉터리를 찾는 방식을 일원화합니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/config.py†L1-L140】 이 문서는 기본 규칙과 사용자 정의 방법을 정리합니다. 전체 코드 구조는 `../references/codebase_overview.md`를 참고하세요.

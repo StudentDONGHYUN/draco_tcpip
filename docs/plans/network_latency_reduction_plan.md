@@ -1,3 +1,5 @@
+<!-- Path: docs/plans/network_latency_reduction_plan.md -->
+
 # 네트워크 왕복 지연 최소화 개선 계획
 
 ## 목표

@@ -1,3 +1,5 @@
+<!-- Path: docs/designs/async_pipeline_design.md -->
+
 # 비동기 프레임 파이프라인 설계
 
 이 문서는 스트리밍 클라이언트/서버가 공유하는 비동기 파이프라인의 목표와 구성 요소를 설명합니다. 실제 구현은 `draco_roundtrip/nodes/stream_client.py`와 `stream_server.py`에서 확인할 수 있으며, 전체 아키텍처 개요는 `../references/codebase_overview.md`를 참고하세요.

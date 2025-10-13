@@ -1,3 +1,5 @@
+<!-- Path: docs/checklists/refactor_checklist.md -->
+
 # 리팩토링 완료 체크리스트
 
 `refac.md`에 정리된 리팩토링 목표를 달성하기 위해 필요한 후속 작업을 체크리스트로 정리했습니다. 각 항목은 완료 조건과 산출물을 명시해 추적이 용이하도록 구성했습니다. 참조 문서는 `../references/codebase_overview.md`와 각 가이드/레퍼런스 하위 폴더에 있습니다.

@@ -1,3 +1,5 @@
+<!-- Path: docs/checklists/code_improvement_checklist.md -->
+
 # 코드 개선 체크리스트
 
 이 문서는 `../reports/code_improvement_review.md`에 정리된 권장 사항과 후속 작업을 구현할 때 참고하는 체크리스트입니다. 패키지 구조와 관련 코드는 `../references/codebase_overview.md`를 참고하세요.

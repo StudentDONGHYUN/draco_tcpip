@@ -1,3 +1,5 @@
+<!-- Path: docs/guides/encoder_cli.md -->
+
 # Draco 인코더 CLI 공용화 가이드
 
 `draco_tools/core/encoder.py`는 스트리밍 노드(`draco_roundtrip/nodes/stream_client.py`)와 배치 CLI(`draco_tools/encode_ply_to_draco.py`)가 동일한 옵션 파서를 공유하도록 설계된 호환 계층입니다.【F:ros2_ws/src/draco_tools/draco_tools/core/encoder.py†L1-L107】 전체 아키텍처는 `../references/codebase_overview.md`를 참고하세요.

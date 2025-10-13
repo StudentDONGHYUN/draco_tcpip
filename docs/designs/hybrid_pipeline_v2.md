@@ -1,3 +1,5 @@
+<!-- Path: docs/designs/hybrid_pipeline_v2.md -->
+
 # Hybrid Streaming Pipeline v2
 
 본 문서는 `async_pipeline_design.md`, `network_latency_reduction_plan.md`, 그리고 Multiprocess Pipeline Design에서 제안한 장점을 통합한 신규 하이브리드 아키텍처를 요약합니다. Python 기반 파이프라인을 유지하면서도 ROS 2/멀티프로세스 확장과 향후 C++ 포팅을 고려하여 단계별 개선 계획을 재정의했습니다.

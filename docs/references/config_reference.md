@@ -1,3 +1,5 @@
+<!-- Path: docs/references/config_reference.md -->
+
 # 설정 파일 참조
 
 `configs/` 디렉터리에 있는 프로파일과 파라미터 파일을 한 곳에서 정리했습니다. 모든 항목은 `draco_roundtrip.utils.config`가 사용하는 검색 규칙(패키지 `share/`, 현재 작업 디렉터리, `DRACO_CONFIG_ROOT` 환경 변수)과 호환됩니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/utils/config.py†L1-L140】 런치 파일(`slam_stream_bridge/launch/bringup.launch.py`)과 CLI가 동일한 헬퍼를 사용하므로, 경로만 맞으면 어디서든 동일하게 불러올 수 있습니다.【F:ros2_ws/src/slam_stream_bridge/slam_stream_bridge/launch/bringup.launch.py†L15-L83】

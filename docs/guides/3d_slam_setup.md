@@ -1,3 +1,5 @@
+<!-- Path: docs/guides/3d_slam_setup.md -->
+
 # 3D LiDAR SLAM(HDL Graph SLAM) 통합 가이드
 
 통합 bringup 런치(`slam_stream_bridge/launch/bringup.launch.py`)는 `draco_roundtrip` 스트리밍 결과를 SLAM 파이프라인으로 바로 전달합니다. 이 문서는 HDL Graph SLAM을 기준으로 필요한 파일과 명령, 그리고 관련 코드 위치를 정리합니다. 코드베이스 구성은 `../references/codebase_overview.md`에서 확인할 수 있습니다.

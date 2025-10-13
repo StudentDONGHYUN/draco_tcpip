@@ -1,3 +1,5 @@
+<!-- Path: docs/guides/HOWTO.md -->
+
 # Draco Roundtrip 시작 가이드
 
 이 문서는 워크스페이스를 처음 세팅할 때 필요한 순서를 요약합니다. 전체 코드 구조와 데이터 흐름은 `../references/codebase_overview.md`에서 다루고 있으므로, 각 단계가 어떤 패키지와 연관되는지 함께 확인하세요.

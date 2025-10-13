@@ -1,3 +1,5 @@
+<!-- Path: docs/references/utils_usage.md -->
+
 # Draco Roundtrip 유틸리티 사용 참조
 
 `draco_roundtrip.utils`는 상위 레벨 노드, CLI 래퍼, 개발 도구가 의존하는 공용 인터페이스를 제공합니다. 이 문서는 각 헬퍼가 어디에서 사용되는지 기록해 향후 리팩토링 시 import 경로를 빠르게 검토할 수 있도록 돕습니다. 전체 패키지 구조는 `codebase_overview.md`(동일 폴더)를 참고하세요.

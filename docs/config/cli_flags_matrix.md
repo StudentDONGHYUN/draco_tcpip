@@ -1,3 +1,5 @@
+<!-- Path: docs/config/cli_flags_matrix.md -->
+
 # CLI 플래그 매트릭스
 
 `stream_client.py`와 `stream_server.py`에서 공통적으로 제공하는 주요 CLI 플래그와

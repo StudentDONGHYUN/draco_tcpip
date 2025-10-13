@@ -1,3 +1,5 @@
+<!-- Path: docs/checklists/hybrid_architecture_checklist.md -->
+
 # Hybrid Streaming Architecture Progress Checklist
 
 본 체크리스트는 `../designs/async_pipeline_design.md`, `../plans/network_latency_reduction_plan.md`, 그리고 기존 멀티프로세스 파이프라인 설계를 통합한 하이브리드 아키텍처 작업 현황을 추적하기 위해 작성했습니다. 단계별 완료 기준(DoD)을 명확히 하여 미완료 항목을 후속 작업으로 이어갈 수 있도록 합니다.

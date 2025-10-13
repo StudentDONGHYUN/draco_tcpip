@@ -1,4 +1,5 @@
 {
+  "_file_path": "docs/reports/project_progress_overview.json",
   "short_term_plan": [
     "rosbag 기반 회귀 벤치마크 하네스를 구축하고 p95 지연 임계값 검증을 자동화합니다.",
     "이벤트 기반 감시가 비활성화된 플랫폼의 성능을 계측하고 보정 전략을 문서화합니다.",

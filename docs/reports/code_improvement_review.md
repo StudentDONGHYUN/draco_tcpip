@@ -1,3 +1,5 @@
+<!-- Path: docs/reports/code_improvement_review.md -->
+
 # 코드베이스 개선 리뷰
 
 ## 개요

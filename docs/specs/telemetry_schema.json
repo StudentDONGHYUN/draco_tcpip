@@ -1,4 +1,5 @@
 {
+  "_file_path": "docs/specs/telemetry_schema.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://draco.example.com/schemas/telemetry-schema-1.0.0.json",
   "title": "Draco Streaming Telemetry",

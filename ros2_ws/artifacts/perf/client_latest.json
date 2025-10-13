@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "schema_doc": "docs/specs/telemetry_schema.md",
+  "session": {
+    "id": "client-1760332096-30207",
+    "role": "client",
+    "transport": "tcp",
+    "protocol": "binary",
+    "fragment_size": 0,
+    "socket_buffer_autotune": false,
+    "started_at_ns": 17800292754799,
+    "ended_at_ns": 17809759371581,
+    "state": "FAILED",
+    "client_state": "degraded",
+    "client_state_reason": "heartbeat timeout",
+    "error_code": 2,
+    "error_message": "heartbeat timeout"
+  },
+  "metrics": {
+    "latency_ms": {
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    },
+    "rtt_ms": {
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    },
+    "ack_latency_ms": {
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    },
+    "throughput_mbps": {
+      "avg": 0.0,
+      "peak": 0.0
+    },
+    "queues": {
+      "capture_max": 0,
+      "encode_max": 2,
+      "decode_max": 0,
+      "pending": 0
+    },
+    "frames": {
+      "sent": 0,
+      "acked": 0,
+      "dropped": 0,
+      "skipped": 0
+    }
+  }
+}

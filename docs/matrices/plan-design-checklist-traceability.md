@@ -1,3 +1,5 @@
+<!-- Path: docs/matrices/plan-design-checklist-traceability.md -->
+
 # 계획-설계-체크리스트 추적 매트릭스
 
 본 매트릭스는 네트워크 지연 감축 계획(`docs/plans/network_latency_reduction_plan.md`),

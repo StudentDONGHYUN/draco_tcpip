@@ -1,3 +1,5 @@
+<!-- Path: docs/templates/results_template.md -->
+
 # 왕복 회귀 로그 템플릿
 
 엔드투엔드 회귀 검증(`ros2_ws/src/draco_roundtrip/tests/e2e_roundtrip.sh`)을 실행한 뒤 결과를 기록할 때 사용하는 템플릿입니다. 실제 검증에 사용한 인자, 환경, 메트릭을 빠짐없이 작성해 재현 가능성을 확보하세요. 로그 구조는 `../guides/logging_guidelines.md`에, 관련 코드 개요는 `../references/codebase_overview.md`에 정리되어 있습니다.

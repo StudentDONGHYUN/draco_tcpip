@@ -1,3 +1,5 @@
+<!-- Path: docs/specs/telemetry_schema.md -->
+
 # Draco 텔레메트리 스키마 (v1.0.0)
 
 `docs/specs/telemetry_schema.json`은 스트리밍 세션이 종료될 때 기록해야 하는

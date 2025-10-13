@@ -1,3 +1,5 @@
+<!-- Path: docs/guides/logging_guidelines.md -->
+
 # 실험 로그 구조 및 수집 절차
 
 리팩토링 이후 모든 라운드트립 실험은 공통 디렉터리 규칙을 사용합니다. `client.profile.yaml`의 `directories` 항목과 `stream_collect_logs` CLI(`draco_roundtrip/tools/log_collection.py`)를 통해 폴더 생성과 메타데이터 기록을 자동화할 수 있습니다.【F:ros2_ws/src/draco_roundtrip/setup.py†L18-L29】
