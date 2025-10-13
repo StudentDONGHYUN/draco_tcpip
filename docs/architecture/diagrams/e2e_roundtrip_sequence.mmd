@@ -1,0 +1,42 @@
+sequenceDiagram
+    title Draco TCP/IP Roundtrip — End-to-End Data Flow
+    participant U as User/CLI
+    participant BAG as ros2 bag play (proc)
+    participant CLI as StreamClient (stream_client.py)
+    participant ENC as Draco Encoder (proc)
+    participant SRV as StreamServer (stream_server.py)
+    participant DEC as Draco Decoder (proc)
+    participant ROS as ROS 2 Topic (/stream_pair/decoded)
+
+    %% Data channel uses binary framing; control channel carries ACK/HEARTBEAT/EOF (see control_plane_contract.md)
+    %% Queues are bounded; TX path honors max_inflight (see async_pipeline_design.md)
+
+    U->>SRV: Start server (listen)
+    U->>CLI: Start client
+
+    BAG-->>CLI: Publish PointCloud2 (capture)
+    Note right of CLI: Capture queue (bounded)
+
+    CLI->>ENC: Encode PLY → Draco (.drc)
+    Note right of ENC: External process call
+
+    ENC-->>CLI: Encoded bytes
+    CLI->>SRV: Send framed DATA over TCP (binary protocol)
+    Note right of CLI: Network queue (bounded)\nTX loop with max_inflight
+
+    SRV-->>CLI: ACK(seq) on control channel
+    Note right of CLI: in_flight -= 1
+
+    SRV->>DEC: Decode Draco → PLY
+    Note right of DEC: External process call
+
+    DEC-->>SRV: Decoded cloud (PLY/PCD)
+    SRV-->>ROS: Publish decoded cloud
+
+    SRV-->>CLI: (optional) Metrics/summary for frame
+
+    %% Graceful end
+    CLI-->>SRV: EOF (control channel)
+    SRV-->>CLI: EOF (after pending=0)
+    SRV-xROS: Close session
+    CLI-xBAG: Stop capture; close session

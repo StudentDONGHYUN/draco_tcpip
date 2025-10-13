@@ -1,0 +1,39 @@
+sequenceDiagram
+    title Draco TCP/IP Roundtrip — TCP Control Plane
+    participant CLI as StreamClient
+    participant SRV as StreamServer
+
+    %% Control plane kinds: ACK(0x01), HEARTBEAT(0x02), EOF(0x03), ERROR(0x04)
+    %% Data vs Control channel separation per contract
+
+    rect rgb(245,245,245)
+      CLI->>SRV: TCP connect (data)
+      CLI-->>SRV: (optional) TCP connect (control)
+    end
+
+    par Streaming
+      CLI->>SRV: DATA Frame (seq=1)  %% data channel
+      SRV-->>CLI: ACK(seq=1)         %% control channel
+      Note right of CLI: in_flight ≤ max_inflight\nACK frees one slot
+
+      CLI->>SRV: DATA Frame (seq=2)
+      SRV-->>CLI: ACK(seq=2)
+      CLI->>SRV: DATA Frame (seq=3)
+      SRV-->>CLI: ACK(seq=3)
+    and Heartbeat
+      loop idle
+        SRV-->>CLI: HEARTBEAT
+      end
+    end
+
+    opt Error path
+      CLI->>SRV: DATA Frame (seq=4)
+      SRV-->>CLI: ERROR{code=TIMEOUT,msg="ACK overdue"}
+      CLI-xSRV: Close sockets; state=FAILED
+    end
+
+    opt Graceful shutdown
+      CLI-->>SRV: EOF
+      SRV-->>CLI: EOF (after pending=0)
+      CLI-xSRV: Close sockets; state=TERMINATED
+    end
