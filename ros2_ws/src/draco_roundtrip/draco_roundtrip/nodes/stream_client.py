@@ -1602,6 +1602,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 async def run_client(args: argparse.Namespace) -> None:
+    session_summary: dict[str, object] | None = None
     fragment_size = _validate_client_config(args)
     _log_effective_config(args, fragment_size)
     layout = resolve_data_layout(
@@ -1898,7 +1899,9 @@ async def run_client(args: argparse.Namespace) -> None:
                         if thread is not None and thread.is_alive():
                             thread.join(timeout=1.0)
     finally:
-        await session_tracker.transition(SessionState.CLOSING, "client shutdown")
+        session_summary = session_tracker.snapshot()
+        if session_tracker.state not in (SessionState.DEGRADED, SessionState.CLOSING):
+            await session_tracker.transition(SessionState.CLOSING, "client shutdown")
         stop_event.set()
         pending_inflight = len(inflight)
         pending_acks = len(acks_pending)
@@ -1924,7 +1927,7 @@ async def run_client(args: argparse.Namespace) -> None:
     throughput_peak_mbps = max(traffic.send_mbps_samples or [throughput_avg_mbps])
     receive_mbps = (traffic.received * 8 / elapsed) / 1e6
 
-    session_snapshot = session_tracker.snapshot()
+    session_snapshot = session_summary or session_tracker.snapshot()
     session_state = session_snapshot.get("state", SessionState.OK.value)
     session_reason = session_snapshot.get("reason")
 
