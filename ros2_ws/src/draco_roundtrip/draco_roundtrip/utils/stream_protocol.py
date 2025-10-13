@@ -229,7 +229,11 @@ class ControlPlane:
         self.state = ControlState.INIT
         self.started_at_ns: int | None = None
         self.ended_at_ns: int | None = None
-        self._pending_deadlines: Dict[int, int] = {}
+        # Track pending ACK deadlines as ``sequence -> (deadline_ns, timeout_ns)`` so we
+        # can reschedule late ACKs without dropping state.  This lets the client remain
+        # responsive to delayed control messages instead of marking the frame as lost
+        # immediately after the first timeout.
+        self._pending_deadlines: Dict[int, tuple[int, int]] = {}
         self._last_heartbeat_ns: int | None = None
         self.error_code: ErrorCode = ErrorCode.NONE
         self.error_message: str | None = None
@@ -246,11 +250,18 @@ class ControlPlane:
             raise ControlPlaneError(f"cannot enter STREAMING from {self.state}")
         self._transition(ControlState.STREAMING)
 
-    def on_frame_sent(self, sequence: int, *, now_ns: int | None = None) -> None:
+    def on_frame_sent(
+        self,
+        sequence: int,
+        *,
+        now_ns: int | None = None,
+        ack_timeout_ns: int | None = None,
+    ) -> None:
         if self.state not in (ControlState.STREAMING, ControlState.DRAINING):
             self.on_first_data()
-        deadline = (now_ns if now_ns is not None else time.monotonic_ns()) + ACK_TIMEOUT_NS
-        self._pending_deadlines[sequence] = deadline
+        timeout = ack_timeout_ns if ack_timeout_ns is not None else ACK_TIMEOUT_NS
+        timestamp = now_ns if now_ns is not None else time.monotonic_ns()
+        self._pending_deadlines[sequence] = (timestamp + timeout, timeout)
 
     def on_ack(self, sequence: int) -> None:
         try:
@@ -294,9 +305,15 @@ class ControlPlane:
         if not self._pending_deadlines:
             return []
         current = now_ns if now_ns is not None else time.monotonic_ns()
-        expired = [seq for seq, deadline in self._pending_deadlines.items() if current >= deadline]
-        for seq in expired:
-            del self._pending_deadlines[seq]
+        expired: list[int] = []
+        for sequence, (deadline, timeout) in list(self._pending_deadlines.items()):
+            if current >= deadline:
+                expired.append(sequence)
+                # Re-arm the deadline so we continue tracking late ACKs without
+                # dropping the sequence from the pending map.  This avoids
+                # ``ControlPlaneError`` on late acknowledgements while still
+                # surfacing repeated timeouts to the caller.
+                self._pending_deadlines[sequence] = (current + timeout, timeout)
         return expired
 
     def heartbeat_timed_out(self, *, now_ns: int | None = None) -> bool:

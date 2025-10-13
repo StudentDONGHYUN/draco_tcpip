@@ -95,7 +95,9 @@ class Telemetry:
         return session
 
     @staticmethod
-    def _normalize_metrics(metrics: Mapping[str, Any]) -> Dict[str, Any]:
+    def _normalize_metrics(
+        metrics: Mapping[str, Any], *, allow_pending: bool = False
+    ) -> Dict[str, Any]:
         if not isinstance(metrics, Mapping):
             raise ValueError("metrics payload must be a mapping")
         normalized: Dict[str, Any] = {}
@@ -115,7 +117,7 @@ class Telemetry:
         if not isinstance(queues, Mapping):
             raise ValueError("metrics.queues must be a mapping")
         pending = int(queues.get("pending", 0))
-        if pending != 0:
+        if pending != 0 and not allow_pending:
             raise ValueError("metrics.queues.pending must be 0 at export time")
         normalized["queues"] = {
             "capture_max": int(queues.get("capture_max", 0)),
@@ -174,8 +176,10 @@ class Telemetry:
         session_overrides: Mapping[str, Any] | None = None,
         inflight_pending: int = 0,
     ) -> Dict[str, Any]:
-        if control_plane.state != ControlState.FAILED:
-            pending_cp = control_plane.pending
+        session_state = (session_overrides or {}).get("state", control_plane.state.value)
+        allow_pending = session_state != ControlState.TERMINATED.value
+        pending_cp = control_plane.pending
+        if not allow_pending:
             if inflight_pending != 0 or pending_cp != 0:
                 raise ValueError(
                     "pending frames remain at export time: "
@@ -190,7 +194,7 @@ class Telemetry:
             "schema_version": self.SCHEMA_VERSION,
             "schema_doc": self.SCHEMA_DOC,
             "session": self._session_block(control_plane, overrides=session_overrides),
-            "metrics": self._normalize_metrics(metrics),
+            "metrics": self._normalize_metrics(metrics, allow_pending=allow_pending),
         }
         if payload["session"].get("state") == ControlState.FAILED.value:
             payload["session"].setdefault("error_code", int(control_plane.error_code))
