@@ -347,6 +347,7 @@ class SessionState(str, Enum):
     """High level lifecycle markers for client/server coordination."""
 
     OK = "ok"
+    SOFT_DEGRADED = "soft_degraded"
     DEGRADED = "degraded"
     CLOSING = "closing"
 
@@ -391,7 +392,10 @@ class SessionTracker:
                 return self._state
             if self._state == SessionState.CLOSING and target != SessionState.CLOSING:
                 return self._state
-            if self._state == SessionState.DEGRADED and target == SessionState.OK:
+            if self._state == SessionState.DEGRADED and target in (
+                SessionState.OK,
+                SessionState.SOFT_DEGRADED,
+            ):
                 return self._state
             previous = self._state
             self._state = target
@@ -469,6 +473,36 @@ class WindowController:
             bdp_bytes = self.ema_throughput * self.ema_rtt
             target = int(round(bdp_bytes / self.ema_payload)) + 1
             self.current_limit = max(self.min_limit, min(self.max_limit, target))
+
+
+@dataclass(slots=True)
+class AckTimeoutPolicy:
+    """Adaptive ACK timeout helper honouring CLI min/max clamps."""
+
+    base: float
+    minimum: float
+    maximum: float
+    last: float = dataclass_field(init=False)
+
+    def __post_init__(self) -> None:
+        if self.minimum <= 0 or self.maximum <= 0:
+            raise ValueError("ack timeout bounds must be positive")
+        if self.minimum > self.maximum:
+            raise ValueError("ack timeout min cannot exceed max")
+        self.base = self._clamp(self.base)
+        self.last = self.base
+
+    def _clamp(self, value: float) -> float:
+        return max(self.minimum, min(self.maximum, value))
+
+    def compute(self, ema_rtt: float) -> float:
+        if ema_rtt > 0.0:
+            candidate = max(self.base, ema_rtt * 2.0 + 0.1)
+        else:
+            candidate = self.base
+        timeout = self._clamp(candidate)
+        self.last = timeout
+        return timeout
 
 
 @dataclass(slots=True)
@@ -883,11 +917,13 @@ async def network_sender(
     fragment_size: int,
     use_binary: bool,
     control_plane: ControlPlane,
+    ack_policy: "AckTimeoutPolicy",
 ) -> None:
     """Send encoded frames while respecting inflight limits."""
 
     encode_finished = 0
     eof_sent = False
+    drain_deadline: float | None = None
 
     async def _wait_with_health(predicate: Callable[[], bool]) -> bool:
         timeout_s = 0.5
@@ -915,7 +951,7 @@ async def network_sender(
                 async with inflight_condition:
                     await _wait_with_health(lambda: bool(inflight or acks_pending))
                 if (
-                    session.state == SessionState.OK
+                    session.state in (SessionState.OK, SessionState.SOFT_DEGRADED)
                     and not inflight
                     and not acks_pending
                     and not stop_event.is_set()
@@ -934,9 +970,14 @@ async def network_sender(
                         await _send_control_message(control, sock, protocol, message)
                         await session.transition(SessionState.CLOSING, "EOF sent")
                         control_plane.on_eof_sent()
-                        print("[CLIENT] EOF sent to server")
+                        pending_count = len(inflight)
+                        pending_acks = len(acks_pending)
+                        print(
+                            f"[CLIENT] EOF sent to server (pending={pending_count} pending_acks={pending_acks})"
+                        )
                         _telemetry("send_eof", "all")
                         eof_sent = True
+                        drain_deadline = time.monotonic() + max(ack_policy.last, 1.0)
                         with contextlib.suppress(OSError):
                             sock.shutdown(socket.SHUT_WR)
                     except Exception as exc:
@@ -944,6 +985,11 @@ async def network_sender(
                         stop_event.set()
                         break
             if eof_sent:
+                if drain_deadline is not None and not stop_event.is_set():
+                    remaining = drain_deadline - time.monotonic()
+                    if remaining > 0:
+                        await asyncio.sleep(min(remaining, CONTROL_POLL_INTERVAL))
+                        continue
                 break
             continue
 
@@ -955,7 +1001,12 @@ async def network_sender(
                 inflight_condition.notify_all()
                 network_queue.task_done()
                 break
-        control_plane.on_frame_sent(encoded.sequence, now_ns=time.monotonic_ns())
+        ack_timeout_s = ack_policy.compute(window.ema_rtt)
+        control_plane.on_frame_sent(
+            encoded.sequence,
+            now_ns=time.monotonic_ns(),
+            ack_timeout_ns=int(ack_timeout_s * 1_000_000_000),
+        )
         fragments: Iterable[FrameFragment]
         if use_binary:
             fragments = iter_fragments(
@@ -1014,9 +1065,11 @@ async def network_sender(
             payload_size=len(encoded.payload),
             encode_ms=encoded.encode_ms,
         )
-        inflight[encoded.sequence] = ctx
-        acks_pending.add(encoded.sequence)
-        traffic.inflight_peak = max(traffic.inflight_peak, len(inflight))
+        async with inflight_condition:
+            inflight[encoded.sequence] = ctx
+            acks_pending.add(encoded.sequence)
+            traffic.inflight_peak = max(traffic.inflight_peak, len(acks_pending))
+            inflight_condition.notify_all()
         traffic.sent += len(encoded.payload)
         print(f"[CLIENT] Sent {encoded.handle.name} ({len(encoded.payload)} bytes)")
         async with inflight_condition:
@@ -1049,6 +1102,7 @@ async def reply_consumer(
     heartbeat_watch: HeartbeatWatch,
     control_plane: ControlPlane,
     use_binary: bool,
+    ack_timeout_strikes: int,
 ) -> None:
     """Process replies from the server and release inflight slots."""
 
@@ -1183,6 +1237,8 @@ async def reply_consumer(
 
     heartbeat_timeout = max(heartbeat_timeout, CONTROL_POLL_INTERVAL)
     heartbeat_watch.touch()
+    timeout_strikes = 0
+    max_timeout_strikes = max(1, ack_timeout_strikes)
 
     try:
         while not stop_event.is_set():
@@ -1197,12 +1253,32 @@ async def reply_consumer(
                 expired = control_plane.expired_sequences(now_ns=now_ns)
                 if expired:
                     detail = ",".join(str(seq) for seq in expired)
-                    print(f"[CLIENT] ERROR: ACK timeout for sequences {detail}")
-                    control_plane.on_error(ErrorCode.TIMEOUT, f"ack timeout ({detail})")
-                    await session.transition(SessionState.DEGRADED, "ack timeout")
-                    stop_event.set()
-                    async with inflight_condition:
-                        inflight_condition.notify_all()
+                    timeout_strikes += 1
+                    if timeout_strikes >= max_timeout_strikes:
+                        print(
+                            f"[CLIENT] ERROR: ACK timeout strike {timeout_strikes}/{max_timeout_strikes}"
+                            f" for sequences {detail}"
+                        )
+                        control_plane.on_error(
+                            ErrorCode.TIMEOUT,
+                            f"ack timeout ({detail})",
+                        )
+                        await session.transition(
+                            SessionState.DEGRADED,
+                            f"ack timeout x{timeout_strikes}",
+                        )
+                        stop_event.set()
+                        async with inflight_condition:
+                            inflight_condition.notify_all()
+                        continue
+                    print(
+                        f"[CLIENT] WARN: ACK timeout strike {timeout_strikes}/{max_timeout_strikes}"
+                        f" for sequences {detail}"
+                    )
+                    await session.transition(
+                        SessionState.SOFT_DEGRADED,
+                        f"ack timeout pending ({detail})",
+                    )
                     continue
                 if control_plane.heartbeat_timed_out(now_ns=now_ns):
                     print("[CLIENT] ERROR: Heartbeat timeout detected")
@@ -1317,6 +1393,9 @@ async def reply_consumer(
                         print(f"[CLIENT] ERROR: {exc}")
                         control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
                         stop_event.set()
+                    timeout_strikes = 0
+                    if session.state == SessionState.SOFT_DEGRADED:
+                        await session.transition(SessionState.OK, "ack recovered")
                 _telemetry(
                     "recv_ack",
                     address.name or (ctx.handle.name if ctx else "unknown"),
@@ -1327,7 +1406,8 @@ async def reply_consumer(
                 continue
 
             if message.kind == MSG_EOF:
-                print("[CLIENT] EOF received from server")
+                pending_count = len(inflight)
+                pending_acks_count = len(acks_pending)
                 try:
                     control_plane.on_eof_received()
                 except ControlPlaneError as exc:
@@ -1336,8 +1416,14 @@ async def reply_consumer(
                 await session.transition(SessionState.CLOSING, "server EOF")
                 stop_event.set()
                 async with inflight_condition:
+                    pending_count = len(inflight)
+                    pending_acks_count = len(acks_pending)
                     acks_pending.clear()
                     inflight_condition.notify_all()
+                print(
+                    "[CLIENT] EOF received from server "
+                    f"(pending={pending_count} pending_acks={pending_acks_count})"
+                )
                 _telemetry("recv_eof", "all")
                 await drain_ready(force=True)
                 reply_queue.task_done()
@@ -1718,6 +1804,30 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help='EMA smoothing factor for adaptive window telemetry (0-1)')
     ap.add_argument('--heartbeat-timeout', type=float, default=10.0,
                     help='Fail the session if no ACK/heartbeat is observed within this many seconds')
+    ap.add_argument(
+        '--ack-timeout',
+        type=float,
+        default=0.5,
+        help='Base ACK timeout in seconds before adaptive adjustments (minimum clamp)',
+    )
+    ap.add_argument(
+        '--ack-timeout-min',
+        type=float,
+        default=0.5,
+        help='Lower bound for adaptive ACK timeout (seconds)',
+    )
+    ap.add_argument(
+        '--ack-timeout-max',
+        type=float,
+        default=2.0,
+        help='Upper bound for adaptive ACK timeout (seconds)',
+    )
+    ap.add_argument(
+        '--ack-timeout-strikes',
+        type=int,
+        default=3,
+        help='Number of consecutive ACK timeout strikes before failing the session',
+    )
     ap.add_argument('--capture-queue', type=int, default=4,
                     help='Maximum capture queue depth before applying backpressure')
     ap.add_argument('--encode-workers', type=int, default=2,
@@ -1822,6 +1932,11 @@ async def run_client(args: argparse.Namespace) -> None:
         max_limit=max_window,
         adaptive=args.adaptive_window,
         alpha=max(0.01, min(0.99, args.window_ema_alpha)),
+    )
+    ack_policy = AckTimeoutPolicy(
+        base=args.ack_timeout,
+        minimum=args.ack_timeout_min,
+        maximum=args.ack_timeout_max,
     )
     telemetry = Telemetry(
         role="client",
@@ -1987,23 +2102,24 @@ async def run_client(args: argparse.Namespace) -> None:
                         network_sender(
                             sock,
                             protocol,
-                        network_queue,
-                        inflight,
-                        acks_pending,
-                        stats=pipeline_stats,
-                        traffic=traffic,
-                        stop_event=stop_event,
-                        inflight_condition=inflight_condition,
-                        encode_workers=args.encode_workers,
-                        window=window_controller,
-                        session=session_tracker,
-                        heartbeat_watch=heartbeat_watch,
-                        heartbeat_timeout=args.heartbeat_timeout,
-                        control=control_channel,
-                        fragment_size=fragment_size,
-                        use_binary=(protocol.name == "binary"),
-                        control_plane=control_plane,
-                    )
+                            network_queue,
+                            inflight,
+                            acks_pending,
+                            stats=pipeline_stats,
+                            traffic=traffic,
+                            stop_event=stop_event,
+                            inflight_condition=inflight_condition,
+                            encode_workers=args.encode_workers,
+                            window=window_controller,
+                            session=session_tracker,
+                            heartbeat_watch=heartbeat_watch,
+                            heartbeat_timeout=args.heartbeat_timeout,
+                            control=control_channel,
+                            fragment_size=fragment_size,
+                            use_binary=(protocol.name == "binary"),
+                            control_plane=control_plane,
+                            ack_policy=ack_policy,
+                        )
                     )
                 )
                 tasks.append(
@@ -2032,6 +2148,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             heartbeat_watch=heartbeat_watch,
                             control_plane=control_plane,
                             use_binary=(protocol.name == "binary"),
+                            ack_timeout_strikes=args.ack_timeout_strikes,
                         )
                     )
                 )
@@ -2067,7 +2184,11 @@ async def run_client(args: argparse.Namespace) -> None:
                             thread.join(timeout=1.0)
     finally:
         session_summary = session_tracker.snapshot()
-        if session_tracker.state not in (SessionState.DEGRADED, SessionState.CLOSING):
+        if session_tracker.state not in (
+            SessionState.DEGRADED,
+            SessionState.CLOSING,
+            SessionState.SOFT_DEGRADED,
+        ):
             await session_tracker.transition(SessionState.CLOSING, "client shutdown")
         stop_event.set()
         pending_inflight = len(inflight)
@@ -2086,6 +2207,7 @@ async def run_client(args: argparse.Namespace) -> None:
     control_plane.on_shutdown()
     elapsed = max(time.monotonic() - start_time, 1e-6)
     frames_processed = pipeline_stats.round_trip.count
+    frames_sent = pipeline_stats.encode_to_send.count
     latency_percentiles = pipeline_stats.latency_percentiles()
     rtt_percentiles = pipeline_stats.percentiles_for(pipeline_stats.network_rtt_samples)
     ack_percentiles = pipeline_stats.percentiles_for(pipeline_stats.ack_latency_samples)
@@ -2100,7 +2222,7 @@ async def run_client(args: argparse.Namespace) -> None:
 
     print('[CLIENT] ---- Transfer summary ----')
     print(f"  elapsed: {elapsed:.2f} s")
-    print(f"  frames: {frames_processed}")
+    print(f"  frames: sent={frames_sent} completed={frames_processed}")
     print(f"  sent: {traffic.sent} bytes ({throughput_avg_mbps:.3f} Mbps)")
     print(f"  received: {traffic.received} bytes ({receive_mbps:.3f} Mbps)")
     if latency_percentiles:
@@ -2142,6 +2264,8 @@ async def run_client(args: argparse.Namespace) -> None:
             "send_peak": throughput_peak_mbps,
             "recv_avg": receive_mbps,
         },
+        "frames_sent": frames_sent,
+        "frames_completed": frames_processed,
         "latency_ms": latency_summary,
         "max_queue_depths": {
             "capture": traffic.capture_depth_peak,
@@ -2162,6 +2286,10 @@ async def run_client(args: argparse.Namespace) -> None:
     try:
         control_pending = control_plane.pending
         control_state = control_plane.state
+        pending_ack_total = max(pending_acks, control_pending)
+        queue_pending = (
+            pending_inflight + pending_ack_total if control_state == ControlState.FAILED else 0
+        )
         if control_state != ControlState.FAILED:
             if pending_inflight != 0 or pending_acks != 0 or control_pending != 0:
                 raise ValueError(
@@ -2174,7 +2302,6 @@ async def run_client(args: argparse.Namespace) -> None:
                     "control plane must reach TERMINATED before telemetry export: "
                     f"state={control_state.value}"
                 )
-        queue_pending = pending_inflight + control_pending if control_state == ControlState.FAILED else 0
         metrics_block = {
             "latency_ms": percentiles_block(latency_percentiles, scale=1000.0),
             "rtt_ms": percentiles_block(rtt_percentiles, scale=1000.0),
@@ -2190,19 +2317,22 @@ async def run_client(args: argparse.Namespace) -> None:
                 "pending": queue_pending,
             },
             "frames": {
-                "sent": frames_processed,
-                "acked": frames_processed,
+                "sent": frames_sent,
+                "acked": max(0, frames_sent - pending_ack_total),
                 "dropped": pipeline_stats.error_frames,
                 "skipped": pipeline_stats.skipped_frames,
             },
         }
+        session_overrides_payload = {
+            "client_state": session_state,
+            "client_state_reason": session_reason,
+        }
+        if control_state == ControlState.FAILED:
+            session_overrides_payload.setdefault("state", ControlState.FAILED.value)
         telemetry_payload = telemetry.build(
             control_plane=control_plane,
             metrics=metrics_block,
-            session_overrides={
-                "client_state": session_state,
-                "client_state_reason": session_reason,
-            },
+            session_overrides=session_overrides_payload,
             inflight_pending=pending_inflight,
         )
         metrics_out_path.write_text(json.dumps(telemetry_payload, indent=2), encoding='utf-8')

@@ -1,4 +1,5 @@
 import pytest
+from multiprocessing import shared_memory
 
 np = pytest.importorskip("numpy")
 
@@ -38,4 +39,9 @@ def test_shared_memory_publisher_unlinks_on_failure(tmp_path):
     with pytest.raises(OSError):
         publisher.publish("frame", np.ones((2, 3), dtype=np.float32))
     assert recorded and all(name.startswith("draco_stream_") for name in recorded if name)
+    for name in recorded:
+        if not name:
+            continue
+        with pytest.raises(FileNotFoundError):
+            shared_memory.SharedMemory(name=name)
     publisher.close()

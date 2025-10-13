@@ -44,7 +44,8 @@
    - `--layout-profile` 또는 `--data-root`로 출력 디렉터리를 손쉽게 구성할 수 있습니다. 프로파일 구조는 `../references/layout_profiles.md`를 참고하세요.
    - QoS 설정을 변경하려면 `--qos-override configs/qos_override.yaml`를 지정하거나 프로파일에 `qos_override` 항목을 추가합니다.
    - 새로운 품질 파이프라인은 `quality_report_dir/<prefix>_quality.jsonl`에 per-frame 비교 결과를 기록합니다. `--quality-thresholds`로 허용 오차를 JSON으로 지정하고, `--no-save-decoded`로 디코딩된 PLY/PCD 파일 저장을 비활성화할 수 있습니다. 응답 형식은 `--resp-format`으로 서버와 일치시켜야 합니다.
-   - 스트림이 종료되면 클라이언트가 `MSG_EOF`를 서버에 전송하고 로그에 `[CLIENT] Sent EOF marker to server`/`[CLIENT] EOF handshake complete`가 출력됩니다. 해당 메시지가 보이면 큐가 모두 비워졌고 양쪽에서 세션이 정상적으로 마무리됐음을 의미합니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py†L650-L825】
+   - ACK 감시 타이머는 기본적으로 RTT EMA 기반으로 0.5~2.0초 사이에서 조정됩니다. 지연 환경에 맞춰 `--ack-timeout*` 플래그(`--ack-timeout`, `--ack-timeout-min`, `--ack-timeout-max`, `--ack-timeout-strikes`)로 하한/상한과 허용 스트라이크 횟수를 조정할 수 있습니다. 세부 계약은 `docs/contracts/control_plane_contract.md`를 참고하세요.
+   - 스트림이 종료되면 클라이언트가 `MSG_EOF`를 서버에 전송하고 로그에 `[CLIENT] EOF sent to server (pending=... pending_acks=...)` / `[CLIENT] EOF received from server (pending=... pending_acks=...)`가 출력됩니다. 해당 메시지가 보이면 큐가 모두 비워졌고 양쪽에서 세션이 정상적으로 마무리됐음을 의미합니다.【F:ros2_ws/src/draco_roundtrip/draco_roundtrip/nodes/stream_client.py†L650-L825】
 4. 서버는 복원된 포인트클라우드를 `/stream_pair/decoded` 토픽으로 퍼블리시하며, 클라이언트는 원본/복원 토픽을 동시에 노출합니다.
 
 ## 3. 모니터링 및 재생 도구

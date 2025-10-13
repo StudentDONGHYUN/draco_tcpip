@@ -506,14 +506,6 @@ async def _recv_loop(
             flags=message.flags,
             data_header=data_header,
         )
-        await decode_queue.put(job)
-        _telemetry(
-            "recv_data",
-            job.name,
-            size=len(job.payload),
-            depth=decode_queue.qsize(),
-            seq=job.sequence,
-        )
         ack_payload = (
             ACK_PAYLOAD_STRUCT.pack(job.sequence)
             if job.sequence is not None
@@ -530,6 +522,14 @@ async def _recv_loop(
             stop_event.set()
             break
         _telemetry("send_ack", job.name, seq=job.sequence)
+        await decode_queue.put(job)
+        _telemetry(
+            "recv_data",
+            job.name,
+            size=len(job.payload),
+            depth=decode_queue.qsize(),
+            seq=job.sequence,
+        )
     producer_done.set()
 
 async def _decode_worker(

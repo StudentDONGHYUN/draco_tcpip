@@ -43,7 +43,7 @@ class SharedMemoryPublisher:
         port: int,
         *,
         connect_timeout: float = 5.0,
-        enable_janitor: bool = False,
+        enable_janitor: bool = True,
         janitor_interval: float = 5.0,
     ) -> None:
         self._host = host
@@ -110,7 +110,11 @@ class SharedMemoryPublisher:
                 continue
             if not name:
                 continue
-            self._try_unlink(name)
+            if not self._try_unlink(name) and not self._janitor_stop.is_set():
+                try:
+                    self._dangling.put_nowait(name)
+                except queue.Full:
+                    time.sleep(0.1)
 
     def publish(self, frame: str, points: np.ndarray) -> SharedMemoryDescriptor:
         """Publish a point cloud through shared memory and notify the listener."""
@@ -156,6 +160,16 @@ class SharedMemoryPublisher:
                 sock.sendall(payload)
             cleanup_name = None
             return descriptor
+        except OSError as exc:
+            if isinstance(exc, BrokenPipeError):
+                with self._lock:
+                    if self._sock is not None:
+                        try:
+                            self._sock.close()
+                        except OSError:
+                            pass
+                        self._sock = None
+            raise
         finally:
             if segment is not None:
                 with contextlib.suppress(Exception):
