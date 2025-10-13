@@ -1,129 +1,109 @@
 # Draco TCP/IP Roundtrip Workspace
 
-이 리포지터리는 LiDAR 포인트클라우드를 Draco로 압축해 TCP를 통해 왕복 전송하고, 복원 품질을 검증하는 ROS 2 워크스페이스입니다. `ros2_ws` 아래의 `draco_roundtrip`, `draco_tools`, `slam_stream_bridge` 패키지가 동일한 코드베이스를 공유하며 스트리밍과 오프라인 분석을 모두 지원합니다.
+Draco TCP/IP Roundtrip 워크스페이스는 LiDAR 포인트클라우드를 Draco로 압축해 TCP 위에서 왕복 전송하고, 복원 품질과 지연을 검증하는 ROS 2 기반 환경입니다. `draco_roundtrip`, `draco_tools`, `slam_stream_bridge` 패키지가 공용 유틸리티와 프로토콜을 공유해 실시간 스트리밍과 배치 분석을 동일한 파이프라인으로 다룰 수 있습니다.
 
-## 주요 기능
-- **실시간 스트리밍**: rosbag 또는 라이브 토픽에서 추출한 PLY 프레임을 Draco로 인코딩하여 서버로 전송하고, 복원된 포인트클라우드를 다시 ROS 토픽으로 퍼블리시합니다.
-- **배치 파이프라인**: `draco_tools` 모듈을 이용해 bag → PLY → Draco → 품질 분석을 일괄 수행하고 CSV/Markdown 리포트를 생성합니다.
-- **품질 지표 분석**: Chamfer-like 지표, 바운딩 박스 비교 등 스트리밍과 배치가 동일한 metric 모듈을 사용하도록 통합했습니다.
-- **SLAM 연동**: `slam_stream_bridge` 런치 파일을 통해 복원된 포인트클라우드를 SLAM 패키지에 연결할 수 있습니다.
+## 문서 네비게이터
 
-## 리포지터리 구조
-```
-.
-├── configs/                # QoS, 네트워크 에뮬레이션 등 공용 설정
-├── docs/                   # 운영 가이드 및 리포트 템플릿
-├── refac.md                # 리팩토링 제안 및 현황 문서
-└── ros2_ws/
-    └── src/
-        ├── draco_roundtrip/
-        │   ├── draco_roundtrip/  # 스트리밍 노드, 공용 utils, CLI
-        │   ├── package.xml
-        │   └── setup.*
-        ├── draco_tools/
-        │   ├── draco_tools/      # 배치 파이프라인, 분석 모듈
-        │   ├── package.xml
-        │   └── setup.*
-        └── slam_stream_bridge/
-            ├── slam_stream_bridge/  # SLAM 연계 런치 파일
-            ├── package.xml
-            └── setup.*
-```
+전체 문서 모음은 [`docs/reference/Documentation_Index.md`](docs/reference/Documentation_Index.md)에서 범주별로 바로가기를 제공합니다. 주요 문서를 빠르게 살펴보려면 아래 표를 참고하세요.
 
-## 사전 준비
-1. **ROS 2**: Humble(권장) 또는 호환 배포판을 설치하고 `source /opt/ros/<distro>/setup.bash`로 환경을 불러옵니다.
-2. **Draco 바이너리**: [Google Draco 릴리스](https://github.com/google/draco/releases)에서 `draco_encoder`, `draco_decoder`를 받아 PATH에 추가하거나 다음 환경 변수를 설정합니다.
-   ```bash
-   export DRACO_HOME=/path/to/draco/build
-   export PATH="$DRACO_HOME:$PATH"
-   export DRACO_ENCODER=$DRACO_HOME/draco_encoder
-   export DRACO_DECODER=$DRACO_HOME/draco_decoder
-   ```
-3. **Python 의존성**: `ros2_ws`에서 `colcon build`를 실행하면 필요한 파이썬 패키지가 `setup.cfg`에 따라 설치됩니다. 수동 설치가 필요하면 `pip install numpy plyfile scipy open3d` 등을 실행하세요.
-4. **데이터 준비**: 테스트 rosbag을 별도 디렉터리에 보관하고, 실행 시 `--bag` 옵션으로 경로를 넘기거나 `draco_tools.bag_to_ply`를 사용해 PLY 프레임을 생성합니다.
+| 카테고리 | 문서 | 핵심 내용 |
+| --- | --- | --- |
+| 가이드 | [사용자 가이드](docs/guides/User_Guide.md) | 환경 설정, 스트리밍/SLAM bringup, 로그 수집 절차를 순서대로 안내합니다. |
+| 아키텍처 | [아키텍처 설계 및 지연 시간 계획](docs/architecture/Architectural_Design_and_Plan.md) | 비동기 파이프라인, 제어 플레인, 지연 최적화 로드맵을 설명합니다. |
+| 추적성 | [추적성 매트릭스](docs/architecture/Traceability_Matrix.md) | 요구사항, 구현, 테스트 간 연결을 관리합니다. |
+| 참조 | [구성 참조](docs/reference/Configuration_Reference.md) | 레이아웃 프로파일, QoS 검색 규칙, 주요 CLI 플래그를 정의합니다. |
+|  | [프로토콜 및 스키마 참조](docs/reference/Protocol_and_Schema_Reference.md) | 제어 메시지, 상태 기계, 텔레메트리 스키마를 명세합니다. |
+| 개발 | [개발 프로세스](docs/development/Development_Process.md) | 체크리스트 기반 워크플로와 완료 정의를 제공합니다. |
+|  | [성능 시험 계획](docs/development/Performance_Test_Plan.md) | rosbag 회귀 벤치마크 구성과 실행 절차를 명시합니다. |
+|  | [런타임 안정성 메모](docs/development/Runtime_Stability_Notes.md) | 실패 모드와 완화 전략을 정리합니다. |
+| 운영 품질 | [성능 시험 계획(요약)](docs/quality/Performance_Test_Plan.md) | 자동화된 지연/하트비트 목표와 검증 항목을 추적합니다. |
+|  | [실험 결과 템플릿](docs/quality/results_template.md) | 실행 보고서에 필요한 메타데이터와 목표를 템플릿으로 제공합니다. |
+| 보고서 | [프로젝트 진행 보고서](docs/reports/Project_Progress_Report.md) | 단·중기 계획과 상태 표를 요약합니다. |
+|  | [리팩터 및 감사 로그](docs/reports/Refactor_and_Audit_Log.md) | 감사 결과, 리팩터 타임라인, 후속 작업을 기록합니다. |
 
-## 빌드
+## 빠른 시작
+
+### 필수 준비
+1. **ROS 2 Humble**을 설치하고 빌드 전 환경을 소스합니다.
+2. 저장소를 클론한 뒤 `rosdep install`과 `colcon build`로 워크스페이스를 빌드합니다.
+3. 저장소 루트에서 Python 패키지를 editable 모드로 설치해 ROS 2 노드와 CLI가 동일한 유틸리티를 사용하도록 합니다.
+4. `DRACO_HOME` 또는 PATH에 Draco 인코더/디코더 실행 파일을 등록합니다.
+
+### 워크스페이스 빌드
 ```bash
 source /opt/ros/<distro>/setup.bash
 cd /workspace/draco_tcpip/ros2_ws
 colcon build --symlink-install
 source install/setup.bash
 ```
-`~/.bashrc`에 위 두 개의 `source` 명령을 추가하면 새 터미널에서 바로 ROS 2 환경을 사용할 수 있습니다.
 
-## 실행 예시
-### 1. 스트리밍 서버
+### 스트리밍 예시
 ```bash
+# 서버 (텔레메트리와 결정적 EOF 핸드셰이크 포함)
 ros2 run draco_roundtrip stream_server --port 5000
-```
-`draco_decoder`가 PATH에 없으면 `--decoder /absolute/path/to/draco_decoder`로 직접 지정할 수 있습니다.
-- 제어 평면 하트비트와 ACK 전송 주기는 `--heartbeat-interval`로 조정할 수 있습니다. 기본 2초 간격으로 빈 구간에서도 클라이언트를 깨워
-  지연 경보를 발생시키며, `0`으로 설정하면 keepalive를 비활성화합니다.
 
-### 2. 스트리밍 클라이언트
-다른 터미널에서 아래 명령을 실행합니다.
-```bash
+# 클라이언트 (rosbag → Draco → TCP 전송)
 ros2 run draco_roundtrip stream_client \
-    --bag /path/to/rosbag_directory \
+    --bag /path/to/bag \
     --topic /sensing/lidar/top/pointcloud \
-    --prefix cycle_sample
+    --prefix demo_run \
+    --layout-profile client.profile.yaml
 ```
-- QoS override는 기본적으로 `configs/qos_override.yaml`을 참조합니다. 필요 시 `--qos-override`로 다른 파일을 지정하거나 레이아웃 프로필에서 `qos_override`를 정의할 수 있습니다.
-- `--layout-profile`을 지정하면 `configs/*.profile.yaml|json`에 정의된 데이터 루트와 디렉터리 구성이 적용됩니다. `--data-root`, `--ply-dir`, `--work-dir`, `--decoded-dir`를 통해 필요한 경로만 덮어쓸 수 있습니다.
-- `--encoder`, `--decoder` 옵션으로 Draco 실행 파일 경로를 직접 지정할 수 있으며, `--cl`, `--qp`, `--qg`로 압축 품질을 조정할 수 있습니다.
-- 수신/복원된 포인트클라우드는 `stream_pair/source`, `stream_pair/decoded` 토픽으로 퍼블리시됩니다.
-- `--max-inflight/--max-pending`는 동시에 전송 중인 프레임 윈도우를 제한합니다. `--initial-inflight`로 초기 값을, `--adaptive-window`와 `--window-ema-alpha`로 RTT 기반 적응형 제어를 활성화할 수 있습니다.
-- `--heartbeat-timeout`은 서버에서 ACK/하트비트를 받지 못했을 때 세션을 중단하는 임계 시간을 정의합니다. 기본 10초이며, 로그에는 펜딩
-  프레임 수가 함께 출력됩니다.
-- `--print-metrics`를 지정하면 각 프레임의 복원 품질 지표와 순단계 지연 시간이 로그로 출력됩니다. 지정하지 않더라도 최종 요약에는 p50/p95/p99 지연과 대역폭, 대기열 사용량이 포함됩니다.
-- 클라이언트와 서버는 바이너리 프로토콜에서 제어 채널(`control/…`)과 데이터 채널(`data/…`)을 구분하며, 데이터 프레임이 도착하면 즉시 ACK를
-  돌려보내 송신 윈도우를 해제합니다. EOF/오류/하트비트 역시 제어 채널로 송수신되며, 로그에 `EOF sent/received`가 표시되면 모든 큐가 비워지고 안전하게 종료된 것입니다. 구형 서버와 연동해야 할 경우 `--protocol legacy`를 이용해 텍스트 프레이밍으로도 동일한 메시지를 주고받을 수 있습니다.
-- `--tx-fragment-size`는 **순수 페이로드 기준** 조각 크기를 의미합니다. 0(기본값)이면 프레임을 분할하지 않으며, 양수로 지정하면 해당 크기보다 큰 페이로드를 `sequence/index/total` 메타데이터와 함께 여러 조각으로 나눕니다. 분할된 프레임은 서버에서 재조립된 뒤에만 디코더 큐에 들어가므로 ACK 역시 완전한 프레임이 확보된 직후 전송됩니다.
-- 바이너리 프레이밍 헤더는 `MAGIC("DRTC")`, `version(1)`, `flags(1)`, `sequence(u32)`, `name_len(u16)`, `payload_len(u32)`로 고정되어 있으며 네트워크 바이트 순서를 사용합니다. 제어/데이터 종류는 `flags`에 포함되어 있어 잘못된 채널 혼입 시 즉시 감지되어 로그에 남습니다.
-- 디코더와 재조립기가 기록하는 로그에는 첫 8바이트의 헥사 덤프, 수신한 조각 수, 누적 바이트 수가 포함되어 초기 프레임 손상 여부를 빠르게 판별할 수 있습니다.
+`stream_server`와 `stream_client`는 제한 큐, 바이너리 프로토콜, 텔레메트리 스키마를 공유하며, bringup 런치로 SLAM까지 통합 실행할 수 있습니다.
 
-### 3. 배치 품질 분석
-```bash
-ros2 run draco_tools encode_ply_to_draco --input data/ply_stream --out data/drc
-ros2 run draco_tools offline_pipeline --bag /path/to/rosbag_directory --config configs/draco.json
-```
-위 명령은 PLY → Draco 변환 및 품질 분석 리포트를 생성합니다. `offline_pipeline`도 `--layout-profile`, `--data-root`, `--ply-dir` 등 동일한 디렉터리 헬퍼를 사용하므로 스트리밍 환경과 동일한 결과 디렉터리를 간편하게 재사용할 수 있습니다. 상세 옵션은 `--help`로 확인하세요.
-
-### 4. 통합 Bringup (스트리밍 + SLAM)
+### SLAM Bringup 및 네트워크 에뮬레이션
+통합 런치를 사용해 서버, 클라이언트, SLAM, 네트워크 프로파일을 동시에 구동할 수 있습니다.
 ```bash
 ros2 launch slam_stream_bridge bringup.launch.py \
     bag:=/path/to/bag \
     topic:=/sensing/lidar/top/pointcloud \
     layout_profile:=client.profile.yaml \
-    slam:=rtabmap \
-    netem_profile:=wifi_dense
+    slam:=hdl
 ```
-- `slam` 인자로 `rtabmap` 또는 `hdl`을 지정할 수 있으며, `slam_params:=<파일>`로 파라미터 파일을 덮어쓸 수 있습니다.
-- `netem_profile`은 `configs/netem.profiles.yaml`에 정의된 프리셋을 적용합니다. 기본값은 `loopback`이며, `netem_dry_run:=false`로 설정하면 실제로 `tc` 명령을 실행합니다. (필요 시 `sudo` 권한 필요)
-- bringup 런치는 `stream_server`, `stream_client`, 선택한 SLAM 노드, 그리고 필요 시 네트워크 에뮬레이션을 순차적으로 실행합니다.
+`stream_netem` CLI로 `configs/netem.profiles.yaml`에 정의된 네트워크 조건을 적용하고, 실험 후 반드시 초기화합니다.
 
-### 5. SLAM 단독 런치
-기존 개별 런치 파일은 여전히 사용할 수 있습니다.
+## 배치 파이프라인과 품질 분석
+
+`draco_tools` 패키지는 bag → PLY → Draco → 품질 분석을 일괄 수행하는 오프라인 파이프라인과 품질 템플릿을 제공합니다.
+
 ```bash
-ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
-ros2 launch slam_stream_bridge rtabmap_stream.launch.py cloud_topic:=/stream_pair/decoded
+ros2 run draco_tools bag_to_ply --bag /path/to/bag --out data/ply_raw
+ros2 run draco_tools encode_ply_to_draco --in data/ply_raw --out data/draco_out
+ros2 run draco_tools offline_pipeline \
+    --bag /path/to/bag \
+    --topic /sensing/lidar/top/pointcloud \
+    --prefix regression_baseline \
+    --layout-profile client.profile.yaml
 ```
-필요한 토픽 remap 및 QoS 설정은 런치 인자 또는 `configs/*.yaml` 파일에서 조정합니다.
 
-## 추가 자료
-- `docs/guides/HOWTO.md`: 세부 운영 시나리오와 환경 설정 가이드
-- `docs/guides/3d_slam_setup.md`: SLAM 연동 구성 절차
-- `docs/references/config_reference.md`: `configs/*.yaml` 및 프로파일 파일 설명과 활용 예시
-- `docs/guides/logging_guidelines.md`: 결과 디렉터리 구조와 로그 수집 자동화 절차
-- `docs/guides/encoder_cli.md`: Draco 인코더 CLI 헬퍼와 통합 로그 포맷 가이드
-- `docs/references/layout_profiles.md`: 디렉터리/프로필 설정 규칙과 예시
-- `docs/templates/results_template.md`: 실험 결과 정리 템플릿
-- `docs/reports/refactor_report.md`: 리팩토링 완료 보고서 및 마이그레이션 안내
-- `refac.md`: 현재 진행 중인 리팩토링 제안 및 단계별 목표
+품질 보고서는 `docs/quality/results_template.md` 양식에 맞춰 작성하고, 텔레메트리는 `Protocol_and_Schema_Reference.md`의 스키마를 준수해야 합니다.
 
-기여 시에는 리팩토링 로드맵과 체크리스트를 참고하여 코드 구조와 문서가 일관되도록 유지해주세요.
+## 개발 및 품질 보증
 
-## 레거시 스크립트 정리 현황
-- 과거 리포지터리 루트에 위치했던 `draco-ros2-roundtrip/scripts/*.py` 실행 파일은 모두 ROS 2 패키지 내부의 콘솔 엔트리포인트로 대체되었습니다.
-- 기존 스크립트 경로를 사용하는 자동화는 `ros2 run draco_roundtrip ...` 또는 `ros2 run draco_tools ...` 형태로 교체해 주세요.
-- 필요한 경우 `ros2 run <package> <entrypoint> --help`로 최신 인자 목록을 확인할 수 있으며, 본 README와 `docs/guides/encoder_cli.md`에서 대표적인 사용 예시를 제공합니다.
+- **개발 워크플로**: Pyright/ruff/pytest 조합, 체크리스트, 결과 문서화 절차는 [개발 프로세스](docs/development/Development_Process.md)에 요약되어 있습니다.
+- **성능 게이트**: `pytest tests/perf/test_latency_gate.py`로 p95 지연 250 ms 목표를 검증하며, 설정과 임계값은 [성능 시험 계획](docs/development/Performance_Test_Plan.md)에 정의되어 있습니다.
+- **런타임 안정성**: 스트리밍 클라이언트/서버의 상태 전이, 공유 메모리 정리, 종료 로그 정책은 [런타임 안정성 메모](docs/development/Runtime_Stability_Notes.md)에 정리되어 있습니다.
+- **운영 지표**: `docs/quality/Performance_Test_Plan.md`는 자동화된 목표를, `docs/runtime/Runtime_Stability_Notes.md`는 장시간 세션 모니터링 결과를 제공합니다.
+
+## 보고 및 추적
+
+- [프로젝트 진행 보고서](docs/reports/Project_Progress_Report.md)에서 단·중기 계획과 상태 표를 확인합니다.
+- [리팩터 및 감사 로그](docs/reports/Refactor_and_Audit_Log.md)는 감사 결과, 리팩터 타임라인, 후속 작업을 추적합니다.
+- 요구사항 매핑과 테스트 연결은 [추적성 매트릭스](docs/architecture/Traceability_Matrix.md)에 기록되어 있어 변경 영향 범위를 빠르게 파악할 수 있습니다.
+
+## 리포지터리 구조
+
+```
+.
+├── configs/                # QoS, 네트워크 에뮬레이션, 레이아웃 프로파일
+├── docs/                   # 가이드, 아키텍처, 참조, 보고서 모음
+├── ros2_ws/
+│   └── src/
+│       ├── draco_roundtrip/       # 스트리밍 노드, CLI, 공용 유틸리티
+│       ├── draco_tools/           # 배치 파이프라인과 분석 도구
+│       └── slam_stream_bridge/    # SLAM 통합 런치 파일
+├── scripts/                # CI, 문서 자동화, 실험 스크립트
+└── tests/                  # 단위/성능/회귀 테스트 스위트
+```
+
+각 패키지와 콘솔 엔트리포인트에 대한 자세한 개요는 [코드베이스 개요](docs/reference/codebase_overview.md)를 참고하세요.
