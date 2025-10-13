@@ -25,7 +25,7 @@ from dataclasses import dataclass, field as dataclass_field
 from enum import Enum
 from multiprocessing import shared_memory
 from pathlib import Path
-from typing import Any, Callable, Deque, Dict, Iterable, Optional, Protocol, TYPE_CHECKING
+from typing import Callable, Deque, Dict, Iterable, Optional, Protocol
 
 import numpy as np
 
@@ -1323,16 +1323,11 @@ async def monitor_process(
     finally:
         event.set()
 
-if TYPE_CHECKING:  # pragma: no cover - imported only for type checking.
-    from inotify_simple import INotify as _INotify
-else:  # pragma: no cover - runtime fallback, typing shim defined above.
-    _INotify = Any
-
 try:  # NOTE: Prefer inotify when available to honor event-driven spool monitoring.
     from inotify_simple import INotify, flags as inotify_flags
 except Exception:  # pragma: no cover - fall back to portable polling when missing.
-    INotify = None  # type: ignore[assignment]
-    inotify_flags = None  # type: ignore[assignment]
+    INotify = None  # type: ignore
+    inotify_flags = None  # type: ignore
 
 
 class SpoolWatcher:
@@ -1344,7 +1339,7 @@ class SpoolWatcher:
     def __init__(self, directory: Path, prefix: str, *, gc_window: int | None = None):
         self.directory = directory
         self.prefix = prefix
-        self._inotify: Optional[_INotify] = None
+        self._inotify: Optional[INotify] = None
         self._watch_descriptor: Optional[int] = None
         self._known: set[str] = set()
         self._retired: Deque[str] = deque(maxlen=self._history_limit)
