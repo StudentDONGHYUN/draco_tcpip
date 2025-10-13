@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import socket
 import subprocess
 import sys
@@ -51,6 +52,59 @@ from draco_roundtrip.utils.stream_protocol import (
     parse_request_payload,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
+
+
+logger = logging.getLogger(__name__)
+
+
+_HAS_ASYNCIO_TIMEOUT = hasattr(asyncio, "timeout")
+
+
+class QueueStopped(Exception):
+    """Raised when a queue consumer should halt due to cancellation."""
+
+
+async def _queue_put(
+    queue: "asyncio.Queue[object]",
+    item: object,
+    *,
+    stop_event: asyncio.Event | None = None,
+    timeout: float = 0.1,
+) -> bool:
+    while True:
+        if stop_event is not None and stop_event.is_set():
+            return False
+        try:
+            if _HAS_ASYNCIO_TIMEOUT:
+                async with asyncio.timeout(timeout):
+                    await queue.put(item)
+            else:  # pragma: no cover - fallback for Python < 3.11
+                await asyncio.wait_for(queue.put(item), timeout)
+            return True
+        except asyncio.TimeoutError:
+            if stop_event is not None and stop_event.is_set():
+                return False
+
+
+async def _queue_get(
+    queue: "asyncio.Queue[object]",
+    *,
+    stop_event: asyncio.Event | None = None,
+    timeout: float = 0.1,
+) -> object:
+    while True:
+        if stop_event is not None and stop_event.is_set():
+            raise QueueStopped
+        try:
+            if _HAS_ASYNCIO_TIMEOUT:
+                async with asyncio.timeout(timeout):
+                    item = await queue.get()
+            else:  # pragma: no cover - fallback for Python < 3.11
+                item = await asyncio.wait_for(queue.get(), timeout)
+            return item
+        except asyncio.TimeoutError:
+            if stop_event is not None and stop_event.is_set():
+                raise QueueStopped
 
 
 @dataclass(slots=True)
@@ -146,7 +200,13 @@ class PipelineResult:
 def _telemetry(stage: str, frame: str, **details: object) -> None:
     extras = " ".join(f"{key}={value}" for key, value in details.items())
     suffix = f" {extras}" if extras else ""
-    print(f"[SERVER][TELEM] {stage} frame={frame} ts={time.monotonic():.6f}{suffix}")
+    logger.info(
+        "[SERVER][TELEM] %s frame=%s ts=%.6f%s",
+        stage,
+        frame,
+        time.monotonic(),
+        suffix,
+    )
 
 
 def _export_server_telemetry(
@@ -196,9 +256,9 @@ def _export_server_telemetry(
         payload = telemetry.build(control_plane=control_plane, metrics=metrics)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        print(f"[SERVER] Wrote telemetry to {target}")
+        logger.info("[SERVER] Wrote telemetry to %s", target)
     except Exception as exc:  # pragma: no cover - best effort logging
-        print(f"[SERVER] WARN: Failed to export telemetry: {exc}")
+        logger.warning("[SERVER] Failed to export telemetry: %s", exc)
 
 
 async def _send_control_message(
@@ -262,7 +322,9 @@ def decode_drc(
     cmd = [str(decoder), "-i", str(drc_path), "-o", str(ply_path)]
     cleanup_files = not keep_artifacts
     if zero_copy:
-        print("[SERVER] WARN: zero-copy replies are not supported in metrics mode; using copy path")
+        logger.warning(
+            "[SERVER] zero-copy replies are not supported in metrics mode; using copy path"
+        )
     try:
         proc = subprocess.run(
             cmd,
@@ -309,10 +371,10 @@ def decode_drc(
             cleanup=cleanup,
         )
         return artifact
-    except subprocess.TimeoutExpired as exc:  # pragma: no cover - depends on external tool
-        raise RuntimeError(
-            f"draco_decoder timed out after {exc.timeout:.1f}s"
-        ) from exc
+    except (
+        subprocess.TimeoutExpired
+    ) as exc:  # pragma: no cover - depends on external tool
+        raise RuntimeError(f"draco_decoder timed out after {exc.timeout:.1f}s") from exc
     finally:
         if cleanup_files:
             with suppress(FileNotFoundError):
@@ -321,42 +383,98 @@ def decode_drc(
 
 def build_arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Draco streaming server")
-    ap.add_argument('--host', default='0.0.0.0')
-    ap.add_argument('--port', type=int, default=5000)
-    ap.add_argument('--control-port', type=int, default=0,
-                    help='Optional TCP port dedicated to control-plane messages (0 disables)')
-    ap.add_argument('--decoder', default=None, help="Path to draco_decoder")
-    ap.add_argument('--work-dir', default='data/server_tmp')
-    ap.add_argument('--decode-timeout', type=float, default=30.0,
-                    help='Fail decoding if the external tool exceeds this timeout (seconds)')
-    ap.add_argument('--tcp-nodelay', action='store_true',
-                    help='Disable Nagle aggregation on accepted sockets for lower latency')
-    ap.add_argument('--socket-buffer-kb', type=int, default=0,
-                    help='Resize socket send/receive buffers (KiB) for high-throughput links')
-    ap.add_argument('--socket-timeout', type=float, default=30.0,
-                    help='Timeout (seconds) for socket operations; 0 disables the safeguard')
-    ap.add_argument('--max-inflight', type=int, default=2,
-                    help='Maximum number of frames to decode concurrently before backpressuring the client')
-    ap.add_argument('--decode-workers', type=int, default=2,
-                    help='Number of concurrent decode workers in the async pipeline')
-    ap.add_argument('--keep-artifacts', action='store_true',
-                    help='Retain .drc/.ply decode artifacts for debugging (default cleans up)')
-    ap.add_argument('--resp-format', choices=('ply', 'pcd'), default='ply',
-                    help='Format used for decoded payloads returned to the client (default: %(default)s)')
-    ap.add_argument('--metrics-sample', type=int, default=50000,
-                    help='Maximum number of points sampled when computing quality metrics (0 disables sampling)')
-    ap.add_argument('--zero-copy-reply', action='store_true',
-                    help='Memory-map decoded PLY payloads to reduce copy overhead when sending replies')
-    ap.add_argument('--legacy-mode', action='store_true',
-                    help='Fallback to the synchronous legacy loop for troubleshooting')
-    ap.add_argument('--heartbeat-interval', type=float, default=2.0,
-                    help='Interval (seconds) for control-plane heartbeat messages; 0 disables keepalive')
+    ap.add_argument("--host", default="0.0.0.0")
+    ap.add_argument("--port", type=int, default=5000)
+    ap.add_argument(
+        "--control-port",
+        type=int,
+        default=0,
+        help="Optional TCP port dedicated to control-plane messages (0 disables)",
+    )
+    ap.add_argument("--decoder", default=None, help="Path to draco_decoder")
+    ap.add_argument("--work-dir", default="data/server_tmp")
+    ap.add_argument(
+        "--decode-timeout",
+        type=float,
+        default=30.0,
+        help="Fail decoding if the external tool exceeds this timeout (seconds)",
+    )
+    ap.add_argument(
+        "--tcp-nodelay",
+        action="store_true",
+        help="Disable Nagle aggregation on accepted sockets for lower latency",
+    )
+    ap.add_argument(
+        "--socket-buffer-kb",
+        type=int,
+        default=0,
+        help="Resize socket send/receive buffers (KiB) for high-throughput links",
+    )
+    ap.add_argument(
+        "--socket-timeout",
+        type=float,
+        default=30.0,
+        help="Timeout (seconds) for socket operations; 0 disables the safeguard",
+    )
+    ap.add_argument(
+        "--max-inflight",
+        type=int,
+        default=2,
+        help="Maximum number of frames to decode concurrently before backpressuring the client",
+    )
+    ap.add_argument(
+        "--queue-size",
+        type=int,
+        default=0,
+        help="Maximum server queue depth before applying backpressure (0 uses --max-inflight)",
+    )
+    ap.add_argument(
+        "--decode-workers",
+        type=int,
+        default=2,
+        help="Number of concurrent decode workers in the async pipeline",
+    )
+    ap.add_argument(
+        "--keep-artifacts",
+        action="store_true",
+        help="Retain .drc/.ply decode artifacts for debugging (default cleans up)",
+    )
+    ap.add_argument(
+        "--resp-format",
+        choices=("ply", "pcd"),
+        default="ply",
+        help="Format used for decoded payloads returned to the client (default: %(default)s)",
+    )
+    ap.add_argument(
+        "--metrics-sample",
+        type=int,
+        default=50000,
+        help="Maximum number of points sampled when computing quality metrics (0 disables sampling)",
+    )
+    ap.add_argument(
+        "--zero-copy-reply",
+        action="store_true",
+        help="Memory-map decoded PLY payloads to reduce copy overhead when sending replies",
+    )
+    ap.add_argument(
+        "--legacy-mode",
+        action="store_true",
+        help="Fallback to the synchronous legacy loop for troubleshooting",
+    )
+    ap.add_argument(
+        "--heartbeat-interval",
+        type=float,
+        default=2.0,
+        help="Interval (seconds) for control-plane heartbeat messages; 0 disables keepalive",
+    )
     protocol_help = available_protocols()
-    ap.add_argument('--protocol',
-                    choices=sorted(protocol_help.keys()),
-                    default='binary',
-                    help='Framing protocol expected from clients (default: %(default)s). Options: '
-                    + ', '.join(f"{name}={desc}" for name, desc in protocol_help.items()))
+    ap.add_argument(
+        "--protocol",
+        choices=sorted(protocol_help.keys()),
+        default="binary",
+        help="Framing protocol expected from clients (default: %(default)s). Options: "
+        + ", ".join(f"{name}={desc}" for name, desc in protocol_help.items()),
+    )
     return ap
 
 
@@ -387,16 +505,20 @@ async def _recv_loop(
             try:
                 await _send_control_message(control, protocol, conn, message)
                 if control_down.is_set():
-                    print(f"[SERVER] Control channel for {label} recovered")
+                    logger.info("[SERVER] Control channel for %s recovered", label)
                     control_down.clear()
                 return True
             except Exception as exc:
-                print(
-                    f"[SERVER] WARN: Failed to send {label} attempt {attempt}/{attempts}: {exc}"
+                logger.warning(
+                    "[SERVER] Failed to send %s attempt %d/%d: %s",
+                    label,
+                    attempt,
+                    attempts,
+                    exc,
                 )
                 await asyncio.sleep(delay)
                 delay = min(delay * 2.0, 0.5)
-        print(f"[SERVER] ERROR: Control channel down while sending {label}")
+        logger.error("[SERVER] Control channel down while sending %s", label)
         control_down.set()
         return False
 
@@ -406,7 +528,10 @@ async def _recv_loop(
         except socket.timeout:
             if producer_done.is_set():
                 break
-            if heartbeat_interval > 0 and (time.monotonic() - last_heartbeat) >= heartbeat_interval:
+            if (
+                heartbeat_interval > 0
+                and (time.monotonic() - last_heartbeat) >= heartbeat_interval
+            ):
                 heartbeat = Message(
                     kind=MSG_HEARTBEAT,
                     name=encode_frame_address(
@@ -428,11 +553,11 @@ async def _recv_loop(
                 last_heartbeat = time.monotonic()
             continue
         except Exception as exc:
-            print(f"[SERVER] ERROR receiving frame: {exc}")
+            logger.error("[SERVER] ERROR receiving frame: %s", exc)
             await _fail_and_signal(lifecycle, stop_event, f"recv error: {exc}")
             break
         if message is None:
-            print("[SERVER] Client closed connection")
+            logger.info("[SERVER] Client closed connection")
             await _fail_and_signal(lifecycle, stop_event, "client closed connection")
             break
         last_heartbeat = time.monotonic()
@@ -442,8 +567,12 @@ async def _recv_loop(
             _telemetry("recv_heartbeat", address.name or "all")
             continue
         if message.kind == MSG_ERROR:
-            detail = message.payload.decode("utf-8", errors="ignore") if message.payload else ""
-            print(f"[SERVER] ERROR from client: {detail or 'unspecified'}")
+            detail = (
+                message.payload.decode("utf-8", errors="ignore")
+                if message.payload
+                else ""
+            )
+            logger.error("[SERVER] ERROR from client: %s", detail or "unspecified")
             control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, detail or None)
             await _fail_and_signal(
                 lifecycle,
@@ -452,7 +581,7 @@ async def _recv_loop(
             )
             break
         if message.kind == MSG_EOF:
-            print("[SERVER] Received EOF marker from client")
+            logger.info("[SERVER] Received EOF marker from client")
             _telemetry("recv_eof", "all")
             control_plane.on_eof_received()
             lifecycle.transition(StreamState.DRAINING, reason="client EOF")
@@ -461,21 +590,31 @@ async def _recv_loop(
             producer_done.set()
             break
         if message.kind != MSG_DATA:
-            print(f"[SERVER] Ignoring unexpected message kind: {message.kind}")
+            logger.warning(
+                "[SERVER] Ignoring unexpected message kind: %s", message.kind
+            )
             continue
         if address.channel != DATA_CHANNEL:
-            print(f"[SERVER] WARN: Received data on control channel: {message.name}")
+            logger.warning(
+                "[SERVER] Received data on control channel: %s", message.name
+            )
         if control_plane.state in (ControlState.INIT, ControlState.HANDSHAKING):
             control_plane.on_first_data()
             lifecycle.transition(StreamState.STREAMING, reason="first frame")
-        sequence = message.sequence if message.sequence is not None else address.sequence
+        sequence = (
+            message.sequence if message.sequence is not None else address.sequence
+        )
         frame_name = address.name or "frame"
         payload_bytes = message.payload
         totals["bytes_in"] += len(payload_bytes)
         if use_binary and message.fragmented:
             if sequence is None:
-                print("[SERVER] ERROR: fragmented frame missing sequence metadata")
-                control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, "fragment missing sequence")
+                logger.error(
+                    "[SERVER] ERROR: fragmented frame missing sequence metadata"
+                )
+                control_plane.on_error(
+                    ErrorCode.PROTOCOL_VIOLATION, "fragment missing sequence"
+                )
                 continue
             state = fragment_states.get(sequence)
             total = message.fragments_total or 1
@@ -504,10 +643,12 @@ async def _recv_loop(
             data_header, draco_payload = parse_request_payload(payload_bytes)
         except ValueError as exc:
             detail = f"invalid payload: {exc}"
-            print(f"[SERVER] ERROR parsing frame {frame_name}: {detail}")
+            logger.error("[SERVER] ERROR parsing frame %s: %s", frame_name, detail)
             error_message = Message(
                 kind=MSG_ERROR,
-                name=encode_frame_address(sequence, frame_name, channel=CONTROL_CHANNEL),
+                name=encode_frame_address(
+                    sequence, frame_name, channel=CONTROL_CHANNEL
+                ),
                 payload=str(detail).encode(),
                 sequence=sequence,
             )
@@ -516,8 +657,10 @@ async def _recv_loop(
         if sequence is None:
             sequence = data_header.sequence
         elif sequence != data_header.sequence:
-            print(
-                f"[SERVER] WARN: Sequence mismatch header={data_header.sequence} message={sequence}"
+            logger.warning(
+                "[SERVER] Sequence mismatch header=%s message=%s",
+                data_header.sequence,
+                sequence,
             )
         job = DecodeJob(
             sequence=sequence,
@@ -530,9 +673,7 @@ async def _recv_loop(
             data_header=data_header,
         )
         ack_payload = (
-            ACK_PAYLOAD_STRUCT.pack(job.sequence)
-            if job.sequence is not None
-            else b""
+            ACK_PAYLOAD_STRUCT.pack(job.sequence) if job.sequence is not None else b""
         )
         ack_message = Message(
             kind=MSG_ACK,
@@ -549,7 +690,9 @@ async def _recv_loop(
             )
             break
         _telemetry("send_ack", job.name, seq=job.sequence)
-        await decode_queue.put(job)
+        if not await _queue_put(decode_queue, job, stop_event=stop_event):
+            stop_event.set()
+            break
         _telemetry(
             "recv_data",
             job.name,
@@ -558,6 +701,7 @@ async def _recv_loop(
             seq=job.sequence,
         )
     producer_done.set()
+
 
 async def _decode_worker(
     worker_id: int,
@@ -570,11 +714,14 @@ async def _decode_worker(
     stop_event: asyncio.Event,
 ) -> None:
     while not stop_event.is_set():
-        job = await decode_queue.get()
+        try:
+            job = await _queue_get(decode_queue, stop_event=stop_event)
+        except QueueStopped:
+            break
         if job is None:
             decode_queue.task_done()
             # Propagate shutdown to the sender so the EOF handshake can trigger once workers drain.
-            await send_queue.put(None)
+            await _queue_put(send_queue, None)
             break
         decode_start = time.monotonic()
         stats.recv_to_decode.record(decode_start - job.received_at)
@@ -586,8 +733,10 @@ async def _decode_worker(
             wait_ms=(decode_start - job.received_at) * 1000.0,
         )
         try:
-            prefix = job.payload[:8].hex() if job.payload else ''
-            print(f"[SERVER] DEBUG decode {job.name}: seq={job.sequence} prefix={prefix}")
+            prefix = job.payload[:8].hex() if job.payload else ""
+            logger.debug(
+                "[SERVER] decode %s: seq=%s prefix=%s", job.name, job.sequence, prefix
+            )
             artifact = await asyncio.to_thread(
                 decode_drc,
                 decoder,
@@ -600,8 +749,12 @@ async def _decode_worker(
                 resp_format=args.resp_format,
                 metrics_sample=getattr(args, "metrics_sample", None),
                 frame_id=job.name,
-                draco_bytes_len=(job.data_header.payload_len if job.data_header else len(job.payload)),
-                timestamp_ns=(job.data_header.timestamp_ns if job.data_header else None),
+                draco_bytes_len=(
+                    job.data_header.payload_len if job.data_header else len(job.payload)
+                ),
+                timestamp_ns=(
+                    job.data_header.timestamp_ns if job.data_header else None
+                ),
             )
             decoded_at = time.monotonic()
             stats.decode_time.record(decoded_at - decode_start)
@@ -614,17 +767,30 @@ async def _decode_worker(
                 seq=job.sequence,
                 latency_ms=(decoded_at - decode_start) * 1000.0,
             )
-            await send_queue.put(PipelineResult(job=job, decoded_at=decoded_at, artifact=artifact))
+            await _queue_put(
+                send_queue,
+                PipelineResult(job=job, decoded_at=decoded_at, artifact=artifact),
+                stop_event=stop_event,
+            )
         except Exception as exc:
-            print(
-                f"[SERVER] ERROR decoding {job.name}: {exc} seq={job.sequence} "
-                f"flags={job.flags} payload_len={len(job.payload)} "
-                f"expected_len={job.frame_payload_len} fragments={job.fragments}"
+            logger.exception(
+                "[SERVER] ERROR decoding %s: %s seq=%s flags=%s payload_len=%d expected_len=%s fragments=%d",
+                job.name,
+                exc,
+                job.sequence,
+                job.flags,
+                len(job.payload),
+                job.frame_payload_len,
+                job.fragments,
             )
             _telemetry("decode_error", job.name, worker=worker_id, seq=job.sequence)
-            await send_queue.put(
-                PipelineResult(job=job, decoded_at=time.monotonic(), error=str(exc))
+            await _queue_put(
+                send_queue,
+                PipelineResult(job=job, decoded_at=time.monotonic(), error=str(exc)),
+                stop_event=stop_event,
             )
+            stop_event.set()
+            break
         finally:
             decode_queue.task_done()
 
@@ -646,7 +812,10 @@ async def _send_loop(
     finished_workers = 0
     eof_sent = False
     while not stop_event.is_set():
-        item = await send_queue.get()
+        try:
+            item = await _queue_get(send_queue, stop_event=stop_event)
+        except QueueStopped:
+            break
         if item is None:
             finished_workers += 1
             send_queue.task_done()
@@ -680,8 +849,12 @@ async def _send_loop(
                 if name.endswith(f".decoded.{resp_format}")
                 else f"{name}.decoded.{resp_format}"
             )
-            metrics_json = json.dumps(result.artifact.metrics, sort_keys=True).encode("utf-8")
-            seq_for_header = result.job.sequence if result.job.sequence is not None else 0
+            metrics_json = json.dumps(result.artifact.metrics, sort_keys=True).encode(
+                "utf-8"
+            )
+            seq_for_header = (
+                result.job.sequence if result.job.sequence is not None else 0
+            )
             _, packed_payload = compose_response_payload(
                 sequence=seq_for_header,
                 timestamp_ns=result.artifact.timestamp_ns,
@@ -707,7 +880,11 @@ async def _send_loop(
             else:
                 await _send_control_message(control, protocol, conn, message)
         except Exception as exc:
-            print(f"[SERVER] ERROR sending {message.name or result.job.name}: {exc}")
+            logger.error(
+                "[SERVER] ERROR sending %s: %s",
+                message.name or result.job.name,
+                exc,
+            )
             await _fail_and_signal(
                 lifecycle,
                 stop_event,
@@ -737,8 +914,10 @@ async def _send_loop(
                 try:
                     result.artifact.close()
                 except Exception as cleanup_exc:
-                    print(
-                        f"[SERVER] WARN: Failed to cleanup artifact for {result.job.name}: {cleanup_exc}"
+                    logger.warning(
+                        "[SERVER] Failed to cleanup artifact for %s: %s",
+                        result.job.name,
+                        cleanup_exc,
                     )
             send_queue.task_done()
             if should_break:
@@ -761,7 +940,7 @@ async def _send_loop(
             _telemetry("send_eof", "all")
             eof_sent = True
         except Exception as exc:
-            print(f"[SERVER] ERROR sending EOF marker: {exc}")
+            logger.error("[SERVER] ERROR sending EOF marker: %s", exc)
         with suppress(OSError):
             # ``SHUT_WR`` triggers a FIN after the MSG_EOF handshake reaches the client.
             conn.shutdown(socket.SHUT_WR)
@@ -782,7 +961,9 @@ async def handle_connection(
 ) -> ControlPlane:
     with ExitStack() as stack:
         data_conn = stack.enter_context(conn)
-        control_socket = stack.enter_context(control_conn) if control_conn is not None else None
+        control_socket = (
+            stack.enter_context(control_conn) if control_conn is not None else None
+        )
         if args.tcp_nodelay:
             with suppress(OSError):
                 data_conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -802,17 +983,23 @@ async def handle_connection(
             if control_socket is not None:
                 control_socket.settimeout(args.socket_timeout)
         protocol = resolve_protocol(args.protocol)
-        print(f"[SERVER] Connection from {addr} using {protocol.name} protocol")
+        logger.info(
+            "[SERVER] Connection from %s using %s protocol", addr, protocol.name
+        )
         control_channel: ControlChannel | None = None
         if control_socket is not None:
             control_protocol = resolve_protocol(args.protocol)
-            control_channel = ControlChannel(sock=control_socket, protocol=control_protocol)
+            control_channel = ControlChannel(
+                sock=control_socket, protocol=control_protocol
+            )
             try:
                 peer = control_socket.getpeername()
             except OSError:
                 peer = "unknown"
-            print(
-                f"[SERVER] Control channel paired from {peer} using {control_protocol.name} protocol"
+            logger.info(
+                "[SERVER] Control channel paired from %s using %s protocol",
+                peer,
+                control_protocol.name,
             )
 
         control_plane = ControlPlane(role="server")
@@ -821,10 +1008,19 @@ async def handle_connection(
         lifecycle.transition(StreamState.HANDSHAKING, reason="connected")
 
         max_inflight = max(1, args.max_inflight)
+        queue_bound = (
+            max_inflight
+            if getattr(args, "queue_size", 0) <= 0
+            else max(1, args.queue_size)
+        )
         if args.decode_workers <= 0:
             raise ValueError("decode_workers must be positive")
-        decode_queue: "asyncio.Queue[DecodeJob | None]" = asyncio.Queue(maxsize=max_inflight)
-        send_queue: "asyncio.Queue[PipelineResult | None]" = asyncio.Queue(maxsize=max_inflight)
+        decode_queue: "asyncio.Queue[DecodeJob | None]" = asyncio.Queue(
+            maxsize=queue_bound
+        )
+        send_queue: "asyncio.Queue[PipelineResult | None]" = asyncio.Queue(
+            maxsize=queue_bound
+        )
         stop_event = asyncio.Event()
         producer_done = asyncio.Event()
         control_path_down = asyncio.Event()
@@ -910,7 +1106,7 @@ async def handle_connection(
 
 
 async def run_server(args: argparse.Namespace) -> None:
-    decoder = resolve_executable('draco_decoder', args.decoder, env_var='DRACO_DECODER')
+    decoder = resolve_executable("draco_decoder", args.decoder, env_var="DRACO_DECODER")
     work_dir = ensure_directory(Path(args.work_dir).resolve())
     stats = PipelineStats()
     totals: Dict[str, int] = {"bytes_in": 0, "bytes_out": 0}
@@ -922,32 +1118,40 @@ async def run_server(args: argparse.Namespace) -> None:
     try:
         server = socket.create_server((args.host, args.port), reuse_port=True)
     except OSError as exc:
-        print(f"[SERVER] WARN: reuse_port failed ({exc}), retrying without it")
+        logger.warning("[SERVER] reuse_port failed (%s), retrying without it", exc)
         server = socket.create_server((args.host, args.port))
 
     control_server: socket.socket | None = None
     if args.control_port > 0:
         try:
-            control_server = socket.create_server((args.host, args.control_port), reuse_port=True)
+            control_server = socket.create_server(
+                (args.host, args.control_port), reuse_port=True
+            )
         except OSError as exc:
-            print(
-                f"[SERVER] WARN: control reuse_port failed ({exc}), retrying without it")
+            logger.warning(
+                "[SERVER] control reuse_port failed (%s), retrying without it",
+                exc,
+            )
             control_server = socket.create_server((args.host, args.control_port))
 
     with ExitStack() as stack:
         stack.enter_context(server)
         if control_server is not None:
             stack.enter_context(control_server)
-        print(f"[SERVER] Listening on {args.host}:{args.port}")
+        logger.info("[SERVER] Listening on %s:%d", args.host, args.port)
         if control_server is not None:
-            print(f"[SERVER] Control channel listening on {args.host}:{args.control_port}")
+            logger.info(
+                "[SERVER] Control channel listening on %s:%d",
+                args.host,
+                args.control_port,
+            )
         conn, addr = await asyncio.to_thread(server.accept)
-        print(f"[SERVER] Accepted connection from {addr}")
+        logger.info("[SERVER] Accepted connection from %s", addr)
         control_conn: socket.socket | None = None
         control_addr = None
         if control_server is not None:
             control_conn, control_addr = await asyncio.to_thread(control_server.accept)
-            print(f"[SERVER] Accepted control connection from {control_addr}")
+            logger.info("[SERVER] Accepted control connection from %s", control_addr)
         control_plane: ControlPlane | None = None
         try:
             control_plane = await handle_connection(
@@ -981,7 +1185,9 @@ async def run_server(args: argparse.Namespace) -> None:
             "role": "server",
             "elapsed_sec": elapsed,
             "state": lifecycle.state.value if lifecycle else control_plane.state.value,
-            "state_reason": lifecycle.reason if lifecycle else control_plane.error_message,
+            "state_reason": (
+                lifecycle.reason if lifecycle else control_plane.error_message
+            ),
             "control_state": control_plane.state.value,
             "control_pending": control_plane.pending,
             "pending_inflight": control_plane.pending,
@@ -998,43 +1204,50 @@ async def run_server(args: argparse.Namespace) -> None:
                 "decode_to_send": stats.decode_to_send.summary(),
             },
         }
-        print(f"[SERVER] shutdown_summary {json.dumps(shutdown_summary, sort_keys=True)}")
-    print("[SERVER] ---- Bandwidth summary ----")
-    print(f"  elapsed: {elapsed:.2f} s")
-    print(
-        f"  inbound: {totals['bytes_in']} bytes ({totals['bytes_in'] * 8 / elapsed / 1e6:.3f} Mbps)"
+        logger.info(
+            "[SERVER] shutdown_summary %s",
+            json.dumps(shutdown_summary, sort_keys=True),
+        )
+    logger.info("[SERVER] ---- Bandwidth summary ----")
+    logger.info("  elapsed: %.2f s", elapsed)
+    logger.info(
+        "  inbound: %d bytes (%.3f Mbps)",
+        totals["bytes_in"],
+        totals["bytes_in"] * 8 / elapsed / 1e6,
     )
-    print(
-        f"  outbound: {totals['bytes_out']} bytes ({totals['bytes_out'] * 8 / elapsed / 1e6:.3f} Mbps)"
+    logger.info(
+        "  outbound: %d bytes (%.3f Mbps)",
+        totals["bytes_out"],
+        totals["bytes_out"] * 8 / elapsed / 1e6,
     )
-    total = totals['bytes_in'] + totals['bytes_out']
-    print(f"  total: {total} bytes ({total * 8 / elapsed / 1e6:.3f} Mbps)")
-    print("  stage metrics:")
-    print(f"    recv→decode: {stats.recv_to_decode.summary()}")
-    print(f"    decode time: {stats.decode_time.summary()}")
-    print(f"    decode→send: {stats.decode_to_send.summary()}")
+    total = totals["bytes_in"] + totals["bytes_out"]
+    logger.info("  total: %d bytes (%.3f Mbps)", total, total * 8 / elapsed / 1e6)
+    logger.info("  stage metrics:")
+    logger.info("    recv→decode: %s", stats.recv_to_decode.summary())
+    logger.info("    decode time: %s", stats.decode_time.summary())
+    logger.info("    decode→send: %s", stats.decode_to_send.summary())
 
 
 def run_server_legacy(args: argparse.Namespace) -> None:
-    decoder = resolve_executable('draco_decoder', args.decoder, env_var='DRACO_DECODER')
+    decoder = resolve_executable("draco_decoder", args.decoder, env_var="DRACO_DECODER")
     work_dir = ensure_directory(Path(args.work_dir).resolve())
     start_time = time.monotonic()
     bytes_in = 0
     bytes_out = 0
     if args.control_port > 0:
-        print(
-            "[SERVER][LEGACY] WARN: control-port ignored in legacy mode; using single channel"
+        logger.warning(
+            "[SERVER][LEGACY] control-port ignored in legacy mode; using single channel"
         )
     try:
         server = socket.create_server((args.host, args.port), reuse_port=True)
     except OSError as exc:
-        print(f"[SERVER] WARN: reuse_port failed ({exc}), retrying without it")
+        logger.warning("[SERVER] reuse_port failed (%s), retrying without it", exc)
         server = socket.create_server((args.host, args.port))
 
     with server:
-        print(f"[SERVER][LEGACY] Listening on {args.host}:{args.port}")
+        logger.info("[SERVER][LEGACY] Listening on %s:%d", args.host, args.port)
         conn, addr = server.accept()
-        print(f"[SERVER][LEGACY] Connection from {addr}")
+        logger.info("[SERVER][LEGACY] Connection from %s", addr)
         with conn:
             if args.tcp_nodelay:
                 with suppress(OSError):
@@ -1056,7 +1269,9 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                         conn,
                         Message(
                             kind=MSG_EOF,
-                            name=encode_frame_address(None, "final", channel=CONTROL_CHANNEL),
+                            name=encode_frame_address(
+                                None, "final", channel=CONTROL_CHANNEL
+                            ),
                             payload=b"",
                         ),
                     )
@@ -1065,20 +1280,30 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                 if msg.kind != MSG_DATA:
                     continue
                 if address.channel != DATA_CHANNEL:
-                    print(f"[SERVER][LEGACY] WARN: data on control channel: {msg.name}")
+                    logger.warning(
+                        "[SERVER][LEGACY] data on control channel: %s", msg.name
+                    )
                 stem = address.name or "frame"
                 try:
                     protocol.send(
                         conn,
                         Message(
                             kind=MSG_ACK,
-                            name=encode_frame_address(address.sequence, stem, channel=CONTROL_CHANNEL),
+                            name=encode_frame_address(
+                                address.sequence, stem, channel=CONTROL_CHANNEL
+                            ),
                             payload=b"",
                         ),
                     )
-                    _telemetry("send_ack", stem, seq=address.sequence if address.sequence is not None else -1)
+                    _telemetry(
+                        "send_ack",
+                        stem,
+                        seq=address.sequence if address.sequence is not None else -1,
+                    )
                 except Exception as exc:
-                    print(f"[SERVER][LEGACY] WARN: Failed to send ACK for {stem}: {exc}")
+                    logger.warning(
+                        "[SERVER][LEGACY] Failed to send ACK for %s: %s", stem, exc
+                    )
                 bytes_in += len(msg.payload)
                 try:
                     artifact = decode_drc(
@@ -1093,7 +1318,9 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                 except Exception as exc:
                     error_msg = Message(
                         kind=MSG_ERROR,
-                        name=encode_frame_address(address.sequence, stem, channel=CONTROL_CHANNEL),
+                        name=encode_frame_address(
+                            address.sequence, stem, channel=CONTROL_CHANNEL
+                        ),
                         payload=str(exc).encode(),
                     )
                     protocol.send(conn, error_msg)
@@ -1101,7 +1328,9 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                 reply_name = stem if stem.endswith(".decoded") else f"{stem}.decoded"
                 reply = Message(
                     kind=MSG_DATA,
-                    name=encode_frame_address(address.sequence, reply_name, channel=DATA_CHANNEL),
+                    name=encode_frame_address(
+                        address.sequence, reply_name, channel=DATA_CHANNEL
+                    ),
                     payload=artifact.payload,
                 )
                 protocol.send(conn, reply)
@@ -1112,17 +1341,31 @@ def run_server_legacy(args: argparse.Namespace) -> None:
                     conn,
                     Message(
                         kind=MSG_EOF,
-                        name=encode_frame_address(None, "final", channel=CONTROL_CHANNEL),
+                        name=encode_frame_address(
+                            None, "final", channel=CONTROL_CHANNEL
+                        ),
                         payload=b"",
                     ),
                 )
     elapsed = max(time.monotonic() - start_time, 1e-6)
     total = bytes_in + bytes_out
-    print("[SERVER][LEGACY] ---- Bandwidth summary ----")
-    print(f"  elapsed: {elapsed:.2f} s")
-    print(f"  inbound: {bytes_in} bytes ({bytes_in * 8 / elapsed / 1e6:.3f} Mbps)")
-    print(f"  outbound: {bytes_out} bytes ({bytes_out * 8 / elapsed / 1e6:.3f} Mbps)")
-    print(f"  total: {total} bytes ({total * 8 / elapsed / 1e6:.3f} Mbps)")
+    logger.info("[SERVER][LEGACY] ---- Bandwidth summary ----")
+    logger.info("  elapsed: %.2f s", elapsed)
+    logger.info(
+        "  inbound: %d bytes (%.3f Mbps)",
+        bytes_in,
+        bytes_in * 8 / elapsed / 1e6,
+    )
+    logger.info(
+        "  outbound: %d bytes (%.3f Mbps)",
+        bytes_out,
+        bytes_out * 8 / elapsed / 1e6,
+    )
+    logger.info(
+        "  total: %d bytes (%.3f Mbps)",
+        total,
+        total * 8 / elapsed / 1e6,
+    )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -1133,7 +1376,7 @@ def main(argv: list[str] | None = None) -> None:
         asyncio.run(run_server(args))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:

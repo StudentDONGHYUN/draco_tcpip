@@ -99,7 +99,13 @@ def _telemetry(stage: str, frame: str, **details: object) -> None:
     extras = " ".join(f"{key}={value}" for key, value in details.items())
     timestamp = time.monotonic()
     suffix = f" {extras}" if extras else ""
-    print(f"[CLIENT][TELEM] {stage} frame={frame} ts={timestamp:.6f}{suffix}")
+    logger.info(
+        "[CLIENT][TELEM] %s frame=%s ts=%.6f%s",
+        stage,
+        frame,
+        timestamp,
+        suffix,
+    )
 
 
 def _validate_client_config(args: argparse.Namespace) -> int:
@@ -107,7 +113,9 @@ def _validate_client_config(args: argparse.Namespace) -> int:
     if fragment_size and args.protocol != "binary":
         raise ValueError("--tx-fragment-size requires --protocol binary")
     if args.socket_buffer_autotune and args.socket_buffer_kb > 0:
-        raise ValueError("--socket-buffer-autotune cannot be combined with --socket-buffer-kb")
+        raise ValueError(
+            "--socket-buffer-autotune cannot be combined with --socket-buffer-kb"
+        )
     if args.transport != "tcp":
         raise NotImplementedError(
             f"transport '{args.transport}' is reserved; only tcp is implemented in Python client"
@@ -121,30 +129,61 @@ def _log_effective_config(args: argparse.Namespace, fragment_size: int) -> None:
         f"tx_fragment_size={fragment_size} metrics_out={args.metrics_out} "
         f"socket_buffer_autotune={'on' if args.socket_buffer_autotune else 'off'}"
     )
-    print(f"[CLIENT] config: {config_summary}")
+    logger.info("[CLIENT] config: %s", config_summary)
+
+
+_HAS_ASYNCIO_TIMEOUT = hasattr(asyncio, "timeout")
+
+
+class QueueStopped(Exception):
+    """Raised when queue operations should terminate due to cancellation."""
 
 
 async def _put_with_retry(
-    queue: asyncio.Queue,
+    queue: "asyncio.Queue[object] | asyncio.PriorityQueue[object]",
     item: object,
     *,
     stop_event: asyncio.Event | None = None,
+    timeout: float = 0.1,
 ) -> bool:
-    """Insert an item even if the queue is temporarily full (backpressure friendly).
-
-    Returns ``True`` when the item was enqueued.  If ``stop_event`` is provided and
-    becomes set while waiting for space in the queue, ``False`` is returned so the
-    caller can abort the pending operation.
-    """
+    """Insert an item while honouring cancellation signals."""
 
     while True:
         if stop_event is not None and stop_event.is_set():
             return False
         try:
-            queue.put_nowait(item)
+            if _HAS_ASYNCIO_TIMEOUT:
+                async with asyncio.timeout(timeout):
+                    await queue.put(item)
+            else:  # pragma: no cover - fallback for Python < 3.11
+                await asyncio.wait_for(queue.put(item), timeout)
             return True
-        except asyncio.QueueFull:
-            await asyncio.sleep(0.05)
+        except asyncio.TimeoutError:
+            if stop_event is not None and stop_event.is_set():
+                return False
+
+
+async def _queue_get(
+    queue: "asyncio.Queue[object] | asyncio.PriorityQueue[object]",
+    *,
+    stop_event: asyncio.Event | None = None,
+    timeout: float = 0.1,
+) -> object:
+    """Retrieve an item while allowing cooperative cancellation."""
+
+    while True:
+        if stop_event is not None and stop_event.is_set():
+            raise QueueStopped
+        try:
+            if _HAS_ASYNCIO_TIMEOUT:
+                async with asyncio.timeout(timeout):
+                    item = await queue.get()
+            else:  # pragma: no cover - fallback for Python < 3.11
+                item = await asyncio.wait_for(queue.get(), timeout)
+            return item
+        except asyncio.TimeoutError:
+            if stop_event is not None and stop_event.is_set():
+                raise QueueStopped
 
 
 async def _fail_and_signal(
@@ -173,7 +212,9 @@ def _safe_unlink(path: Path) -> None:
         path.unlink()
 
 
-def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: float = 5.0) -> None:
+def _terminate_process(
+    proc: subprocess.Popen | None, name: str, *, timeout: float = 5.0
+) -> None:
     """Best-effort shutdown helper that avoids leaving child processes around."""
 
     if proc is None:
@@ -185,7 +226,7 @@ def _terminate_process(proc: subprocess.Popen | None, name: str, *, timeout: flo
     try:
         proc.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
-        print(f"[CLIENT] WARN: {name} did not exit after terminate, killing")
+        logger.warning("[CLIENT] %s did not exit after terminate, killing", name)
         proc.kill()
         with contextlib.suppress(subprocess.TimeoutExpired):
             proc.wait(timeout=timeout)
@@ -266,7 +307,11 @@ class StageStats:
         if self.count == 0:
             return {"count": 0, "avg_ms": 0.0, "max_ms": 0.0}
         avg = self.total / self.count
-        return {"count": self.count, "avg_ms": avg * 1000.0, "max_ms": self.maximum * 1000.0}
+        return {
+            "count": self.count,
+            "avg_ms": avg * 1000.0,
+            "max_ms": self.maximum * 1000.0,
+        }
 
 
 @dataclass(slots=True)
@@ -383,7 +428,11 @@ class SessionTracker:
         self._reason: str | None = None
         self._lock = asyncio.Lock()
         self._transitions: list[dict[str, str | None]] = [
-            {"state": self._state.value, "reason": None, "ts": f"{time.monotonic():.6f}"}
+            {
+                "state": self._state.value,
+                "reason": None,
+                "ts": f"{time.monotonic():.6f}",
+            }
         ]
 
     @property
@@ -401,16 +450,24 @@ class SessionTracker:
             "transitions": list(self._transitions),
         }
 
-    async def transition(self, target: SessionState, reason: str | None = None) -> SessionState:
+    async def transition(
+        self, target: SessionState, reason: str | None = None
+    ) -> SessionState:
         async with self._lock:
             if target == self._state:
                 if reason and reason != self._reason:
                     self._reason = reason
-                    print(
-                        f"[CLIENT] Session state {self._state.value} (reason updated): {reason}"
+                    logger.info(
+                        "[CLIENT] Session state %s (reason updated): %s",
+                        self._state.value,
+                        reason,
                     )
                     self._transitions.append(
-                        {"state": self._state.value, "reason": reason, "ts": f"{time.monotonic():.6f}"}
+                        {
+                            "state": self._state.value,
+                            "reason": reason,
+                            "ts": f"{time.monotonic():.6f}",
+                        }
                     )
                 return self._state
             if self._state == SessionState.CLOSING and target != SessionState.CLOSING:
@@ -430,9 +487,12 @@ class SessionTracker:
                 "ts": f"{time.monotonic():.6f}",
             }
             self._transitions.append(transition)
-            print(
-                f"[CLIENT] Session state {previous.value} → {target.value}"
-                + (f" ({reason})" if reason else "")
+            suffix = f" ({reason})" if reason else ""
+            logger.info(
+                "[CLIENT] Session state %s → %s%s",
+                previous.value,
+                target.value,
+                suffix,
             )
             return self._state
 
@@ -477,7 +537,9 @@ class WindowController:
         if self.ema_payload == 0.0:
             self.ema_payload = float(payload_size)
         else:
-            self.ema_payload = (1.0 - self.alpha) * self.ema_payload + self.alpha * float(payload_size)
+            self.ema_payload = (
+                1.0 - self.alpha
+            ) * self.ema_payload + self.alpha * float(payload_size)
 
     def observe_ack(self, payload_size: int, rtt: float) -> None:
         if not self.adaptive or payload_size <= 0 or rtt <= 0:
@@ -486,7 +548,9 @@ class WindowController:
         if self.ema_throughput == 0.0:
             self.ema_throughput = throughput
         else:
-            self.ema_throughput = (1.0 - self.alpha) * self.ema_throughput + self.alpha * throughput
+            self.ema_throughput = (
+                1.0 - self.alpha
+            ) * self.ema_throughput + self.alpha * throughput
         if self.ema_rtt == 0.0:
             self.ema_rtt = rtt
         else:
@@ -605,7 +669,9 @@ class ReplyPump(threading.Thread):
             # Event loop might be closed already during shutdown; drop the event.
             pass
 
-    def run(self) -> None:  # pragma: no cover - threading behaviour is timing sensitive.
+    def run(
+        self,
+    ) -> None:  # pragma: no cover - threading behaviour is timing sensitive.
         while not self._stop_event.is_set():
             try:
                 message = self._protocol.recv(self._sock)
@@ -617,7 +683,9 @@ class ReplyPump(threading.Thread):
             if message is None:
                 self._submit(ReplyEvent(kind="closed", channel=self._channel))
                 return
-            self._submit(ReplyEvent(kind="message", message=message, channel=self._channel))
+            self._submit(
+                ReplyEvent(kind="message", message=message, channel=self._channel)
+            )
             if message.kind == MSG_EOF:
                 return
 
@@ -646,20 +714,15 @@ async def _send_control_message(
 class FrameHandle(Protocol):
     name: str
 
-    def ensure_encoder_input(self, work_dir: Path) -> Path:
-        ...
+    def ensure_encoder_input(self, work_dir: Path) -> Path: ...
 
-    def load_source_points(self) -> np.ndarray:
-        ...
+    def load_source_points(self) -> np.ndarray: ...
 
-    def priority_hint(self) -> float:
-        ...
+    def priority_hint(self) -> float: ...
 
-    def on_consumed(self) -> None:
-        ...
+    def on_consumed(self) -> None: ...
 
-    def on_aborted(self) -> None:
-        ...
+    def on_aborted(self) -> None: ...
 
 
 class FilesystemFrameHandle:
@@ -674,7 +737,9 @@ class FilesystemFrameHandle:
         except FileNotFoundError:
             self._priority = time.time()
 
-    def ensure_encoder_input(self, work_dir: Path) -> Path:  # noqa: ARG002 - interface requirement
+    def ensure_encoder_input(
+        self, work_dir: Path
+    ) -> Path:  # noqa: ARG002 - interface requirement
         return self._path
 
     def load_source_points(self) -> np.ndarray:
@@ -750,7 +815,10 @@ class FilesystemFrameSupplier:
         self._watcher = watcher
 
     def drain_initial(self) -> list[FrameHandle]:
-        return [FilesystemFrameHandle(self._watcher, path) for path in self._watcher.drain_initial()]
+        return [
+            FilesystemFrameHandle(self._watcher, path)
+            for path in self._watcher.drain_initial()
+        ]
 
     def wait_for_new(self, timeout: float) -> list[FrameHandle]:
         paths = self._watcher.wait_for_new(timeout)
@@ -786,8 +854,16 @@ async def capture_stage(
         initial = frame_supplier.drain_initial()
         for handle in initial:
             sequence = next(_sequence_ids)
-            payload = CapturePayload(sequence=sequence, handle=handle, captured_at=time.monotonic())
-            await capture_queue.put((handle.priority_hint(), next(_capture_ticket), payload))
+            payload = CapturePayload(
+                sequence=sequence, handle=handle, captured_at=time.monotonic()
+            )
+            enqueued = await _put_with_retry(
+                capture_queue,
+                (handle.priority_hint(), next(_capture_ticket), payload),
+                stop_event=stop_event,
+            )
+            if not enqueued:
+                break
             depth = capture_queue.qsize()
             traffic.capture_depth_peak = max(traffic.capture_depth_peak, depth)
             _telemetry("capture_enqueue", handle.name, depth=depth, seq=sequence)
@@ -798,11 +874,23 @@ async def capture_stage(
                 empty_rounds = 0
                 for handle in handles:
                     sequence = next(_sequence_ids)
-                    payload = CapturePayload(sequence=sequence, handle=handle, captured_at=time.monotonic())
-                    await capture_queue.put((handle.priority_hint(), next(_capture_ticket), payload))
+                    payload = CapturePayload(
+                        sequence=sequence, handle=handle, captured_at=time.monotonic()
+                    )
+                    enqueued = await _put_with_retry(
+                        capture_queue,
+                        (handle.priority_hint(), next(_capture_ticket), payload),
+                        stop_event=stop_event,
+                    )
+                    if not enqueued:
+                        break
                     depth = capture_queue.qsize()
                     traffic.capture_depth_peak = max(traffic.capture_depth_peak, depth)
-                    _telemetry("capture_enqueue", handle.name, depth=depth, seq=sequence)
+                    _telemetry(
+                        "capture_enqueue", handle.name, depth=depth, seq=sequence
+                    )
+                if stop_event.is_set():
+                    break
             else:
                 empty_rounds += 1
             if (
@@ -835,13 +923,20 @@ async def encode_worker(
     """Encode frames pulled from the capture queue and forward them."""
 
     while not stop_event.is_set():
-        priority, _, payload = await capture_queue.get()
+        try:
+            priority, _, payload = await _queue_get(
+                capture_queue, stop_event=stop_event
+            )
+        except QueueStopped:
+            break
         if payload is None:
             capture_queue.task_done()
             # Always deliver the sentinel so the network sender unblocks, even when
             # shutdown has already been requested via ``stop_event``.
             await _put_with_retry(network_queue, None)
-            traffic.network_depth_peak = max(traffic.network_depth_peak, network_queue.qsize())
+            traffic.network_depth_peak = max(
+                traffic.network_depth_peak, network_queue.qsize()
+            )
             break
         handle = payload.handle
         sequence = payload.sequence
@@ -854,7 +949,9 @@ async def encode_worker(
             seq=sequence,
         )
         try:
-            encoder_input = await asyncio.to_thread(handle.ensure_encoder_input, work_dir)
+            encoder_input = await asyncio.to_thread(
+                handle.ensure_encoder_input, work_dir
+            )
             result = await asyncio.to_thread(
                 encode_frame,
                 encoder_input,
@@ -868,7 +965,7 @@ async def encode_worker(
             encoded_at = time.monotonic()
             stats.capture_to_encode.record(encode_start - captured_at)
             stats.encode_time.record(encoded_at - encode_start)
-            print(
+            logger.info(
                 format_encode_log(
                     result,
                     source=Path(encoder_input),
@@ -897,12 +994,14 @@ async def encode_worker(
             )
             if not await _put_with_retry(network_queue, encoded, stop_event=stop_event):
                 break
-            traffic.network_depth_peak = max(traffic.network_depth_peak, network_queue.qsize())
+            traffic.network_depth_peak = max(
+                traffic.network_depth_peak, network_queue.qsize()
+            )
         except asyncio.CancelledError:
             stop_event.set()
             raise
         except Exception as exc:
-            print(f"[CLIENT] ENCODE FAIL {handle.name}: {exc}")
+            logger.exception("[CLIENT] ENCODE FAIL %s: %s", handle.name, exc)
             with contextlib.suppress(Exception):
                 handle.on_consumed()
             detail = f"encode failure: {exc}"
@@ -914,8 +1013,9 @@ async def encode_worker(
                     detail=detail,
                     frame=handle.name,
                 ),
-                stop_event=stop_event,
             )
+            stop_event.set()
+            break
         finally:
             capture_queue.task_done()
 
@@ -950,7 +1050,10 @@ async def network_sender(
     encode_finished = 0
     eof_sent = False
     drain_deadline: float | None = None
-    streaming_started = lifecycle.state not in (StreamState.INIT, StreamState.HANDSHAKING)
+    streaming_started = lifecycle.state not in (
+        StreamState.INIT,
+        StreamState.HANDSHAKING,
+    )
 
     async def _wait_with_health(predicate: Callable[[], bool]) -> bool:
         timeout_s = 0.5
@@ -975,7 +1078,10 @@ async def network_sender(
         return not predicate()
 
     while not stop_event.is_set():
-        item = await network_queue.get()
+        try:
+            item = await _queue_get(network_queue, stop_event=stop_event)
+        except QueueStopped:
+            break
         if item is None:
             encode_finished += 1
             network_queue.task_done()
@@ -1005,8 +1111,10 @@ async def network_sender(
                         lifecycle.transition(StreamState.DRAINING, reason="EOF sent")
                         pending_count = len(inflight)
                         pending_acks = len(acks_pending)
-                        print(
-                            f"[CLIENT] EOF sent to server (pending={pending_count} pending_acks={pending_acks})"
+                        logger.info(
+                            "[CLIENT] EOF sent to server (pending=%d pending_acks=%d)",
+                            pending_count,
+                            pending_acks,
                         )
                         _telemetry("send_eof", "all")
                         eof_sent = True
@@ -1014,7 +1122,7 @@ async def network_sender(
                         with contextlib.suppress(OSError):
                             sock.shutdown(socket.SHUT_WR)
                     except Exception as exc:
-                        print(f"[CLIENT] ERROR sending EOF marker: {exc}")
+                        logger.error("[CLIENT] ERROR sending EOF marker: %s", exc)
                         await _fail_and_signal(
                             lifecycle,
                             stop_event,
@@ -1088,7 +1196,7 @@ async def network_sender(
                 await asyncio.to_thread(protocol.send, sock, message)
                 traffic.record_send(len(fragment.payload))
         except Exception as exc:
-            print(f"[CLIENT] ERROR sending {encoded.handle.name}: {exc}")
+            logger.error("[CLIENT] ERROR sending %s: %s", encoded.handle.name, exc)
             with contextlib.suppress(Exception):
                 encoded.handle.on_aborted()
             async with inflight_condition:
@@ -1123,7 +1231,11 @@ async def network_sender(
         if ack_deadlines.push(encoded.sequence, sent_at + ack_timeout_s):
             ack_deadline_event.set()
         traffic.sent += len(encoded.payload)
-        print(f"[CLIENT] Sent {encoded.handle.name} ({len(encoded.payload)} bytes)")
+        logger.info(
+            "[CLIENT] Sent %s (%d bytes)",
+            encoded.handle.name,
+            len(encoded.payload),
+        )
         async with inflight_condition:
             inflight_condition.notify_all()
         network_queue.task_done()
@@ -1169,16 +1281,22 @@ async def reply_consumer(
     async def emit_result(result: DecodedResult) -> None:
         ctx = result.context
         base_name = result.base_name or ctx.handle.name
-        resp_format = result.metrics.get("extra", {}).get("resp_format", default_resp_format)
+        resp_format = result.metrics.get("extra", {}).get(
+            "resp_format", default_resp_format
+        )
         suffix = f".{resp_format}"
-        decoded_name = base_name if base_name.endswith(suffix) else f"{base_name}{suffix}"
+        decoded_name = (
+            base_name if base_name.endswith(suffix) else f"{base_name}{suffix}"
+        )
         decoded_path = decoded_dir / decoded_name
         if save_decoded:
             await asyncio.to_thread(decoded_path.write_bytes, result.decoded)
         if ctx.orig_points is None:
             ctx.orig_points = await asyncio.to_thread(ctx.handle.load_source_points)
         pts_src = ctx.orig_points
-        pts_dec = await asyncio.to_thread(_load_decoded_points, result.decoded, resp_format)
+        pts_dec = await asyncio.to_thread(
+            _load_decoded_points, result.decoded, resp_format
+        )
         if ctx.orig_metrics is None:
             ctx.orig_metrics = await asyncio.to_thread(
                 pointcloud_metrics.compute,
@@ -1211,18 +1329,28 @@ async def reply_consumer(
             return abs(a - b) / abs(b)
 
         quality = {
-            "point_count_abs": abs(int(client_metrics["point_count"]) - int(orig["point_count"])),
+            "point_count_abs": abs(
+                int(client_metrics["point_count"]) - int(orig["point_count"])
+            ),
             "centroid_l2": float(
                 np.linalg.norm(
                     np.asarray(client_metrics["centroid"], dtype=float)
                     - np.asarray(orig["centroid"], dtype=float)
                 )
             ),
-            "scale_diag_rel": _rel_delta(float(client_metrics["scale_diag"]), float(orig["scale_diag"])),
-            "avg_nn_rel": _rel_delta(float(client_metrics["avg_nn_dist"]), float(orig["avg_nn_dist"])),
+            "scale_diag_rel": _rel_delta(
+                float(client_metrics["scale_diag"]), float(orig["scale_diag"])
+            ),
+            "avg_nn_rel": _rel_delta(
+                float(client_metrics["avg_nn_dist"]), float(orig["avg_nn_dist"])
+            ),
             "chamfer_est": chamfer_value,
         }
-        breaches = {key: quality[key] > value for key, value in quality_thresholds.items() if key in quality}
+        breaches = {
+            key: quality[key] > value
+            for key, value in quality_thresholds.items()
+            if key in quality
+        }
         if any(breaches.values()):
             stats.error_frames += 1
         status = "WARN" if any(breaches.values()) else "INFO"
@@ -1231,14 +1359,11 @@ async def reply_consumer(
             f"centroid_l2={quality['centroid_l2']:.5f} scale_rel={quality['scale_diag_rel']:.5f} "
             f"avg_nn_rel={quality['avg_nn_rel']:.5f} chamfer={quality['chamfer_est']:.5f}"
         )
-        print(f"[CLIENT][QUALITY][{status}] {summary}")
+        log_fn = logger.warning if status == "WARN" else logger.info
+        log_fn("[CLIENT][QUALITY][%s] %s", status, summary)
         if print_metrics:
-            print(
-                f"[CLIENT] Server metrics {decoded_name}: {server_metrics}"
-            )
-            print(
-                f"[CLIENT] Client metrics {decoded_name}: {client_metrics}"
-            )
+            logger.info("[CLIENT] Server metrics %s: %s", decoded_name, server_metrics)
+            logger.info("[CLIENT] Client metrics %s: %s", decoded_name, client_metrics)
         if quality_report_path is not None:
             record = {
                 "sequence": ctx.sequence,
@@ -1264,7 +1389,7 @@ async def reply_consumer(
         while True:
             if next_sequence in skipped_sequences:
                 detail = skipped_sequences.pop(next_sequence)
-                print(f"[CLIENT] Skipping frame seq={next_sequence}: {detail}")
+                logger.info("[CLIENT] Skipping frame seq=%d: %s", next_sequence, detail)
                 stats.skipped_frames += 1
                 skipped += 1
                 next_sequence += 1
@@ -1284,7 +1409,7 @@ async def reply_consumer(
             if skipped_sequences:
                 for sequence in sorted(skipped_sequences):
                     detail = skipped_sequences[sequence]
-                    print(f"[CLIENT] Skipped pending seq={sequence}: {detail}")
+                    logger.info("[CLIENT] Skipped pending seq=%d: %s", sequence, detail)
                     stats.skipped_frames += 1
                     skipped += 1
                 skipped_sequences.clear()
@@ -1307,7 +1432,9 @@ async def reply_consumer(
             await task
 
     pending_get: asyncio.Task[ReplyEvent] = asyncio.create_task(reply_queue.get())
-    heartbeat_task: asyncio.Task[None] = asyncio.create_task(asyncio.sleep(CONTROL_POLL_INTERVAL))
+    heartbeat_task: asyncio.Task[None] = asyncio.create_task(
+        asyncio.sleep(CONTROL_POLL_INTERVAL)
+    )
     update_task: asyncio.Task[None] = asyncio.create_task(ack_deadline_event.wait())
     stop_task: asyncio.Task[None] = asyncio.create_task(stop_event.wait())
     deadline_task: asyncio.Task[None] | None = None
@@ -1324,11 +1451,18 @@ async def reply_consumer(
                     deadline_task = asyncio.create_task(asyncio.sleep(delay))
                 need_reschedule = False
 
-            wait_tasks: set[asyncio.Task[object]] = {pending_get, heartbeat_task, update_task, stop_task}
+            wait_tasks: set[asyncio.Task[object]] = {
+                pending_get,
+                heartbeat_task,
+                update_task,
+                stop_task,
+            }
             if deadline_task is not None:
                 wait_tasks.add(deadline_task)
 
-            done, _ = await asyncio.wait(wait_tasks, return_when=asyncio.FIRST_COMPLETED)
+            done, _ = await asyncio.wait(
+                wait_tasks, return_when=asyncio.FIRST_COMPLETED
+            )
 
             if stop_task in done:
                 break
@@ -1398,7 +1532,9 @@ async def reply_consumer(
                 continue
 
             if heartbeat_task in done:
-                heartbeat_task = asyncio.create_task(asyncio.sleep(CONTROL_POLL_INTERVAL))
+                heartbeat_task = asyncio.create_task(
+                    asyncio.sleep(CONTROL_POLL_INTERVAL)
+                )
                 if stop_event.is_set():
                     break
                 now_ns = time.monotonic_ns()
@@ -1446,7 +1582,12 @@ async def reply_consumer(
                         async with inflight_condition:
                             acks_pending.discard(sequence)
                             inflight_condition.notify_all()
-                    print(f"[CLIENT] Local skip seq={sequence}: {frame_name} ({detail})")
+                    logger.warning(
+                        "[CLIENT] Local skip seq=%s: %s (%s)",
+                        sequence,
+                        frame_name,
+                        detail,
+                    )
                     stats.error_frames += 1
                     await drain_ready()
                     reply_queue.task_done()
@@ -1455,11 +1596,15 @@ async def reply_consumer(
                     channel = event.channel or DATA_CHANNEL
                     detail = str(event.error)
                     if isinstance(event.error, ProtocolError):
-                        print(
-                            f"[CLIENT] PROTOCOL ERROR on {channel}: {detail} (binary framing)"
+                        logger.error(
+                            "[CLIENT] PROTOCOL ERROR on %s: %s (binary framing)",
+                            channel,
+                            detail,
                         )
                     else:
-                        print(f"[CLIENT] ERROR from reply pump ({channel}): {detail}")
+                        logger.error(
+                            "[CLIENT] ERROR from reply pump (%s): %s", channel, detail
+                        )
                     control_plane.on_error(ErrorCode.INTERNAL_ERROR, detail)
                     await session.transition(
                         SessionState.DEGRADED, f"reply pump error ({channel})"
@@ -1476,7 +1621,9 @@ async def reply_consumer(
                     break
                 if event.kind == "closed":
                     channel = event.channel or DATA_CHANNEL
-                    print(f"[CLIENT] Connection closed by server on {channel} channel")
+                    logger.error(
+                        "[CLIENT] Connection closed by server on %s channel", channel
+                    )
                     control_plane.on_error(
                         ErrorCode.PROTOCOL_VIOLATION, "connection closed"
                     )
@@ -1509,7 +1656,11 @@ async def reply_consumer(
                     continue
 
                 if message.kind == MSG_ACK:
-                    sequence = message.sequence if message.sequence is not None else address.sequence
+                    sequence = (
+                        message.sequence
+                        if message.sequence is not None
+                        else address.sequence
+                    )
                     if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
                         sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
                     if sequence is not None and ack_deadlines.cancel(sequence):
@@ -1536,7 +1687,9 @@ async def reply_consumer(
                                 )
                         except ControlPlaneError as exc:
                             logger.error("ACK processing error: %s", exc)
-                            control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
+                            control_plane.on_error(
+                                ErrorCode.PROTOCOL_VIOLATION, str(exc)
+                            )
                             await _fail_and_signal(
                                 lifecycle,
                                 stop_event,
@@ -1550,7 +1703,11 @@ async def reply_consumer(
                         "recv_ack",
                         address.name or (ctx.handle.name if ctx else "unknown"),
                         seq=sequence,
-                        latency_ms=(ctx.ack_at - ctx.sent_at) * 1000.0 if ctx and ctx.ack_at else None,
+                        latency_ms=(
+                            (ctx.ack_at - ctx.sent_at) * 1000.0
+                            if ctx and ctx.ack_at
+                            else None
+                        ),
                     )
                     reply_queue.task_done()
                     continue
@@ -1561,7 +1718,7 @@ async def reply_consumer(
                 try:
                     control_plane.on_eof_received()
                 except ControlPlaneError as exc:
-                    print(f"[CLIENT] ERROR: {exc}")
+                    logger.error("[CLIENT] ERROR: %s", exc)
                     control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
                 lifecycle.transition(StreamState.DRAINING, reason="server EOF")
                 if control_plane.state == ControlState.TERMINATED:
@@ -1573,9 +1730,10 @@ async def reply_consumer(
                     pending_acks_count = len(acks_pending)
                     acks_pending.clear()
                     inflight_condition.notify_all()
-                print(
-                    "[CLIENT] EOF received from server "
-                    f"(pending={pending_count} pending_acks={pending_acks_count})"
+                logger.info(
+                    "[CLIENT] EOF received from server (pending=%d pending_acks=%d)",
+                    pending_count,
+                    pending_acks_count,
                 )
                 _telemetry("recv_eof", "all")
                 await drain_ready(force=True)
@@ -1584,30 +1742,50 @@ async def reply_consumer(
 
             async with inflight_condition:
                 ctx = None
-                sequence = message.sequence if message.sequence is not None else address.sequence
+                sequence = (
+                    message.sequence
+                    if message.sequence is not None
+                    else address.sequence
+                )
                 if sequence is not None:
                     ctx = inflight.pop(sequence, None)
                     acks_pending.discard(sequence)
                 if ctx is None:
                     for key, candidate in list(inflight.items()):
-                        if candidate.handle.name == address.name or candidate.sequence == sequence:
+                        if (
+                            candidate.handle.name == address.name
+                            or candidate.sequence == sequence
+                        ):
                             ctx = inflight.pop(key)
                             acks_pending.discard(candidate.sequence)
                             break
                 inflight_condition.notify_all()
             if ctx is None:
-                print(f"[CLIENT] WARN: Received reply for unknown frame {message.name}")
+                logger.warning(
+                    "[CLIENT] Received reply for unknown frame %s", message.name
+                )
                 reply_queue.task_done()
                 continue
 
             if message.kind == MSG_ERROR:
-                detail = body.decode("utf-8", errors="replace") if body else ErrorCode.INTERNAL_ERROR.name
-                print(f"[CLIENT] SERVER ERROR for seq={ctx.sequence}: {detail}")
+                detail = (
+                    body.decode("utf-8", errors="replace")
+                    if body
+                    else ErrorCode.INTERNAL_ERROR.name
+                )
+                logger.error(
+                    "[CLIENT] SERVER ERROR for seq=%s: %s", ctx.sequence, detail
+                )
                 stats.error_frames += 1
                 skipped_sequences[ctx.sequence] = detail
                 control_plane.on_error(ErrorCode.INTERNAL_ERROR, detail)
-                await session.transition(SessionState.DEGRADED, f"server error {ErrorCode.INTERNAL_ERROR.name}")
-                _telemetry("recv_error", address.name or str(ctx.sequence), detail=detail)
+                await session.transition(
+                    SessionState.DEGRADED,
+                    f"server error {ErrorCode.INTERNAL_ERROR.name}",
+                )
+                _telemetry(
+                    "recv_error", address.name or str(ctx.sequence), detail=detail
+                )
                 with contextlib.suppress(Exception):
                     ctx.handle.on_aborted()
                 await _fail_and_signal(
@@ -1623,30 +1801,46 @@ async def reply_consumer(
             if use_binary and message.fragmented and ctx.sequence is not None:
                 bucket = fragment_buffer.setdefault(
                     ctx.sequence,
-                    {"chunks": {}, "total": message.fragments_total or 1, "expected": message.frame_payload_len},
+                    {
+                        "chunks": {},
+                        "total": message.fragments_total or 1,
+                        "expected": message.frame_payload_len,
+                    },
                 )
                 bucket["chunks"][message.fragment_index or 0] = body
                 if len(bucket["chunks"]) < bucket["total"]:
                     reply_queue.task_done()
                     continue
-                ordered = [bucket["chunks"][idx] for idx in range(bucket["total"]) if idx in bucket["chunks"]]
+                ordered = [
+                    bucket["chunks"][idx]
+                    for idx in range(bucket["total"])
+                    if idx in bucket["chunks"]
+                ]
                 body = b"".join(ordered)
                 fragment_buffer.pop(ctx.sequence, None)
 
             try:
                 header, decoded_payload, metrics_payload = parse_response_payload(body)
             except ValueError as exc:
-                print(
-                    f"[CLIENT] ERROR parsing response for seq={ctx.sequence}: {exc}"
+                logger.error(
+                    "[CLIENT] ERROR parsing response for seq=%s: %s",
+                    ctx.sequence,
+                    exc,
                 )
                 stats.error_frames += 1
                 reply_queue.task_done()
                 continue
             try:
-                metrics = json.loads(metrics_payload.decode("utf-8")) if metrics_payload else {}
+                metrics = (
+                    json.loads(metrics_payload.decode("utf-8"))
+                    if metrics_payload
+                    else {}
+                )
             except json.JSONDecodeError as exc:
-                print(
-                    f"[CLIENT] ERROR decoding metrics JSON for seq={ctx.sequence}: {exc}"
+                logger.error(
+                    "[CLIENT] ERROR decoding metrics JSON for seq=%s: %s",
+                    ctx.sequence,
+                    exc,
                 )
                 stats.error_frames += 1
                 reply_queue.task_done()
@@ -1677,8 +1871,9 @@ async def reply_consumer(
                 await emit_result(result)
             else:
                 if result.sequence < next_sequence:
-                    print(
-                        f"[CLIENT] WARN: Late arrival for already published seq={result.sequence}, dropping"
+                    logger.warning(
+                        "[CLIENT] Late arrival for already published seq=%s, dropping",
+                        result.sequence,
                     )
                 else:
                     reorder_buffer[result.sequence] = result
@@ -1688,8 +1883,10 @@ async def reply_consumer(
         await session.transition(SessionState.DEGRADED, "reply consumer cancelled")
         flushed, skipped = await drain_ready(force=True)
         if flushed or skipped:
-            print(
-                f"[CLIENT] Reply consumer cancelled; drained={flushed} skipped={skipped}"
+            logger.warning(
+                "[CLIENT] Reply consumer cancelled; drained=%d skipped=%d",
+                flushed,
+                skipped,
             )
         async with inflight_condition:
             acks_pending.clear()
@@ -1698,8 +1895,10 @@ async def reply_consumer(
     except Exception as exc:
         await session.transition(SessionState.DEGRADED, f"reply consumer error: {exc}")
         flushed, skipped = await drain_ready(force=True)
-        print(
-            f"[CLIENT] ERROR in reply consumer tail drain: drained={flushed} skipped={skipped}"
+        logger.error(
+            "[CLIENT] ERROR in reply consumer tail drain: drained=%d skipped=%d",
+            flushed,
+            skipped,
         )
         async with inflight_condition:
             acks_pending.clear()
@@ -1718,6 +1917,7 @@ async def reply_consumer(
         await _cancel_task(stop_task)
         heartbeat_watch.touch()
 
+
 async def monitor_process(
     proc: subprocess.Popen | None,
     event: asyncio.Event,
@@ -1734,6 +1934,7 @@ async def monitor_process(
             await asyncio.sleep(0.5)
     finally:
         event.set()
+
 
 try:  # NOTE: Prefer inotify when available to honor event-driven spool monitoring.
     from inotify_simple import INotify, flags as inotify_flags
@@ -1768,9 +1969,7 @@ class SpoolWatcher:
                 | inotify_flags.MOVED_TO
                 | inotify_flags.CREATE
             )
-            self._watch_descriptor = self._inotify.add_watch(
-                str(self.directory), mask
-            )
+            self._watch_descriptor = self._inotify.add_watch(str(self.directory), mask)
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
@@ -1860,7 +2059,6 @@ class SpoolWatcher:
         self._retired_set.add(name)
 
 
-
 def launch_bag_to_ply(
     args: argparse.Namespace,
     ply_dir: Path,
@@ -1869,162 +2067,255 @@ def launch_bag_to_ply(
     shared_memory_port: int | None = None,
     shared_memory_only: bool = False,
 ) -> subprocess.Popen:
-    cmd = [sys.executable, '-m', 'draco_roundtrip.io.bag_recorder',
-           '--topic', args.topic,
-           '--out', str(ply_dir),
-           '--prefix', args.prefix,
-           '--idle-timeout-sec', str(args.idle_timeout)]
+    cmd = [
+        sys.executable,
+        "-m",
+        "draco_roundtrip.io.bag_recorder",
+        "--topic",
+        args.topic,
+        "--out",
+        str(ply_dir),
+        "--prefix",
+        args.prefix,
+        "--idle-timeout-sec",
+        str(args.idle_timeout),
+    ]
     if args.best_effort:
-        cmd.append('--best-effort')
+        cmd.append("--best-effort")
     if args.max_frames:
-        cmd += ['--max-frames', str(args.max_frames)]
+        cmd += ["--max-frames", str(args.max_frames)]
     if shared_memory_host and shared_memory_port:
         cmd += [
-            '--shared-memory-host',
+            "--shared-memory-host",
             shared_memory_host,
-            '--shared-memory-port',
+            "--shared-memory-port",
             str(shared_memory_port),
         ]
         if shared_memory_only:
-            cmd.append('--shared-memory-only')
+            cmd.append("--shared-memory-only")
     elif shared_memory_only:
-        raise ValueError('shared_memory_only requires shared memory host/port')
+        raise ValueError("shared_memory_only requires shared memory host/port")
     return subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Streaming client with live playback")
-    ap.add_argument('--bag', required=True)
-    ap.add_argument('--topic', required=True)
-    ap.add_argument('--prefix', required=True)
-    ap.add_argument('--layout-profile', default=None,
-                    help='Name or path of a layout profile (configs/*.profile.{yaml,json})')
-    ap.add_argument('--data-root', default=None,
-                    help='Base directory for generated artifacts (overrides profile/data root)')
-    ap.add_argument('--ply-dir', default=None,
-                    help='Override the spool directory for captured PLY frames')
+    ap.add_argument("--bag", required=True)
+    ap.add_argument("--topic", required=True)
+    ap.add_argument("--prefix", required=True)
     ap.add_argument(
-        '--spool-gc-window',
+        "--layout-profile",
+        default=None,
+        help="Name or path of a layout profile (configs/*.profile.{yaml,json})",
+    )
+    ap.add_argument(
+        "--data-root",
+        default=None,
+        help="Base directory for generated artifacts (overrides profile/data root)",
+    )
+    ap.add_argument(
+        "--ply-dir",
+        default=None,
+        help="Override the spool directory for captured PLY frames",
+    )
+    ap.add_argument(
+        "--spool-gc-window",
         type=int,
         default=0,
-        help='Maximum number of discovered spool files to remember before pruning (0 disables)',
+        help="Maximum number of discovered spool files to remember before pruning (0 disables)",
     )
     add_encoder_arguments(
         ap,
-        hint_option='--encoder',
-        hint_dest='encoder',
-        extra_option='--encoder-extra',
-        extra_dest='encoder_extra',
+        hint_option="--encoder",
+        hint_dest="encoder",
+        extra_option="--encoder-extra",
+        extra_dest="encoder_extra",
     )
-    ap.add_argument('--idle-timeout', type=float, default=10.0)
-    ap.add_argument('--max-frames', type=int, default=0)
-    ap.add_argument('--best-effort', action='store_true')
-    ap.add_argument('--work-dir', default=None,
-                    help='Override temporary directory for encoder scratch data')
-    ap.add_argument('--decoded-dir', default=None,
-                    help='Override directory where decoded frames from the server are stored')
-    ap.add_argument('--quality-thresholds', default='{}',
-                    help='JSON object describing max deltas for quality metrics (empty for informational only)')
-    ap.add_argument('--quality-report-dir', default='artifacts/quality',
-                    help='Directory where per-frame quality JSONL reports are written')
-    ap.add_argument('--no-save-decoded', action='store_true',
-                    help='Do not persist decoded responses from the server to disk')
-    ap.add_argument('--server-host', default='127.0.0.1')
-    ap.add_argument('--server-port', type=int, default=5000)
-    ap.add_argument('--control-port', type=int, default=0,
-                    help='Optional TCP port for a dedicated control-plane connection (0 disables)')
-    ap.add_argument('--play-frame-id', default='lidar_link')
-    ap.add_argument('--play-topic-prefix', default='stream_pair')
-    ap.add_argument('--play-hz', type=float, default=10.0)
-    ap.add_argument('--play-sample', type=int, default=50000)
-    ap.add_argument('--metrics-sample', type=int, default=50000,
-                    help='Maximum number of points sampled for client-side metrics (0 means use all points)')
-    ap.add_argument('--resp-format', choices=('ply', 'pcd'), default='ply',
-                    help='Expected format for decoded payloads returned by the server (default: %(default)s)')
-    ap.add_argument('--qos-override', default=None,
-                    help='Override QoS profile file. Defaults to layout profile or package configs')
-    ap.add_argument('--socket-timeout', type=float, default=15.0,
-                    help='Timeout (seconds) for socket operations; 0 disables the safeguard')
-    protocol_help = available_protocols()
-    ap.add_argument('--protocol',
-                    choices=sorted(protocol_help.keys()),
-                    default='binary',
-                    help='Framing protocol to use (default: %(default)s). Options: '
-                    + ', '.join(f"{name}={desc}" for name, desc in protocol_help.items()))
+    ap.add_argument("--idle-timeout", type=float, default=10.0)
+    ap.add_argument("--max-frames", type=int, default=0)
+    ap.add_argument("--best-effort", action="store_true")
     ap.add_argument(
-        '--transport',
-        choices=('tcp', 'quic', 'udp_fec'),
-        default='tcp',
-        help='Transport layer for data plane. tcp만 구현되어 있으며 quic/udp_fec는 예약 상태입니다.',
+        "--work-dir",
+        default=None,
+        help="Override temporary directory for encoder scratch data",
     )
     ap.add_argument(
-        '--tx-fragment-size',
+        "--decoded-dir",
+        default=None,
+        help="Override directory where decoded frames from the server are stored",
+    )
+    ap.add_argument(
+        "--quality-thresholds",
+        default="{}",
+        help="JSON object describing max deltas for quality metrics (empty for informational only)",
+    )
+    ap.add_argument(
+        "--quality-report-dir",
+        default="artifacts/quality",
+        help="Directory where per-frame quality JSONL reports are written",
+    )
+    ap.add_argument(
+        "--no-save-decoded",
+        action="store_true",
+        help="Do not persist decoded responses from the server to disk",
+    )
+    ap.add_argument("--server-host", default="127.0.0.1")
+    ap.add_argument("--server-port", type=int, default=5000)
+    ap.add_argument(
+        "--control-port",
         type=int,
         default=0,
-        help='Binary 프로토콜에서 payload를 MTU 안전 조각으로 분할한다 (0은 비활성).',
+        help="Optional TCP port for a dedicated control-plane connection (0 disables)",
     )
-    ap.add_argument('--max-inflight', '--max-pending', dest='max_inflight', type=int, default=4,
-                    help='Upper bound on in-flight frames awaiting ACK/decoded replies')
-    ap.add_argument('--initial-inflight', type=int, default=None,
-                    help='Initial TX window before adaptive control adjusts it (defaults to max)')
-    ap.add_argument('--adaptive-window', action='store_true',
-                    help='Enable RTT/throughput based TX window adaptation')
-    ap.add_argument('--window-ema-alpha', type=float, default=0.2,
-                    help='EMA smoothing factor for adaptive window telemetry (0-1)')
-    ap.add_argument('--heartbeat-timeout', type=float, default=10.0,
-                    help='Fail the session if no ACK/heartbeat is observed within this many seconds')
+    ap.add_argument("--play-frame-id", default="lidar_link")
+    ap.add_argument("--play-topic-prefix", default="stream_pair")
+    ap.add_argument("--play-hz", type=float, default=10.0)
+    ap.add_argument("--play-sample", type=int, default=50000)
     ap.add_argument(
-        '--ack-timeout',
+        "--metrics-sample",
+        type=int,
+        default=50000,
+        help="Maximum number of points sampled for client-side metrics (0 means use all points)",
+    )
+    ap.add_argument(
+        "--resp-format",
+        choices=("ply", "pcd"),
+        default="ply",
+        help="Expected format for decoded payloads returned by the server (default: %(default)s)",
+    )
+    ap.add_argument(
+        "--qos-override",
+        default=None,
+        help="Override QoS profile file. Defaults to layout profile or package configs",
+    )
+    ap.add_argument(
+        "--socket-timeout",
+        type=float,
+        default=15.0,
+        help="Timeout (seconds) for socket operations; 0 disables the safeguard",
+    )
+    protocol_help = available_protocols()
+    ap.add_argument(
+        "--protocol",
+        choices=sorted(protocol_help.keys()),
+        default="binary",
+        help="Framing protocol to use (default: %(default)s). Options: "
+        + ", ".join(f"{name}={desc}" for name, desc in protocol_help.items()),
+    )
+    ap.add_argument(
+        "--transport",
+        choices=("tcp", "quic", "udp_fec"),
+        default="tcp",
+        help="Transport layer for data plane. tcp만 구현되어 있으며 quic/udp_fec는 예약 상태입니다.",
+    )
+    ap.add_argument(
+        "--tx-fragment-size",
+        type=int,
+        default=0,
+        help="Binary 프로토콜에서 payload를 MTU 안전 조각으로 분할한다 (0은 비활성).",
+    )
+    ap.add_argument(
+        "--max-inflight",
+        "--max-pending",
+        dest="max_inflight",
+        type=int,
+        default=4,
+        help="Upper bound on in-flight frames awaiting ACK/decoded replies",
+    )
+    ap.add_argument(
+        "--initial-inflight",
+        type=int,
+        default=None,
+        help="Initial TX window before adaptive control adjusts it (defaults to max)",
+    )
+    ap.add_argument(
+        "--adaptive-window",
+        action="store_true",
+        help="Enable RTT/throughput based TX window adaptation",
+    )
+    ap.add_argument(
+        "--window-ema-alpha",
+        type=float,
+        default=0.2,
+        help="EMA smoothing factor for adaptive window telemetry (0-1)",
+    )
+    ap.add_argument(
+        "--heartbeat-timeout",
+        type=float,
+        default=10.0,
+        help="Fail the session if no ACK/heartbeat is observed within this many seconds",
+    )
+    ap.add_argument(
+        "--ack-timeout",
         type=float,
         default=0.5,
-        help='Base ACK timeout in seconds before adaptive adjustments (minimum clamp)',
+        help="Base ACK timeout in seconds before adaptive adjustments (minimum clamp)",
     )
     ap.add_argument(
-        '--ack-timeout-min',
+        "--ack-timeout-min",
         type=float,
         default=0.5,
-        help='Lower bound for adaptive ACK timeout (seconds)',
+        help="Lower bound for adaptive ACK timeout (seconds)",
     )
     ap.add_argument(
-        '--ack-timeout-max',
+        "--ack-timeout-max",
         type=float,
         default=2.0,
-        help='Upper bound for adaptive ACK timeout (seconds)',
+        help="Upper bound for adaptive ACK timeout (seconds)",
     )
     ap.add_argument(
-        '--ack-timeout-strikes',
+        "--ack-timeout-strikes",
         type=int,
         default=3,
-        help='Number of consecutive ACK timeout strikes before failing the session',
+        help="Number of consecutive ACK timeout strikes before failing the session",
     )
-    ap.add_argument('--capture-queue', type=int, default=4,
-                    help='Maximum capture queue depth before applying backpressure')
-    ap.add_argument('--encode-workers', type=int, default=2,
-                    help='Number of concurrent encoder workers for the async pipeline')
-    ap.add_argument('--tcp-nodelay', action='store_true',
-                    help='Disable Nagle aggregation to reduce latency for interactive playback')
-    ap.add_argument('--socket-buffer-kb', type=int, default=0,
-                    help='Resize socket send/receive buffers (KiB) to better saturate fast links')
     ap.add_argument(
-        '--socket-buffer-autotune',
-        action='store_true',
-        help='커널 소켓 버퍼 자동 튜닝을 요청한다 (SO_SNDBUF/SO_RCVBUF=0).',
+        "--capture-queue",
+        type=int,
+        default=4,
+        help="Maximum capture queue depth before applying backpressure",
     )
-    ap.add_argument('--capture-transport',
-                    choices=('filesystem', 'shared-memory'),
-                    default='shared-memory',
-                    help='Frame capture backend: filesystem spool (legacy) or shared-memory zero copy')
     ap.add_argument(
-        '--metrics-out',
-        '--telemetry-out',
-        dest='metrics_out',
-        default='artifacts/perf/client_latest.json',
-        help='텔레메트리 JSON 출력 경로 (스키마 준수).',
+        "--encode-workers",
+        type=int,
+        default=2,
+        help="Number of concurrent encoder workers for the async pipeline",
     )
-    ap.add_argument('--print-metrics', action='store_true',
-                    help='Stream per-frame latency/accuracy metrics to stdout during playback')
+    ap.add_argument(
+        "--tcp-nodelay",
+        action="store_true",
+        help="Disable Nagle aggregation to reduce latency for interactive playback",
+    )
+    ap.add_argument(
+        "--socket-buffer-kb",
+        type=int,
+        default=0,
+        help="Resize socket send/receive buffers (KiB) to better saturate fast links",
+    )
+    ap.add_argument(
+        "--socket-buffer-autotune",
+        action="store_true",
+        help="커널 소켓 버퍼 자동 튜닝을 요청한다 (SO_SNDBUF/SO_RCVBUF=0).",
+    )
+    ap.add_argument(
+        "--capture-transport",
+        choices=("filesystem", "shared-memory"),
+        default="shared-memory",
+        help="Frame capture backend: filesystem spool (legacy) or shared-memory zero copy",
+    )
+    ap.add_argument(
+        "--metrics-out",
+        "--telemetry-out",
+        dest="metrics_out",
+        default="artifacts/perf/client_latest.json",
+        help="텔레메트리 JSON 출력 경로 (스키마 준수).",
+    )
+    ap.add_argument(
+        "--print-metrics",
+        action="store_true",
+        help="Stream per-frame latency/accuracy metrics to stdout during playback",
+    )
     return ap
-
 
 
 async def run_client(args: argparse.Namespace) -> None:
@@ -2033,15 +2324,15 @@ async def run_client(args: argparse.Namespace) -> None:
     _log_effective_config(args, fragment_size)
     layout = resolve_data_layout(
         {
-            'ply_dir': 'ply_stream',
-            'work_dir': 'client_work',
-            'decoded_dir': 'decoded_from_server',
+            "ply_dir": "ply_stream",
+            "work_dir": "client_work",
+            "decoded_dir": "decoded_from_server",
         },
         profile=args.layout_profile,
         overrides={
-            'ply_dir': args.ply_dir,
-            'work_dir': args.work_dir,
-            'decoded_dir': args.decoded_dir,
+            "ply_dir": args.ply_dir,
+            "work_dir": args.work_dir,
+            "decoded_dir": args.decoded_dir,
         },
         base=args.data_root,
         ensure=True,
@@ -2050,15 +2341,19 @@ async def run_client(args: argparse.Namespace) -> None:
     encoder_hint, encoder_options, _ = resolve_encoder_options(args)
     encoder_path = find_draco_encoder(encoder_hint)
 
-    ply_dir = layout['ply_dir']
-    work_dir = layout['work_dir']
-    decoded_dir = layout['decoded_dir']
+    ply_dir = layout["ply_dir"]
+    work_dir = layout["work_dir"]
+    decoded_dir = layout["decoded_dir"]
 
     try:
-        thresholds_raw = json.loads(args.quality_thresholds) if args.quality_thresholds else {}
+        thresholds_raw = (
+            json.loads(args.quality_thresholds) if args.quality_thresholds else {}
+        )
         if not isinstance(thresholds_raw, dict):
             raise ValueError("quality thresholds must be a JSON object")
-        quality_thresholds = {str(key): float(value) for key, value in thresholds_raw.items()}
+        quality_thresholds = {
+            str(key): float(value) for key, value in thresholds_raw.items()
+        }
     except Exception as exc:  # noqa: BLE001
         raise ValueError(f"invalid --quality-thresholds payload: {exc}") from exc
     quality_report_path: Path | None = None
@@ -2069,19 +2364,23 @@ async def run_client(args: argparse.Namespace) -> None:
         with contextlib.suppress(OSError):
             quality_report_path.unlink()
 
-    bag_cmd = ['ros2', 'bag', 'play', str(Path(args.bag).expanduser().resolve())]
+    bag_cmd = ["ros2", "bag", "play", str(Path(args.bag).expanduser().resolve())]
     qos_override = resolve_qos_override(args.qos_override, profile=layout.profile)
     if qos_override is not None:
-        bag_cmd += ['--qos-profile-overrides-path', str(qos_override)]
+        bag_cmd += ["--qos-profile-overrides-path", str(qos_override)]
     else:
-        print('[CLIENT] WARN: QoS override file not found, falling back to recorded QoS', file=sys.stderr)
+        logger.warning(
+            "[CLIENT] QoS override file not found, falling back to recorded QoS"
+        )
 
     bag_process = subprocess.Popen(bag_cmd)
     saver_proc: subprocess.Popen | None = None
     shared_receiver: SharedMemoryReceiver | None = None
 
     to_play: queue.Queue = queue.Queue()
-    playback_thread = start_playback_thread(to_play, args.play_frame_id, args.play_topic_prefix, args.play_hz)
+    playback_thread = start_playback_thread(
+        to_play, args.play_frame_id, args.play_topic_prefix, args.play_hz
+    )
 
     stop_event = asyncio.Event()
     bag_done = asyncio.Event()
@@ -2145,8 +2444,11 @@ async def run_client(args: argparse.Namespace) -> None:
                     with contextlib.suppress(OSError):
                         sock.setsockopt(socket.SOL_SOCKET, opt, 0)
             protocol = resolve_protocol(args.protocol)
-            print(
-                f"[CLIENT] Connected to {args.server_host}:{args.server_port} using {protocol.name} protocol"
+            logger.info(
+                "[CLIENT] Connected to %s:%d using %s protocol",
+                args.server_host,
+                args.server_port,
+                protocol.name,
             )
             control_plane.on_connected(time.monotonic_ns())
             lifecycle.transition(StreamState.HANDSHAKING, reason="connected")
@@ -2157,14 +2459,18 @@ async def run_client(args: argparse.Namespace) -> None:
                 control_sock = conn_stack.enter_context(
                     socket.create_connection(
                         (args.server_host, args.control_port),
-                        timeout=args.socket_timeout if args.socket_timeout > 0 else None,
+                        timeout=(
+                            args.socket_timeout if args.socket_timeout > 0 else None
+                        ),
                     )
                 )
                 if args.socket_timeout > 0:
                     control_sock.settimeout(args.socket_timeout)
                 if args.tcp_nodelay:
                     with contextlib.suppress(OSError):
-                        control_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                        control_sock.setsockopt(
+                            socket.IPPROTO_TCP, socket.TCP_NODELAY, 1
+                        )
                 if args.socket_buffer_kb > 0:
                     buf_size = args.socket_buffer_kb * 1024
                     for opt in (socket.SO_SNDBUF, socket.SO_RCVBUF):
@@ -2175,10 +2481,14 @@ async def run_client(args: argparse.Namespace) -> None:
                         with contextlib.suppress(OSError):
                             control_sock.setsockopt(socket.SOL_SOCKET, opt, 0)
                 control_protocol = resolve_protocol(args.protocol)
-                control_channel = ControlChannel(sock=control_sock, protocol=control_protocol)
-                print(
-                    f"[CLIENT] Control channel connected to {args.server_host}:{args.control_port}"
-                    f" using {control_protocol.name} protocol"
+                control_channel = ControlChannel(
+                    sock=control_sock, protocol=control_protocol
+                )
+                logger.info(
+                    "[CLIENT] Control channel connected to %s:%d using %s protocol",
+                    args.server_host,
+                    args.control_port,
+                    control_protocol.name,
                 )
 
             loop = asyncio.get_running_loop()
@@ -2205,18 +2515,22 @@ async def run_client(args: argparse.Namespace) -> None:
 
             with contextlib.ExitStack() as stack:
                 frame_supplier: FilesystemFrameSupplier | SharedMemoryFrameSupplier
-                if args.capture_transport == 'filesystem':
+                if args.capture_transport == "filesystem":
                     watcher = stack.enter_context(
-                        SpoolWatcher(ply_dir, args.prefix, gc_window=args.spool_gc_window)
+                        SpoolWatcher(
+                            ply_dir, args.prefix, gc_window=args.spool_gc_window
+                        )
                     )
                     frame_supplier = FilesystemFrameSupplier(watcher)
-                elif args.capture_transport == 'shared-memory':
+                elif args.capture_transport == "shared-memory":
                     shared_receiver = SharedMemoryReceiver()
                     shared_receiver.start()
                     stack.callback(shared_receiver.stop)
                     frame_supplier = SharedMemoryFrameSupplier(shared_receiver)
                 else:
-                    raise ValueError(f"unknown capture transport '{args.capture_transport}'")
+                    raise ValueError(
+                        f"unknown capture transport '{args.capture_transport}'"
+                    )
 
                 shared_host = shared_receiver.host if shared_receiver else None
                 shared_port = shared_receiver.port if shared_receiver else None
@@ -2225,15 +2539,15 @@ async def run_client(args: argparse.Namespace) -> None:
                     ply_dir,
                     shared_memory_host=shared_host,
                     shared_memory_port=shared_port,
-                    shared_memory_only=(args.capture_transport == 'shared-memory'),
+                    shared_memory_only=(args.capture_transport == "shared-memory"),
                 )
 
                 if args.encode_workers <= 0:
-                    raise ValueError('encode_workers must be positive')
+                    raise ValueError("encode_workers must be positive")
 
-                capture_queue: "asyncio.PriorityQueue[tuple[float, int, CapturePayload | None]]" = (
-                    asyncio.PriorityQueue(maxsize=max(1, args.capture_queue))
-                )
+                capture_queue: (
+                    "asyncio.PriorityQueue[tuple[float, int, CapturePayload | None]]"
+                ) = asyncio.PriorityQueue(maxsize=max(1, args.capture_queue))
                 network_queue: "asyncio.Queue[Optional[EncodedFrame]]" = asyncio.Queue(
                     maxsize=max(1, args.max_inflight)
                 )
@@ -2333,13 +2647,15 @@ async def run_client(args: argparse.Namespace) -> None:
                 )
                 tasks.append(
                     asyncio.create_task(
-                        monitor_process(bag_process, bag_done, 'ros2 bag', stop_event)
+                        monitor_process(bag_process, bag_done, "ros2 bag", stop_event)
                     )
                 )
                 if saver_proc is not None:
                     tasks.append(
                         asyncio.create_task(
-                            monitor_process(saver_proc, saver_done, 'bag_to_ply', stop_event)
+                            monitor_process(
+                                saver_proc, saver_done, "bag_to_ply", stop_event
+                            )
                         )
                     )
                 else:
@@ -2389,9 +2705,9 @@ async def run_client(args: argparse.Namespace) -> None:
         to_play.put(None)
         if playback_thread.is_alive():
             playback_thread.join(timeout=1.0)
-        _terminate_process(bag_process, 'ros2 bag')
+        _terminate_process(bag_process, "ros2 bag")
         if saver_proc is not None:
-            _terminate_process(saver_proc, 'bag_to_ply')
+            _terminate_process(saver_proc, "bag_to_ply")
 
     control_plane.on_shutdown()
     elapsed = max(time.monotonic() - start_time, 1e-6)
@@ -2409,39 +2725,55 @@ async def run_client(args: argparse.Namespace) -> None:
     session_state = session_snapshot.get("state", SessionState.OK.value)
     session_reason = session_snapshot.get("reason")
 
-    print('[CLIENT] ---- Transfer summary ----')
-    print(f"  elapsed: {elapsed:.2f} s")
-    print(f"  frames: sent={frames_sent} completed={frames_processed}")
-    print(f"  sent: {traffic.sent} bytes ({throughput_avg_mbps:.3f} Mbps)")
-    print(f"  received: {traffic.received} bytes ({receive_mbps:.3f} Mbps)")
+    logger.info("[CLIENT] ---- Transfer summary ----")
+    logger.info("  elapsed: %.2f s", elapsed)
+    logger.info("  frames: sent=%d completed=%d", frames_sent, frames_processed)
+    logger.info("  sent: %d bytes (%.3f Mbps)", traffic.sent, throughput_avg_mbps)
+    logger.info("  received: %d bytes (%.3f Mbps)", traffic.received, receive_mbps)
     if latency_percentiles:
-        print("  latency percentiles (capture→reply):")
+        logger.info("  latency percentiles (capture→reply):")
         for label in ("p50", "p95", "p99"):
             if label in latency_percentiles:
-                print(f"    {label}: {latency_percentiles[label] * 1000.0:.2f} ms")
-    print(f"  session: {session_state} reason={session_reason}")
-    print('  stage metrics:')
-    print(f"    capture→encode: {pipeline_stats.capture_to_encode.summary()}")
-    print(f"    encode latency: {pipeline_stats.encode_time.summary()}")
-    print(f"    encode→send: {pipeline_stats.encode_to_send.summary()}")
-    print(f"    round-trip: {pipeline_stats.round_trip.summary()}")
-    print(f"    network RTT: {pipeline_stats.network_rtt.summary()}")
-    print(f"    ACK latency: {pipeline_stats.ack_latency.summary()}")
-    print(
-        f"  inflight_peak: {traffic.inflight_peak} window_limit={window_controller.limit()}"
-        f" adaptive={'on' if args.adaptive_window else 'off'}"
+                logger.info(
+                    "    %s: %.2f ms",
+                    label,
+                    latency_percentiles[label] * 1000.0,
+                )
+    logger.info("  session: %s reason=%s", session_state, session_reason)
+    logger.info("  stage metrics:")
+    logger.info("    capture→encode: %s", pipeline_stats.capture_to_encode.summary())
+    logger.info("    encode latency: %s", pipeline_stats.encode_time.summary())
+    logger.info("    encode→send: %s", pipeline_stats.encode_to_send.summary())
+    logger.info("    round-trip: %s", pipeline_stats.round_trip.summary())
+    logger.info("    network RTT: %s", pipeline_stats.network_rtt.summary())
+    logger.info("    ACK latency: %s", pipeline_stats.ack_latency.summary())
+    logger.info(
+        "  inflight_peak: %d window_limit=%d adaptive=%s",
+        traffic.inflight_peak,
+        window_controller.limit(),
+        "on" if args.adaptive_window else "off",
     )
-    print(
-        f"  queue peaks: capture={traffic.capture_depth_peak} network={traffic.network_depth_peak}"
+    logger.info(
+        "  queue peaks: capture=%d network=%d",
+        traffic.capture_depth_peak,
+        traffic.network_depth_peak,
     )
     control_pending = control_plane.pending
-    print(
-        f"  drops/skipped: {pipeline_stats.skipped_frames} errors={pipeline_stats.error_frames}"
-        f" pending={pending_inflight} pending_acks={pending_acks} control_pending={control_pending}"
+    logger.info(
+        "  drops/skipped: %d errors=%d pending=%d pending_acks=%d control_pending=%d",
+        pipeline_stats.skipped_frames,
+        pipeline_stats.error_frames,
+        pending_inflight,
+        pending_acks,
+        control_pending,
     )
 
     latency_summary = {
-        label: (latency_percentiles[label] * 1000.0 if label in latency_percentiles else None)
+        label: (
+            latency_percentiles[label] * 1000.0
+            if label in latency_percentiles
+            else None
+        )
         for label in ("p50", "p95", "p99")
     }
     frames_acked = max(0, frames_sent - max(pending_acks, control_pending))
@@ -2476,7 +2808,10 @@ async def run_client(args: argparse.Namespace) -> None:
         "session_state": session_state,
         "session_reason": session_reason,
     }
-    print(f"[CLIENT] shutdown_summary {json.dumps(shutdown_summary, sort_keys=True)}")
+    logger.info(
+        "[CLIENT] shutdown_summary %s",
+        json.dumps(shutdown_summary, sort_keys=True),
+    )
 
     metrics_out_path = Path(args.metrics_out).expanduser()
     metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2485,7 +2820,9 @@ async def run_client(args: argparse.Namespace) -> None:
         control_state = control_plane.state
         pending_ack_total = max(pending_acks, control_pending)
         queue_pending = (
-            pending_inflight + pending_ack_total if control_state == ControlState.FAILED else 0
+            pending_inflight + pending_ack_total
+            if control_state == ControlState.FAILED
+            else 0
         )
         if control_state != ControlState.FAILED:
             if pending_inflight != 0 or pending_acks != 0 or control_pending != 0:
@@ -2532,10 +2869,12 @@ async def run_client(args: argparse.Namespace) -> None:
             session_overrides=session_overrides_payload,
             inflight_pending=pending_inflight,
         )
-        metrics_out_path.write_text(json.dumps(telemetry_payload, indent=2), encoding='utf-8')
-        print(f"[CLIENT] Wrote telemetry to {metrics_out_path}")
+        metrics_out_path.write_text(
+            json.dumps(telemetry_payload, indent=2), encoding="utf-8"
+        )
+        logger.info("[CLIENT] Wrote telemetry to %s", metrics_out_path)
     except Exception as exc:
-        print(f"[CLIENT] WARN: Failed to write telemetry file: {exc}")
+        logger.warning("[CLIENT] Failed to write telemetry file: %s", exc)
 
 
 def main(argv: Iterable[str] | None = None) -> None:
@@ -2543,7 +2882,7 @@ def main(argv: Iterable[str] | None = None) -> None:
     asyncio.run(run_client(args))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 
 # 변경 요약:
