@@ -172,9 +172,20 @@ class Telemetry:
         control_plane: ControlPlane,
         metrics: Mapping[str, Any],
         session_overrides: Mapping[str, Any] | None = None,
+        inflight_pending: int = 0,
     ) -> Dict[str, Any]:
-        if control_plane.pending != 0:
-            raise ValueError("control plane must have pending=0 before telemetry export")
+        if control_plane.state != ControlState.FAILED:
+            pending_cp = control_plane.pending
+            if inflight_pending != 0 or pending_cp != 0:
+                raise ValueError(
+                    "pending frames remain at export time: "
+                    f"inflight={inflight_pending} control_plane={pending_cp}"
+                )
+            if control_plane.state != ControlState.TERMINATED:
+                raise ValueError(
+                    "control plane must reach TERMINATED before telemetry export "
+                    f"(state={control_plane.state.value})"
+                )
         payload: Dict[str, Any] = {
             "schema_version": self.SCHEMA_VERSION,
             "schema_doc": self.SCHEMA_DOC,

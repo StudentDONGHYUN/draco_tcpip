@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "schema_doc": "docs/specs/telemetry_schema.md",
+  "session": {
+    "id": "client-1760322705-4544",
+    "role": "client",
+    "transport": "tcp",
+    "protocol": "binary",
+    "fragment_size": 512,
+    "socket_buffer_autotune": false,
+    "started_at_ns": 4746564461296,
+    "ended_at_ns": 4746564482114,
+    "state": "TERMINATED"
+  },
+  "metrics": {
+    "latency_ms": {
+      "p50": 42.0,
+      "p95": 120.0,
+      "p99": 180.0
+    },
+    "rtt_ms": {
+      "p50": 50.0,
+      "p95": 130.0,
+      "p99": 190.0
+    },
+    "ack_latency_ms": {
+      "p50": 15.0,
+      "p95": 30.0,
+      "p99": 45.0
+    },
+    "throughput_mbps": {
+      "avg": 85.0,
+      "peak": 92.0
+    },
+    "queues": {
+      "capture_max": 3,
+      "encode_max": 2,
+      "decode_max": 1,
+      "pending": 0
+    },
+    "frames": {
+      "sent": 128,
+      "acked": 128,
+      "dropped": 0,
+      "skipped": 0
+    }
+  }
+}

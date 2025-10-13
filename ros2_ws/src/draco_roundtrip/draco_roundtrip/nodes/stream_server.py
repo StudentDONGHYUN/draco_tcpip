@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import mmap
 import socket
 import subprocess
@@ -32,11 +33,16 @@ from draco_roundtrip.utils.protocol import (
     resolve_protocol,
 )
 from draco_roundtrip.utils.stream_protocol import (
+    ACK_PAYLOAD_STRUCT,
     CONTROL_CHANNEL,
     DATA_CHANNEL,
+    ControlPlane,
+    ControlState,
+    ErrorCode,
     decode_frame_address,
     encode_frame_address,
 )
+from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
 
 
 @dataclass(slots=True)
@@ -107,6 +113,58 @@ def _telemetry(stage: str, frame: str, **details: object) -> None:
     extras = " ".join(f"{key}={value}" for key, value in details.items())
     suffix = f" {extras}" if extras else ""
     print(f"[SERVER][TELEM] {stage} frame={frame} ts={time.monotonic():.6f}{suffix}")
+
+
+def _export_server_telemetry(
+    control_plane: ControlPlane,
+    stats: PipelineStats,
+    totals: Dict[str, int],
+    *,
+    protocol: str,
+    elapsed: float,
+    output_path: Path | None = None,
+) -> None:
+    """Write server telemetry aligned with docs/specs/telemetry_schema.md."""
+
+    target = Path(output_path or "artifacts/perf/server_latest.json")
+    telemetry = Telemetry(
+        role="server",
+        transport="tcp",
+        protocol=protocol,
+        fragment_size=0,
+        socket_buffer_autotune=False,
+    )
+    frames_processed = stats.decode_time.count
+    total_bytes = totals.get("bytes_out", 0) + totals.get("bytes_in", 0)
+    throughput_avg = (total_bytes * 8 / max(elapsed, 1e-6)) / 1e6
+    metrics = {
+        "latency_ms": percentiles_block(None, scale=1.0),
+        "rtt_ms": percentiles_block(None, scale=1.0),
+        "ack_latency_ms": percentiles_block(None, scale=1.0),
+        "throughput_mbps": {
+            "avg": throughput_avg,
+            "peak": throughput_avg,
+        },
+        "queues": {
+            "capture_max": 0,
+            "encode_max": 0,
+            "decode_max": 0,
+            "pending": 0,
+        },
+        "frames": {
+            "sent": frames_processed,
+            "acked": frames_processed,
+            "dropped": 0,
+            "skipped": 0,
+        },
+    }
+    try:
+        payload = telemetry.build(control_plane=control_plane, metrics=metrics)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(f"[SERVER] Wrote telemetry to {target}")
+    except Exception as exc:  # pragma: no cover - best effort logging
+        print(f"[SERVER] WARN: Failed to export telemetry: {exc}")
 
 
 async def _send_control_message(
@@ -226,6 +284,7 @@ async def _recv_loop(
     producer_done: asyncio.Event,
     totals: Dict[str, int],
     heartbeat_interval: float,
+    control_plane: ControlPlane,
 ) -> None:
     heartbeat_interval = max(0.0, heartbeat_interval)
     last_heartbeat = time.monotonic()
@@ -269,9 +328,20 @@ async def _recv_loop(
             break
         last_heartbeat = time.monotonic()
         address = decode_frame_address(message.name)
+        if message.kind == MSG_HEARTBEAT:
+            control_plane.on_heartbeat()
+            _telemetry("recv_heartbeat", address.name or "all")
+            continue
+        if message.kind == MSG_ERROR:
+            detail = message.payload.decode("utf-8", errors="ignore") if message.payload else ""
+            print(f"[SERVER] ERROR from client: {detail or 'unspecified'}")
+            control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, detail or None)
+            stop_event.set()
+            break
         if message.kind == MSG_EOF:
             print("[SERVER] Received EOF marker from client")
             _telemetry("recv_eof", "all")
+            control_plane.on_eof_received()
             producer_done.set()
             break
         if message.kind != MSG_DATA:
@@ -279,6 +349,8 @@ async def _recv_loop(
             continue
         if address.channel != DATA_CHANNEL:
             print(f"[SERVER] WARN: Received data on control channel: {message.name}")
+        if control_plane.state in (ControlState.INIT, ControlState.HANDSHAKING):
+            control_plane.on_first_data()
         job = DecodeJob(
             sequence=address.sequence,
             name=address.name or "frame",
@@ -296,6 +368,11 @@ async def _recv_loop(
             seq=job.sequence,
         )
         try:
+            ack_payload = (
+                ACK_PAYLOAD_STRUCT.pack(job.sequence)
+                if job.sequence is not None
+                else b""
+            )
             await _send_control_message(
                 control,
                 protocol,
@@ -303,7 +380,7 @@ async def _recv_loop(
                 Message(
                     kind=MSG_ACK,
                     name=encode_frame_address(job.sequence, job.name, channel=CONTROL_CHANNEL),
-                    payload=b"",
+                    payload=ack_payload,
                 ),
             )
             _telemetry("send_ack", job.name, seq=job.sequence)
@@ -381,6 +458,7 @@ async def _send_loop(
     stop_event: asyncio.Event,
     producer_done: asyncio.Event,
     worker_count: int,
+    control_plane: ControlPlane,
 ) -> None:
     finished_workers = 0
     eof_sent = False
@@ -406,6 +484,8 @@ async def _send_loop(
                 payload=payload,
             )
             stage_label = "send_error"
+            if control_plane.state != ControlState.FAILED:
+                control_plane.on_error(ErrorCode.INTERNAL_ERROR, result.error)
         else:
             name = result.job.name
             reply_name = name if name.endswith(".decoded") else f"{name}.decoded"
@@ -449,6 +529,8 @@ async def _send_loop(
                     )
             send_queue.task_done()
     if not eof_sent and producer_done.is_set():
+        if control_plane.state != ControlState.FAILED:
+            control_plane.on_eof_sent()
         try:
             await _send_control_message(
                 control,
@@ -461,6 +543,7 @@ async def _send_loop(
                 ),
             )
             _telemetry("send_eof", "all")
+            eof_sent = True
         except Exception as exc:
             print(f"[SERVER] ERROR sending EOF marker: {exc}")
         with suppress(OSError):
@@ -480,7 +563,7 @@ async def handle_connection(
     stats: PipelineStats,
     totals: Dict[str, int],
     control_conn: socket.socket | None = None,
-) -> None:
+) -> ControlPlane:
     with ExitStack() as stack:
         data_conn = stack.enter_context(conn)
         control_socket = stack.enter_context(control_conn) if control_conn is not None else None
@@ -516,6 +599,9 @@ async def handle_connection(
                 f"[SERVER] Control channel paired from {peer} using {control_protocol.name} protocol"
             )
 
+        control_plane = ControlPlane(role="server")
+        control_plane.on_connected(time.monotonic_ns())
+
         max_inflight = max(1, args.max_inflight)
         if args.decode_workers <= 0:
             raise ValueError("decode_workers must be positive")
@@ -534,6 +620,7 @@ async def handle_connection(
                 producer_done,
                 totals,
                 args.heartbeat_interval,
+                control_plane,
             )
         )
         worker_tasks = [
@@ -562,6 +649,7 @@ async def handle_connection(
                 stop_event,
                 producer_done,
                 args.decode_workers,
+                control_plane,
             )
         )
 
@@ -584,6 +672,8 @@ async def handle_connection(
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+        control_plane.on_shutdown()
+        return control_plane
 
 
 async def run_server(args: argparse.Namespace) -> None:
@@ -625,8 +715,9 @@ async def run_server(args: argparse.Namespace) -> None:
         if control_server is not None:
             control_conn, control_addr = await asyncio.to_thread(control_server.accept)
             print(f"[SERVER] Accepted control connection from {control_addr}")
+        control_plane: ControlPlane | None = None
         try:
-            await handle_connection(
+            control_plane = await handle_connection(
                 conn,
                 addr,
                 args,
@@ -644,6 +735,14 @@ async def run_server(args: argparse.Namespace) -> None:
                     control_conn.close()
 
     elapsed = max(time.monotonic() - start_time, 1e-6)
+    if control_plane is not None:
+        _export_server_telemetry(
+            control_plane,
+            stats,
+            totals,
+            protocol=args.protocol,
+            elapsed=elapsed,
+        )
     print("[SERVER] ---- Bandwidth summary ----")
     print(f"  elapsed: {elapsed:.2f} s")
     print(
