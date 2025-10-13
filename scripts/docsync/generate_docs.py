@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
@@ -72,10 +73,46 @@ ANCHOR_RENDERERS: dict[tuple[Path, str], Callable[[], str]] = {
 }
 
 
+_NOTE_PATTERN = re.compile(r"^\s*Note\s+(?:over|left of|right of)\s+\w+:\s*")
+_COMMAND_PREFIX = re.compile(
+    r"^\s*(?:%%|participant\b|autonumber\b|loop\b|end\b|alt\b|else\b|par\b|and\b|opt\b|rect\b|activate\b|deactivate\b|critical\b|break\b|box\b|link\b|click\b|title\b)"
+)
+_MESSAGE_PREFIX = re.compile(r"^\s*[\w$][^:]*:\s*")
+
+
+def _normalize_mermaid(src: str) -> str:
+    lines = src.splitlines()
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if _NOTE_PATTERN.match(line):
+            normalized = line.replace("\\n", "<br/>")
+            j = i + 1
+            while j < len(lines):
+                candidate = lines[j]
+                if not candidate.strip():
+                    break
+                if (
+                    _NOTE_PATTERN.match(candidate)
+                    or _COMMAND_PREFIX.match(candidate)
+                    or _MESSAGE_PREFIX.match(candidate)
+                ):
+                    break
+                normalized += "<br/>" + candidate.strip()
+                j += 1
+            out.append(normalized)
+            i = j
+            continue
+        out.append(line)
+        i += 1
+    return "\n".join(out)
+
+
 def _inject_mermaid_by_registry() -> None:
     updates_by_file: dict[Path, list[AnchorUpdate]] = {}
     for (path, anchor), renderer in ANCHOR_RENDERERS.items():
-        md = f"```mermaid\n{renderer()}\n```\n"
+        md = f"```mermaid\n{_normalize_mermaid(renderer())}\n```\n"
         updates_by_file.setdefault(path, []).append(AnchorUpdate(name=anchor, content=md))
     for path, updates in updates_by_file.items():
         apply_updates(path, updates)

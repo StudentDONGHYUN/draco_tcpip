@@ -22,7 +22,7 @@ sequenceDiagram
 
     ENC-->>CLI: 인코딩된 바이트
     CLI->>SRV: TCP로 프레이밍된 DATA 전송(바이너리 프로토콜)
-    Note right of CLI: 네트워크 큐(제한)\nmax_inflight를 갖는 TX 루프
+    Note right of CLI: 네트워크 큐(제한)<br/>max_inflight를 갖는 TX 루프
 
     SRV-->>CLI: 제어 채널 ACK(seq)
     Note right of CLI: in_flight -= 1
