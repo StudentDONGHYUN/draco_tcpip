@@ -29,7 +29,6 @@ from draco_roundtrip.utils.protocol import (
     MSG_EOF,
     MSG_ERROR,
     MSG_HEARTBEAT,
-    ProtocolHandler,
     available_protocols,
     resolve_protocol,
 )
