@@ -83,6 +83,29 @@ class DecodeJob:
     name: str
     payload: bytes
     received_at: float
+    frame_payload_len: int | None = None
+    fragments: int = 1
+    flags: int | None = None
+
+
+@dataclass(slots=True)
+class FragmentAssembly:
+    sequence: int
+    name: str
+    total: int
+    expected_len: int | None
+    chunks: Dict[int, bytes] = field(default_factory=dict)
+    received: int = 0
+
+    def add(self, index: int, payload: bytes) -> bool:
+        if index in self.chunks:
+            return False
+        self.chunks[index] = payload
+        self.received += len(payload)
+        return len(self.chunks) == self.total
+
+    def assemble(self) -> bytes:
+        return b"".join(self.chunks[i] for i in range(self.total))
 
 
 @dataclass(slots=True)
@@ -291,6 +314,9 @@ async def _recv_loop(
     last_heartbeat = time.monotonic()
     control_down.clear()
 
+    fragment_states: Dict[int, FragmentAssembly] = {}
+    use_binary = protocol.name == "binary"
+
     async def send_control_with_retry(message: Message, label: str) -> bool:
         delay = 0.05
         attempts = 3
@@ -367,13 +393,47 @@ async def _recv_loop(
             print(f"[SERVER] WARN: Received data on control channel: {message.name}")
         if control_plane.state in (ControlState.INIT, ControlState.HANDSHAKING):
             control_plane.on_first_data()
+        sequence = message.sequence if message.sequence is not None else address.sequence
+        frame_name = address.name or "frame"
+        payload_bytes = message.payload
+        totals["bytes_in"] += len(payload_bytes)
+        if use_binary and message.fragmented:
+            if sequence is None:
+                print("[SERVER] ERROR: fragmented frame missing sequence metadata")
+                control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, "fragment missing sequence")
+                continue
+            state = fragment_states.get(sequence)
+            total = message.fragments_total or 1
+            expected_len = message.frame_payload_len
+            if state is None:
+                state = FragmentAssembly(
+                    sequence=sequence,
+                    name=frame_name,
+                    total=total,
+                    expected_len=expected_len,
+                )
+                fragment_states[sequence] = state
+            complete = state.add(message.fragment_index or 0, payload_bytes)
+            _telemetry(
+                "recv_fragment",
+                frame_name,
+                seq=sequence,
+                index=message.fragment_index or 0,
+                total=total,
+            )
+            if not complete:
+                continue
+            payload_bytes = state.assemble()
+            fragment_states.pop(sequence, None)
         job = DecodeJob(
-            sequence=address.sequence,
-            name=address.name or "frame",
-            payload=message.payload,
+            sequence=sequence,
+            name=frame_name,
+            payload=payload_bytes,
             received_at=time.monotonic(),
+            frame_payload_len=message.frame_payload_len,
+            fragments=message.fragments_total or 1,
+            flags=message.flags,
         )
-        totals["bytes_in"] += len(message.payload)
         await decode_queue.put(job)
         _telemetry(
             "recv_data",
@@ -391,6 +451,7 @@ async def _recv_loop(
             kind=MSG_ACK,
             name=encode_frame_address(job.sequence, job.name, channel=CONTROL_CHANNEL),
             payload=ack_payload,
+            sequence=job.sequence,
         )
         if not await send_control_with_retry(ack_message, f"ack-{job.sequence}"):
             producer_done.set()
@@ -426,6 +487,8 @@ async def _decode_worker(
             wait_ms=(decode_start - job.received_at) * 1000.0,
         )
         try:
+            prefix = job.payload[:8].hex() if job.payload else ''
+            print(f"[SERVER] DEBUG decode {job.name}: seq={job.sequence} prefix={prefix}")
             artifact = await asyncio.to_thread(
                 decode_drc,
                 decoder,
@@ -447,7 +510,11 @@ async def _decode_worker(
             )
             await send_queue.put(PipelineResult(job=job, decoded_at=decoded_at, artifact=artifact))
         except Exception as exc:
-            print(f"[SERVER] ERROR decoding {job.name}: {exc}")
+            print(
+                f"[SERVER] ERROR decoding {job.name}: {exc} seq={job.sequence} "
+                f"flags={job.flags} payload_len={len(job.payload)} "
+                f"expected_len={job.frame_payload_len} fragments={job.fragments}"
+            )
             _telemetry("decode_error", job.name, worker=worker_id, seq=job.sequence)
             await send_queue.put(
                 PipelineResult(job=job, decoded_at=time.monotonic(), error=str(exc))
@@ -490,6 +557,7 @@ async def _send_loop(
                     channel=CONTROL_CHANNEL,
                 ),
                 payload=payload,
+                sequence=result.job.sequence,
             )
             stage_label = "send_error"
             if control_plane.state != ControlState.FAILED:
@@ -505,6 +573,7 @@ async def _send_loop(
                     channel=DATA_CHANNEL,
                 ),
                 payload=result.artifact.payload,
+                sequence=result.job.sequence,
             )
             stage_label = "send_data"
         try:

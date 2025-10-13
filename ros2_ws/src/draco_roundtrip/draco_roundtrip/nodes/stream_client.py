@@ -52,6 +52,7 @@ from draco_roundtrip.utils.protocol import (
     MSG_ERROR,
     MSG_HEARTBEAT,
     ProtocolHandler,
+    ProtocolError,
     available_protocols,
     resolve_protocol,
 )
@@ -61,21 +62,17 @@ from draco_roundtrip.utils.stream_protocol import (
     ACK_TIMEOUT_NS,
     CONTROL_CHANNEL,
     CONTROL_POLL_INTERVAL,
-    ControlCode,
     ControlPlane,
     ControlPlaneError,
     ControlState,
     DATA_CHANNEL,
     ErrorCode,
     FrameFragment,
-    pack_frame_header,
     decode_frame_address,
     encode_frame_address,
     iter_fragments,
     validate_fragment_size,
     ACK_PAYLOAD_STRUCT,
-    unpack_frame_header,
-    FRAME_HEADER_SIZE,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
 
@@ -869,11 +866,6 @@ async def network_sender(
                     and not stop_event.is_set()
                 ):
                     eof_payload = b""
-                    if use_binary:
-                        eof_fragment = FrameFragment(
-                            sequence=None, payload=b"", control_code=ControlCode.EOF
-                        )
-                        eof_payload = pack_frame_header(eof_fragment.header())
                     message = Message(
                         kind=MSG_EOF,
                         name=encode_frame_address(
@@ -917,14 +909,17 @@ async def network_sender(
                 fragment_size=fragment_size,
             )
         else:
-            fragments = (FrameFragment(sequence=encoded.sequence, payload=encoded.payload),)
+            fragments = (
+                FrameFragment(
+                    sequence=encoded.sequence,
+                    payload=encoded.payload,
+                    index=0,
+                    total=1,
+                    frame_payload_len=len(encoded.payload),
+                ),
+            )
         try:
             for fragment in fragments:
-                payload = (
-                    pack_frame_header(fragment.header()) + fragment.payload
-                    if use_binary
-                    else fragment.payload
-                )
                 message = Message(
                     kind=MSG_DATA,
                     name=encode_frame_address(
@@ -932,7 +927,12 @@ async def network_sender(
                         encoded.handle.name,
                         channel=DATA_CHANNEL,
                     ),
-                    payload=payload,
+                    payload=fragment.payload,
+                    sequence=fragment.sequence,
+                    fragmented=fragment.total > 1,
+                    fragment_index=fragment.index,
+                    fragments_total=fragment.total,
+                    frame_payload_len=fragment.frame_payload_len,
                 )
                 await asyncio.to_thread(protocol.send, sock, message)
                 traffic.record_send(len(fragment.payload))
@@ -992,7 +992,7 @@ async def reply_consumer(
 
     reorder_buffer: Dict[int, DecodedResult] = {}
     skipped_sequences: Dict[int, str] = {}
-    fragment_buffer: Dict[int, bytearray] = {}
+    fragment_buffer: Dict[int, dict[str, object]] = {}
     next_sequence = 0
 
     async def emit_result(result: DecodedResult) -> None:
@@ -1108,8 +1108,14 @@ async def reply_consumer(
                 continue
             if event.kind == "error" and event.error:
                 channel = event.channel or DATA_CHANNEL
-                print(f"[CLIENT] ERROR from reply pump ({channel}): {event.error}")
-                control_plane.on_error(ErrorCode.INTERNAL_ERROR, str(event.error))
+                detail = str(event.error)
+                if isinstance(event.error, ProtocolError):
+                    print(
+                        f"[CLIENT] PROTOCOL ERROR on {channel}: {detail} (binary framing)"
+                    )
+                else:
+                    print(f"[CLIENT] ERROR from reply pump ({channel}): {detail}")
+                control_plane.on_error(ErrorCode.INTERNAL_ERROR, detail)
                 await session.transition(
                     SessionState.DEGRADED, f"reply pump error ({channel})"
                 )
@@ -1138,22 +1144,8 @@ async def reply_consumer(
 
             message = event.message
             address = decode_frame_address(message.name)
-            header = None
             body = message.payload
-            if use_binary:
-                try:
-                    header = unpack_frame_header(message.payload)
-                except ValueError as exc:
-                    print(f"[CLIENT] ERROR: invalid frame header: {exc}")
-                    control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
-                    await session.transition(SessionState.DEGRADED, "invalid frame header")
-                    stop_event.set()
-                    async with inflight_condition:
-                        acks_pending.clear()
-                        inflight_condition.notify_all()
-                    reply_queue.task_done()
-                    continue
-                body = message.payload[FRAME_HEADER_SIZE:]
+
 
             if message.kind == MSG_HEARTBEAT:
                 heartbeat_watch.touch()
@@ -1165,9 +1157,7 @@ async def reply_consumer(
                 continue
 
             if message.kind == MSG_ACK:
-                sequence = address.sequence
-                if header is not None and header.sequence is not None:
-                    sequence = header.sequence
+                sequence = message.sequence if message.sequence is not None else address.sequence
                 if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
                     sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
                 ctx: FrameContext | None = None
@@ -1217,7 +1207,7 @@ async def reply_consumer(
 
             async with inflight_condition:
                 ctx = None
-                sequence = address.sequence
+                sequence = message.sequence if message.sequence is not None else address.sequence
                 if sequence is not None:
                     ctx = inflight.pop(sequence, None)
                     acks_pending.discard(sequence)
@@ -1234,25 +1224,12 @@ async def reply_consumer(
                 continue
 
             if message.kind == MSG_ERROR:
-                if use_binary and header and header.control_code == ControlCode.ERROR and body:
-                    code = (
-                        ErrorCode(body[0])
-                        if body[0] in ErrorCode._value2member_map_
-                        else ErrorCode.INTERNAL_ERROR
-                    )
-                    detail = (
-                        body[1:].decode("utf-8", errors="replace")
-                        if len(body) > 1
-                        else code.name
-                    )
-                else:
-                    code = ErrorCode.INTERNAL_ERROR
-                    detail = body.decode("utf-8", errors="replace") if body else code.name
+                detail = body.decode("utf-8", errors="replace") if body else ErrorCode.INTERNAL_ERROR.name
                 print(f"[CLIENT] SERVER ERROR for seq={ctx.sequence}: {detail}")
                 stats.error_frames += 1
                 skipped_sequences[ctx.sequence] = detail
-                control_plane.on_error(code, detail)
-                await session.transition(SessionState.DEGRADED, f"server error {code.name}")
+                control_plane.on_error(ErrorCode.INTERNAL_ERROR, detail)
+                await session.transition(SessionState.DEGRADED, f"server error {ErrorCode.INTERNAL_ERROR.name}")
                 _telemetry("recv_error", address.name or str(ctx.sequence), detail=detail)
                 with contextlib.suppress(Exception):
                     ctx.handle.on_aborted()
@@ -1260,17 +1237,20 @@ async def reply_consumer(
                 reply_queue.task_done()
                 continue
 
-            if use_binary and header is not None:
-                if header.more_fragments and ctx.sequence is not None:
-                    fragment_buffer.setdefault(ctx.sequence, bytearray()).extend(body)
+            if use_binary and message.fragmented and ctx.sequence is not None:
+                bucket = fragment_buffer.setdefault(
+                    ctx.sequence,
+                    {"chunks": {}, "total": message.fragments_total or 1, "expected": message.frame_payload_len},
+                )
+                bucket["chunks"][message.fragment_index or 0] = body
+                if len(bucket["chunks"]) < bucket["total"]:
                     reply_queue.task_done()
                     continue
-                if ctx.sequence is not None and ctx.sequence in fragment_buffer:
-                    bucket = fragment_buffer.pop(ctx.sequence)
-                    bucket.extend(body)
-                    body = bytes(bucket)
+                ordered = [bucket["chunks"][idx] for idx in range(bucket["total"]) if idx in bucket["chunks"]]
+                body = b"".join(ordered)
+                fragment_buffer.pop(ctx.sequence, None)
 
-            payload = body if body else message.payload
+            payload = body
             control_plane.on_first_data()
             rtt = max(0.0, now - ctx.sent_at)
             total_latency = max(0.0, now - ctx.captured_at)

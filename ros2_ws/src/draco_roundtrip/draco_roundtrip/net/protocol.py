@@ -1,12 +1,4 @@
-"""TCP protocol helpers shared by client/server.
-
-The original implementation relied on a text meta-header (``"kind:name"``)
-sent ahead of the payload.  While simple, that approach required several
-``sendall``/``recv`` syscalls and UTF-8 encoding work on every frame.  To
-support the network latency reduction roadmap we introduce a compact binary
-framing format.  Both variants live side-by-side and can be selected via the
-command-line flags exposed by ``stream_client`` and ``stream_server``.
-"""
+"""TCP protocol helpers shared by client and server."""
 
 from __future__ import annotations
 
@@ -14,6 +6,19 @@ import socket
 import struct
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
+
+from .io import recv_exact
+from ..protocol.header import (
+    FLAG_FRAGMENTED,
+    FLAG_MORE_FRAGMENTS,
+    FrameType,
+    FragmentInfo,
+    HEADER_SIZE,
+    FRAGMENT_INFO_SIZE,
+    pack_frame_header,
+    unpack_frame_header,
+    HeaderError,
+)
 
 __all__ = [
     "Message",
@@ -35,18 +40,21 @@ _HEADER = struct.Struct("!I")
 _SIZE = struct.Struct("!Q")
 _SEPARATOR = ":"
 
-_BINARY_HEADER = struct.Struct("!BBH")  # version, kind, name length
-_BINARY_SIZE = struct.Struct("!Q")
-_BINARY_VERSION = 1
-
-_KIND_TO_CODE = {"data": 0, "error": 1, "eof": 2, "ack": 3, "heartbeat": 4}
-_CODE_TO_KIND = {value: key for key, value in _KIND_TO_CODE.items()}
-
 MSG_DATA = "data"
 MSG_ERROR = "error"
 MSG_EOF = "eof"
 MSG_ACK = "ack"
 MSG_HEARTBEAT = "heartbeat"
+
+_FRAME_TYPE_BY_KIND = {
+    MSG_DATA: FrameType.DATA,
+    MSG_ERROR: FrameType.ERROR,
+    MSG_EOF: FrameType.EOF,
+    MSG_ACK: FrameType.ACK,
+    MSG_HEARTBEAT: FrameType.HEARTBEAT,
+}
+
+_KIND_BY_FRAME_TYPE = {value: key for key, value in _FRAME_TYPE_BY_KIND.items()}
 
 
 class ProtocolError(RuntimeError):
@@ -62,6 +70,12 @@ class Message:
     kind: str
     name: str
     payload: bytes
+    sequence: int | None = None
+    fragmented: bool = False
+    fragment_index: int | None = None
+    fragments_total: int | None = None
+    frame_payload_len: int | None = None
+    flags: int | None = None
 
     def as_meta(self) -> str:
         return f"{self.kind}{_SEPARATOR}{self.name}" if self.name else self.kind
@@ -71,10 +85,6 @@ class Message:
         if _SEPARATOR in meta:
             kind, name = meta.split(_SEPARATOR, 1)
         else:
-            # NOTE: Legacy text framing omitted the kind for data messages, but
-            # control frames (EOF/ERROR) can appear without a name.  Preserve the
-            # behaviour where an unknown token is treated as the frame name for a
-            # data message while ensuring well-known kinds round-trip correctly.
             if meta in {MSG_ERROR, MSG_EOF} and not payload:
                 kind, name = meta, ""
             elif meta == MSG_DATA and not payload:
@@ -82,16 +92,6 @@ class Message:
             else:
                 kind, name = MSG_DATA, meta
         return cls(kind=kind or MSG_DATA, name=name, payload=payload)
-
-
-def _read_exact(sock: socket.socket, size: int) -> bytes:
-    buf = bytearray()
-    while len(buf) < size:
-        chunk = sock.recv(size - len(buf))
-        if not chunk:
-            raise ConnectionClosed("socket closed while reading")
-        buf.extend(chunk)
-    return bytes(buf)
 
 
 def _send_text(sock: socket.socket, message: Message) -> None:
@@ -126,48 +126,84 @@ def _recv_text(sock: socket.socket) -> Optional[Message]:
     (name_len,) = _HEADER.unpack(header)
     if name_len <= 0:
         return None
-    meta = _read_exact(sock, name_len).decode("utf-8")
-    (payload_len,) = _SIZE.unpack(_read_exact(sock, _SIZE.size))
-    payload = _read_exact(sock, payload_len) if payload_len else b""
+    meta = recv_exact(sock, name_len).decode("utf-8")
+    (payload_len,) = _SIZE.unpack(recv_exact(sock, _SIZE.size))
+    payload = recv_exact(sock, payload_len) if payload_len else b""
     return Message.from_meta(meta, payload)
 
 
+def _build_fragment_info(message: Message) -> tuple[FragmentInfo | None, bool]:
+    if not message.fragmented and not message.fragments_total:
+        return None, False
+    total = message.fragments_total if message.fragments_total else 1
+    index = message.fragment_index if message.fragment_index is not None else 0
+    frame_len = (
+        message.frame_payload_len
+        if message.frame_payload_len is not None
+        else len(message.payload)
+    )
+    fragment = FragmentInfo(index=index, total=total, frame_payload_len=frame_len)
+    more = index < total - 1 or bool(message.fragmented and message.fragments_total is None)
+    return fragment, more
+
+
 def _send_binary(sock: socket.socket, message: Message) -> None:
-    kind_code = _KIND_TO_CODE.get(message.kind, _KIND_TO_CODE[MSG_DATA])
+    frame_type = _FRAME_TYPE_BY_KIND.get(message.kind, FrameType.DATA)
     name_bytes = message.name.encode("utf-8") if message.name else b""
     if len(name_bytes) > 0xFFFF:
         raise ProtocolError("message name too long for binary framing")
-    header = _BINARY_HEADER.pack(_BINARY_VERSION, kind_code, len(name_bytes))
+    sequence = message.sequence if message.sequence is not None else 0
+    fragment, more = _build_fragment_info(message)
+    header = pack_frame_header(
+        frame_type=frame_type,
+        sequence=sequence,
+        name_len=len(name_bytes),
+        payload_len=len(message.payload),
+        fragment=fragment,
+        more_fragments=more,
+    )
     sock.sendall(header)
     if name_bytes:
         sock.sendall(name_bytes)
-    payload_len = len(message.payload)
-    sock.sendall(_BINARY_SIZE.pack(payload_len))
-    if payload_len:
+    if message.payload:
         _send_all(sock, message.payload)
 
 
 def _recv_binary(sock: socket.socket) -> Optional[Message]:
-    header = sock.recv(_BINARY_HEADER.size)
-    if not header:
+    first = sock.recv(HEADER_SIZE)
+    if not first:
         return None
-    if len(header) != _BINARY_HEADER.size:
-        raise ProtocolError("incomplete binary header")
-    version, kind_code, name_len = _BINARY_HEADER.unpack(header)
-    if version != _BINARY_VERSION:
-        raise ProtocolError(f"unsupported binary protocol version {version}")
-    if name_len:
-        name_bytes = _read_exact(sock, name_len)
-        name = name_bytes.decode("utf-8")
-    else:
-        name = ""
-    (payload_len,) = _BINARY_SIZE.unpack(_read_exact(sock, _BINARY_SIZE.size))
-    payload = _read_exact(sock, payload_len) if payload_len else b""
+    header_buf = bytearray(first)
+    while len(header_buf) < HEADER_SIZE:
+        chunk = sock.recv(HEADER_SIZE - len(header_buf))
+        if not chunk:
+            raise ConnectionClosed("socket closed while reading header")
+        header_buf.extend(chunk)
+    flags = header_buf[5]
+    if flags & FLAG_FRAGMENTED:
+        extra = recv_exact(sock, FRAGMENT_INFO_SIZE)
+        header_buf.extend(extra)
     try:
-        kind = _CODE_TO_KIND[kind_code]
-    except KeyError as exc:  # pragma: no cover - only triggered by wire corruption.
-        raise ProtocolError(f"unknown message kind code {kind_code}") from exc
-    return Message(kind=kind, name=name, payload=payload)
+        frame_header = unpack_frame_header(bytes(header_buf))
+    except HeaderError as exc:
+        raise ProtocolError(str(exc)) from exc
+    name_bytes = recv_exact(sock, frame_header.name_len) if frame_header.name_len else b""
+    name = name_bytes.decode("utf-8") if name_bytes else ""
+    payload = recv_exact(sock, frame_header.payload_len) if frame_header.payload_len else b""
+    kind = _KIND_BY_FRAME_TYPE.get(frame_header.frame_type, MSG_DATA)
+    message = Message(kind=kind, name=name, payload=payload)
+    message.sequence = frame_header.sequence
+    message.fragmented = frame_header.is_fragmented
+    message.flags = frame_header.flags
+    if frame_header.fragment is not None:
+        message.fragment_index = frame_header.fragment.index
+        message.fragments_total = frame_header.fragment.total
+        message.frame_payload_len = frame_header.fragment.frame_payload_len
+        if not message.fragmented and frame_header.fragment.total > 1:
+            message.fragmented = True
+    if frame_header.flags & FLAG_MORE_FRAGMENTS:
+        message.fragmented = True
+    return message
 
 
 @dataclass(frozen=True)
@@ -191,7 +227,7 @@ _PROTOCOLS: Dict[str, ProtocolHandler] = {
         name="binary",
         send=_send_binary,
         recv=_recv_binary,
-        description="Compact binary framing (reduced syscalls/encoding)",
+        description="Compact Draco binary framing (shared header)",
     ),
 }
 
