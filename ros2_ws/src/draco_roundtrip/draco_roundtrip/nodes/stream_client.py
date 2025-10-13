@@ -13,6 +13,7 @@ import asyncio
 import contextlib
 import itertools
 import json
+import logging
 import math
 import queue
 import socket
@@ -38,6 +39,7 @@ from draco_tools.core.encoder import (
 )
 from draco_roundtrip.analysis import pointcloud_metrics
 from draco_roundtrip.common.state_machine import StreamState, StreamStateMachine
+from draco_roundtrip.common.timers import AckDeadlineHeap
 from draco_roundtrip.utils.config import resolve_data_layout, resolve_qos_override
 from draco_roundtrip.io.ply_codec import save_xyz
 from draco_roundtrip.utils.ply_io import (
@@ -80,6 +82,9 @@ from draco_roundtrip.utils.stream_protocol import (
     parse_response_payload,
 )
 from draco_roundtrip.utils.telemetry import Telemetry, percentiles_block
+
+
+logger = logging.getLogger(__name__)
 
 
 _capture_ticket = itertools.count()
@@ -199,6 +204,7 @@ class FrameContext:
     payload_size: int
     encode_ms: float
     ack_at: float | None = None
+    ack_timeout: float = 0.0
     orig_metrics: dict[str, object] | None = None
     orig_points: np.ndarray | None = None
 
@@ -920,6 +926,7 @@ async def network_sender(
     network_queue: "asyncio.Queue[Optional[EncodedFrame]]",
     inflight: Dict[int, FrameContext],
     acks_pending: set[int],
+    ack_deadlines: AckDeadlineHeap,
     *,
     stats: PipelineStats,
     traffic: TrafficStats,
@@ -935,6 +942,7 @@ async def network_sender(
     use_binary: bool,
     control_plane: ControlPlane,
     ack_policy: "AckTimeoutPolicy",
+    ack_deadline_event: asyncio.Event,
     lifecycle: StreamStateMachine,
 ) -> None:
     """Send encoded frames while respecting inflight limits."""
@@ -1105,12 +1113,15 @@ async def network_sender(
             sent_at=sent_at,
             payload_size=len(encoded.payload),
             encode_ms=encoded.encode_ms,
+            ack_timeout=ack_timeout_s,
         )
         async with inflight_condition:
             inflight[encoded.sequence] = ctx
             acks_pending.add(encoded.sequence)
             traffic.inflight_peak = max(traffic.inflight_peak, len(acks_pending))
             inflight_condition.notify_all()
+        if ack_deadlines.push(encoded.sequence, sent_at + ack_timeout_s):
+            ack_deadline_event.set()
         traffic.sent += len(encoded.payload)
         print(f"[CLIENT] Sent {encoded.handle.name} ({len(encoded.payload)} bytes)")
         async with inflight_condition:
@@ -1122,12 +1133,14 @@ async def reply_consumer(
     reply_queue: "asyncio.Queue[ReplyEvent]",
     inflight: Dict[int, FrameContext],
     *,
+    ack_deadlines: AckDeadlineHeap,
     stats: PipelineStats,
     traffic: TrafficStats,
     stop_event: asyncio.Event,
     inflight_condition: asyncio.Condition,
     window: WindowController,
     acks_pending: set[int],
+    ack_deadline_event: asyncio.Event,
     decoded_dir: Path,
     to_play: "queue.Queue",
     play_sample: int,
@@ -1282,24 +1295,57 @@ async def reply_consumer(
     timeout_strikes = 0
     max_timeout_strikes = max(1, ack_timeout_strikes)
 
+    async def _cancel_task(task: asyncio.Task[object] | None) -> None:
+        if task is None:
+            return
+        if task.done():
+            with contextlib.suppress(Exception):
+                task.result()
+            return
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
+    pending_get: asyncio.Task[ReplyEvent] = asyncio.create_task(reply_queue.get())
+    heartbeat_task: asyncio.Task[None] = asyncio.create_task(asyncio.sleep(CONTROL_POLL_INTERVAL))
+    update_task: asyncio.Task[None] = asyncio.create_task(ack_deadline_event.wait())
+    stop_task: asyncio.Task[None] = asyncio.create_task(stop_event.wait())
+    deadline_task: asyncio.Task[None] | None = None
+    need_reschedule = True
+
     try:
         while not stop_event.is_set():
-            try:
-                event = await asyncio.wait_for(
-                    reply_queue.get(), timeout=CONTROL_POLL_INTERVAL
-                )
-            except asyncio.TimeoutError:
-                if stop_event.is_set():
-                    break
-                now_ns = time.monotonic_ns()
-                expired = control_plane.expired_sequences(now_ns=now_ns)
-                if expired:
-                    detail = ",".join(str(seq) for seq in expired)
+            if need_reschedule:
+                await _cancel_task(deadline_task)
+                deadline_task = None
+                next_deadline = ack_deadlines.next_deadline()
+                if next_deadline is not None:
+                    delay = max(0.0, next_deadline - time.monotonic())
+                    deadline_task = asyncio.create_task(asyncio.sleep(delay))
+                need_reschedule = False
+
+            wait_tasks: set[asyncio.Task[object]] = {pending_get, heartbeat_task, update_task, stop_task}
+            if deadline_task is not None:
+                wait_tasks.add(deadline_task)
+
+            done, _ = await asyncio.wait(wait_tasks, return_when=asyncio.FIRST_COMPLETED)
+
+            if stop_task in done:
+                break
+
+            if deadline_task is not None and deadline_task in done:
+                deadline_task = None
+                now = time.monotonic()
+                due_sequences = ack_deadlines.pop_due(now)
+                if due_sequences:
+                    detail = ",".join(str(seq) for seq in sorted(due_sequences))
                     timeout_strikes += 1
                     if timeout_strikes >= max_timeout_strikes:
-                        print(
-                            f"[CLIENT] ERROR: ACK timeout strike {timeout_strikes}/{max_timeout_strikes}"
-                            f" for sequences {detail}"
+                        logger.error(
+                            "ACK timeout strike %s/%s for sequences %s",
+                            timeout_strikes,
+                            max_timeout_strikes,
+                            detail,
                         )
                         control_plane.on_error(
                             ErrorCode.TIMEOUT,
@@ -1315,18 +1361,49 @@ async def reply_consumer(
                             f"ack timeout ({detail})",
                             inflight_condition=inflight_condition,
                         )
+                    else:
+                        logger.warning(
+                            "ACK timeout strike %s/%s for sequences %s",
+                            timeout_strikes,
+                            max_timeout_strikes,
+                            detail,
+                        )
+                        await session.transition(
+                            SessionState.SOFT_DEGRADED,
+                            f"ack timeout pending ({detail})",
+                        )
+                    for sequence in due_sequences:
+                        ctx = inflight.get(sequence)
+                        if ctx is None:
+                            continue
+                        deadline = now + max(ctx.ack_timeout, 0.0)
+                        if ack_deadlines.push(sequence, deadline):
+                            ack_deadline_event.set()
+                        control_plane.on_frame_sent(
+                            sequence,
+                            now_ns=time.monotonic_ns(),
+                            ack_timeout_ns=int(ctx.ack_timeout * 1_000_000_000),
+                        )
+                    need_reschedule = True
+                    if stop_event.is_set():
                         continue
-                    print(
-                        f"[CLIENT] WARN: ACK timeout strike {timeout_strikes}/{max_timeout_strikes}"
-                        f" for sequences {detail}"
-                    )
-                    await session.transition(
-                        SessionState.SOFT_DEGRADED,
-                        f"ack timeout pending ({detail})",
-                    )
                     continue
+                need_reschedule = True
+                continue
+
+            if update_task in done:
+                ack_deadline_event.clear()
+                update_task = asyncio.create_task(ack_deadline_event.wait())
+                need_reschedule = True
+                continue
+
+            if heartbeat_task in done:
+                heartbeat_task = asyncio.create_task(asyncio.sleep(CONTROL_POLL_INTERVAL))
+                if stop_event.is_set():
+                    break
+                now_ns = time.monotonic_ns()
                 if control_plane.heartbeat_timed_out(now_ns=now_ns):
-                    print("[CLIENT] ERROR: Heartbeat timeout detected")
+                    logger.error("Heartbeat timeout detected")
                     control_plane.on_error(ErrorCode.TIMEOUT, "heartbeat timeout")
                     await session.transition(SessionState.DEGRADED, "heartbeat timeout")
                     await _fail_and_signal(
@@ -1337,9 +1414,9 @@ async def reply_consumer(
                     )
                     continue
                 if heartbeat_timeout > 0 and heartbeat_watch.age() > heartbeat_timeout:
-                    print(
-                        "[CLIENT] WARN: No server reply within heartbeat window;",
-                        f" pending={len(inflight)} inflight",
+                    logger.warning(
+                        "No server reply within heartbeat window; pending=%s inflight",
+                        len(inflight),
                     )
                     await session.transition(
                         SessionState.DEGRADED, "reply heartbeat window expired"
@@ -1353,126 +1430,130 @@ async def reply_consumer(
                     continue
                 continue
 
-            now = time.monotonic()
-            heartbeat_watch.touch()
-            if event.kind == "local_skip":
-                sequence = event.sequence
-                detail = event.detail or "local failure"
-                frame_name = event.frame or (
-                    str(sequence) if sequence is not None else "unknown"
-                )
-                if sequence is not None:
-                    skipped_sequences[sequence] = detail
-                    async with inflight_condition:
-                        acks_pending.discard(sequence)
-                        inflight_condition.notify_all()
-                print(f"[CLIENT] Local skip seq={sequence}: {frame_name} ({detail})")
-                stats.error_frames += 1
-                await drain_ready()
-                reply_queue.task_done()
-                continue
-            if event.kind == "error" and event.error:
-                channel = event.channel or DATA_CHANNEL
-                detail = str(event.error)
-                if isinstance(event.error, ProtocolError):
-                    print(
-                        f"[CLIENT] PROTOCOL ERROR on {channel}: {detail} (binary framing)"
-                    )
-                else:
-                    print(f"[CLIENT] ERROR from reply pump ({channel}): {detail}")
-                control_plane.on_error(ErrorCode.INTERNAL_ERROR, detail)
-                await session.transition(
-                    SessionState.DEGRADED, f"reply pump error ({channel})"
-                )
-                async with inflight_condition:
-                    acks_pending.clear()
-                    inflight_condition.notify_all()
-                await _fail_and_signal(
-                    lifecycle,
-                    stop_event,
-                    f"reply pump error ({channel})",
-                )
-                reply_queue.task_done()
-                break
-            if event.kind == "closed":
-                channel = event.channel or DATA_CHANNEL
-                print(f"[CLIENT] Connection closed by server on {channel} channel")
-                control_plane.on_error(
-                    ErrorCode.PROTOCOL_VIOLATION, "connection closed"
-                )
-                await session.transition(SessionState.DEGRADED, "connection closed")
-                async with inflight_condition:
-                    acks_pending.clear()
-                    inflight_condition.notify_all()
-                await _fail_and_signal(
-                    lifecycle,
-                    stop_event,
-                    f"connection closed ({channel})",
-                )
-                reply_queue.task_done()
-                break
-            if event.kind != "message" or event.message is None:
-                reply_queue.task_done()
-                continue
-
-            message = event.message
-            address = decode_frame_address(message.name)
-            body = message.payload
-
-
-            if message.kind == MSG_HEARTBEAT:
+            if pending_get in done:
+                event = pending_get.result()
+                pending_get = asyncio.create_task(reply_queue.get())
+                now = time.monotonic()
                 heartbeat_watch.touch()
-                control_plane.on_heartbeat(now_ns=time.monotonic_ns())
-                _telemetry("recv_heartbeat", address.name or "all")
-                async with inflight_condition:
-                    inflight_condition.notify_all()
-                reply_queue.task_done()
-                continue
-
-            if message.kind == MSG_ACK:
-                sequence = message.sequence if message.sequence is not None else address.sequence
-                if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
-                    sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
-                ctx: FrameContext | None = None
-                async with inflight_condition:
+                if event.kind == "local_skip":
+                    sequence = event.sequence
+                    detail = event.detail or "local failure"
+                    frame_name = event.frame or (
+                        str(sequence) if sequence is not None else "unknown"
+                    )
                     if sequence is not None:
-                        ctx = inflight.get(sequence)
-                        acks_pending.discard(sequence)
-                    inflight_condition.notify_all()
-                if ctx is None:
-                    print(f"[CLIENT] WARN: ACK for unknown frame {message.name}")
-                else:
-                    ctx.ack_at = now
-                    ack_latency = max(0.0, ctx.ack_at - ctx.sent_at)
-                    stats.record_ack(ack_latency)
-                    window.observe_ack(ctx.payload_size, ack_latency)
-                    try:
-                        control_plane.on_ack(ctx.sequence)
-                        if control_plane.state == ControlState.TERMINATED:
-                            lifecycle.transition(
-                                StreamState.TERMINATED,
-                                reason="acks drained",
-                            )
-                    except ControlPlaneError as exc:
-                        print(f"[CLIENT] ERROR: {exc}")
-                        control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
-                        await _fail_and_signal(
-                            lifecycle,
-                            stop_event,
-                            f"ack processing error: {exc}",
-                            inflight_condition=inflight_condition,
+                        skipped_sequences[sequence] = detail
+                        async with inflight_condition:
+                            acks_pending.discard(sequence)
+                            inflight_condition.notify_all()
+                    print(f"[CLIENT] Local skip seq={sequence}: {frame_name} ({detail})")
+                    stats.error_frames += 1
+                    await drain_ready()
+                    reply_queue.task_done()
+                    continue
+                if event.kind == "error" and event.error:
+                    channel = event.channel or DATA_CHANNEL
+                    detail = str(event.error)
+                    if isinstance(event.error, ProtocolError):
+                        print(
+                            f"[CLIENT] PROTOCOL ERROR on {channel}: {detail} (binary framing)"
                         )
-                    timeout_strikes = 0
-                    if session.state == SessionState.SOFT_DEGRADED:
-                        await session.transition(SessionState.OK, "ack recovered")
-                _telemetry(
-                    "recv_ack",
-                    address.name or (ctx.handle.name if ctx else "unknown"),
-                    seq=sequence,
-                    latency_ms=(ctx.ack_at - ctx.sent_at) * 1000.0 if ctx and ctx.ack_at else None,
-                )
-                reply_queue.task_done()
-                continue
+                    else:
+                        print(f"[CLIENT] ERROR from reply pump ({channel}): {detail}")
+                    control_plane.on_error(ErrorCode.INTERNAL_ERROR, detail)
+                    await session.transition(
+                        SessionState.DEGRADED, f"reply pump error ({channel})"
+                    )
+                    async with inflight_condition:
+                        acks_pending.clear()
+                        inflight_condition.notify_all()
+                    await _fail_and_signal(
+                        lifecycle,
+                        stop_event,
+                        f"reply pump error ({channel})",
+                    )
+                    reply_queue.task_done()
+                    break
+                if event.kind == "closed":
+                    channel = event.channel or DATA_CHANNEL
+                    print(f"[CLIENT] Connection closed by server on {channel} channel")
+                    control_plane.on_error(
+                        ErrorCode.PROTOCOL_VIOLATION, "connection closed"
+                    )
+                    await session.transition(SessionState.DEGRADED, "connection closed")
+                    async with inflight_condition:
+                        acks_pending.clear()
+                        inflight_condition.notify_all()
+                    await _fail_and_signal(
+                        lifecycle,
+                        stop_event,
+                        f"connection closed ({channel})",
+                    )
+                    reply_queue.task_done()
+                    break
+                if event.kind != "message" or event.message is None:
+                    reply_queue.task_done()
+                    continue
+
+                message = event.message
+                address = decode_frame_address(message.name)
+                body = message.payload
+
+                if message.kind == MSG_HEARTBEAT:
+                    heartbeat_watch.touch()
+                    control_plane.on_heartbeat(now_ns=time.monotonic_ns())
+                    _telemetry("recv_heartbeat", address.name or "all")
+                    async with inflight_condition:
+                        inflight_condition.notify_all()
+                    reply_queue.task_done()
+                    continue
+
+                if message.kind == MSG_ACK:
+                    sequence = message.sequence if message.sequence is not None else address.sequence
+                    if sequence is None and len(body) >= ACK_PAYLOAD_STRUCT.size:
+                        sequence = ACK_PAYLOAD_STRUCT.unpack_from(body)[0]
+                    if sequence is not None and ack_deadlines.cancel(sequence):
+                        ack_deadline_event.set()
+                    ctx: FrameContext | None = None
+                    async with inflight_condition:
+                        if sequence is not None:
+                            ctx = inflight.get(sequence)
+                            acks_pending.discard(sequence)
+                        inflight_condition.notify_all()
+                    if ctx is None:
+                        logger.warning("ACK for unknown frame %s", message.name)
+                    else:
+                        ctx.ack_at = now
+                        ack_latency = max(0.0, ctx.ack_at - ctx.sent_at)
+                        stats.record_ack(ack_latency)
+                        window.observe_ack(ctx.payload_size, ack_latency)
+                        try:
+                            control_plane.on_ack(ctx.sequence)
+                            if control_plane.state == ControlState.TERMINATED:
+                                lifecycle.transition(
+                                    StreamState.TERMINATED,
+                                    reason="acks drained",
+                                )
+                        except ControlPlaneError as exc:
+                            logger.error("ACK processing error: %s", exc)
+                            control_plane.on_error(ErrorCode.PROTOCOL_VIOLATION, str(exc))
+                            await _fail_and_signal(
+                                lifecycle,
+                                stop_event,
+                                f"ack processing error: {exc}",
+                                inflight_condition=inflight_condition,
+                            )
+                        timeout_strikes = 0
+                        if session.state == SessionState.SOFT_DEGRADED:
+                            await session.transition(SessionState.OK, "ack recovered")
+                    _telemetry(
+                        "recv_ack",
+                        address.name or (ctx.handle.name if ctx else "unknown"),
+                        seq=sequence,
+                        latency_ms=(ctx.ack_at - ctx.sent_at) * 1000.0 if ctx and ctx.ack_at else None,
+                    )
+                    reply_queue.task_done()
+                    continue
 
             if message.kind == MSG_EOF:
                 pending_count = len(inflight)
@@ -1630,6 +1711,11 @@ async def reply_consumer(
         )
         raise
     finally:
+        await _cancel_task(pending_get)
+        await _cancel_task(heartbeat_task)
+        await _cancel_task(update_task)
+        await _cancel_task(deadline_task)
+        await _cancel_task(stop_task)
         heartbeat_watch.touch()
 
 async def monitor_process(
@@ -2006,6 +2092,8 @@ async def run_client(args: argparse.Namespace) -> None:
     frame_counter = itertools.count()
     inflight: Dict[int, FrameContext] = {}
     acks_pending: set[int] = set()
+    ack_deadlines = AckDeadlineHeap()
+    ack_deadline_event = asyncio.Event()
     pending_inflight = 0
     pending_acks = 0
     max_window = max(1, args.max_inflight)
@@ -2190,6 +2278,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             network_queue,
                             inflight,
                             acks_pending,
+                            ack_deadlines,
                             stats=pipeline_stats,
                             traffic=traffic,
                             stop_event=stop_event,
@@ -2204,6 +2293,7 @@ async def run_client(args: argparse.Namespace) -> None:
                             use_binary=(protocol.name == "binary"),
                             control_plane=control_plane,
                             ack_policy=ack_policy,
+                            ack_deadline_event=ack_deadline_event,
                             lifecycle=lifecycle,
                         )
                     )
@@ -2213,12 +2303,14 @@ async def run_client(args: argparse.Namespace) -> None:
                         reply_consumer(
                             reply_queue,
                             inflight,
+                            ack_deadlines=ack_deadlines,
                             stats=pipeline_stats,
                             traffic=traffic,
                             stop_event=stop_event,
                             inflight_condition=inflight_condition,
                             window=window_controller,
                             acks_pending=acks_pending,
+                            ack_deadline_event=ack_deadline_event,
                             decoded_dir=decoded_dir,
                             to_play=to_play,
                             play_sample=args.play_sample,
