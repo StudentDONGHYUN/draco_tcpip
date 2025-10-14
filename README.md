@@ -36,25 +36,33 @@ source install/setup.bash
 `~/.bashrc` 에 위 두 개의 `source` 명령과 PATH 설정을 추가해 두면 새 터미널에서도 바로 `ros2 run` 명령을 사용할 수 있습니다.
 
 ## 실행 방법
-### 1. 서버
-```bash
-ros2 run draco_roundtrip stream_server --port 5000
-```
-`draco_decoder` 가 PATH에 없다면 `--decoder /absolute/path/to/draco_decoder` 로 직접 지정합니다. 서버는 수신한 Draco 파일을 지정된 임시 디렉터리에 저장하고, 디코딩 결과를 클라이언트에게 다시 전송합니다.
+### 서버-센트릭 스트리밍 파이프라인 (분산 환경)
+리팩터링된 양방향 프로토콜은 서버와 로봇이 서로 다른 PC에서 동작하도록 설계되었습니다. 각 PC에서 아래 단계를 따라 두 노드를 실행하세요.
 
-### 2. 클라이언트
-다른 터미널에서 다음과 같이 실행합니다.
-```bash
-ros2 run draco_roundtrip stream_client \
-    --bag data/bags/rosbag2_2024_09_24-14_28_57 \
-    --topic /sensing/lidar/top/pointcloud \
-    --prefix cycle_sample
-```
-- rosbag 재생 시 `configs/qos_override.yaml`을 자동으로 적용해 QoS를 Best Effort로 낮춰줍니다.
-- 기본 `--idle-timeout` 은 10초로 설정되어 있어, 초기 로딩 동안 메시지를 기다릴 수 있습니다.
-- `--encoder` 옵션을 통해 `draco_encoder` 경로를 직접 지정할 수 있고, `--cl`, `--qp`, `--qg`를 통해 압축 품질을 조정할 수 있습니다.
+**1. 서버 PC (고성능 머신)**
 
-클라이언트가 실행되면 `data/ply_stream/`에 생성된 PLY 파일을 인코딩한 뒤 서버로 전송하며, 서버에서 돌려받은 복원 결과는 `data/decoded_from_server/`에 저장되고 동시에 ROS 토픽(`stream_pair/source`, `stream_pair/decoded`)으로 퍼블리시됩니다. RViz에서 두 토픽을 비교하면 복원 품질을 시각적으로 확인할 수 있습니다.
+```bash
+ros2 launch draco_roundtrip server.launch.py [port:=5000]
+```
+
+- `port` (옵션): 업링크(TCP) 포트. 기본값은 `5000`이며, 다운링크 포트는 자동으로 `port + 1` 로 계산됩니다.
+
+**2. 클라이언트 PC (로봇)**
+
+```bash
+ros2 launch draco_roundtrip client.launch.py \
+    server_ip:=192.168.3.16 \
+    server_port:=5000 \
+    bag_file:=/absolute/path/to/your.bag \
+    topic_name:=/sensing/lidar/top/pointcloud
+```
+
+- `server_ip` (필수): 서버 PC의 IP 또는 호스트명. 다운링크 접속에도 동일 값이 사용됩니다.
+- `server_port` (옵션): 서버 런치에서 사용한 업링크 포트(기본값 `5000`). 다운링크 포트는 자동으로 `server_port + 1` 로 설정됩니다.
+- `bag_file` (필수): 스트리밍할 rosbag2 디렉터리 또는 DB3 파일의 절대 경로.
+- `topic_name` (필수): rosbag 안의 `sensor_msgs/msg/PointCloud2` 토픽 이름.
+
+각 런치 파일은 신규(기본) 모드로 노드를 실행하며, 필요 시 `--encoder`, `--decoder` 등 세부 인자는 환경 변수나 `ROS_ARGUMENTS` 를 통해 각 노드에 전달할 수 있습니다. 클라이언트가 실행되면 `data/ply_stream/`에 생성된 PLY 파일을 인코딩한 뒤 서버로 전송하고, 서버에서 돌려받은 복원 결과는 `data/decoded_from_server/`에 저장되며 동시에 ROS 토픽(`stream_pair/source`, `stream_pair/decoded`)으로 퍼블리시됩니다. RViz에서 두 토픽을 비교하면 복원 품질을 시각적으로 확인할 수 있습니다.
 
 ### 3. 보조 유틸리티
 - PLY 생성만 필요한 경우:

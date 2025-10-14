@@ -11,59 +11,53 @@ the Draco uplink intact while streaming autonomy outputs back to the robot.
 * Network reachability between the client and server for the uplink and
   downlink ports
 
-## Server
+## Launching the pipeline
 
-Launch the streaming server, which decodes Draco frames, publishes
-`PointCloud2`, and emits control-plane telemetry. Binary downlink is enabled by
-default.
+The refactored, bidirectional workflow assumes a distributed deployment. Launch
+the server and client on their respective machines so the uplink and downlink
+flows stay synchronized.
 
-```bash
-ros2 run draco_roundtrip stream_server \
-  --host 0.0.0.0 \
-  --port 5000 \
-  --downlink-port 6000 \
-  --downlink-rate 10 \
-  --points-topic /server/points \
-  --pose-topic /server_pose \
-  --path-topic /planned_path \
-  --twist-topic /cmd_vel
-```
-
-The server publishes stub pose/path/twist messages if no SLAM/planner inputs
-are available. Use `--legacy-downlink` to re-enable the original PLY response
-flow (a deprecation warning is logged).
-
-Switch to JSON telemetry when debugging:
+### Server PC (uplink/downlink hub)
 
 ```bash
-ros2 run draco_roundtrip stream_server --downlink-json
+ros2 launch draco_roundtrip server.launch.py [port:=5000]
 ```
 
-## Client
+* `port` defaults to `5000`. The downlink port is automatically derived as
+  `port + 1`.
+* Run this command on the high-performance server that performs decoding and
+  analytics.
 
-Run the client to stream PLY frames, encode them to Draco, and consume the
-downlink telemetry. The client publishes `/server_pose`, `/planned_path`, and
-`/cmd_vel` into its ROS graph (prefixed via `--topic-prefix` when required).
+### Client PC (robot)
 
 ```bash
-ros2 run draco_roundtrip stream_client \
-  --bag my_recording.db3 \
-  --topic /lidar/points \
-  --prefix robot1 \
-  --ply-dir data/ply_stream \
-  --server-host 192.168.1.100 \
-  --server-port 5000 \
-  --downlink-host 192.168.1.100 \
-  --downlink-port 6000 \
-  --topic-prefix robot1
+ros2 launch draco_roundtrip client.launch.py \
+  server_ip:=192.168.3.16 \
+  server_port:=5000 \
+  bag_file:=/path/to/recording \
+  topic_name:=/lidar/points
 ```
+
+* `server_ip` is required and must point to the server PC reachable over the
+  network. The same address is reused for the downlink connection.
+* `server_port` defaults to `5000`; the client automatically listens on
+  `server_port + 1` for the downlink.
+* `bag_file` should point to the rosbag2 directory or database file to replay.
+* `topic_name` selects the `sensor_msgs/msg/PointCloud2` topic inside the bag.
+
+Additional command-line options for `stream_client` and `stream_server` can be
+passed via `ROS_ARGUMENTS` when necessary (e.g., enabling `--downlink-json`).
+Both nodes inherit the package defaults for heartbeat timing, telemetry topics,
+and QoS handling.
 
 Heartbeat messages keep the downlink alive. Increase the heartbeat interval for
-satcom links:
+satcom links by exporting
 
 ```bash
-ros2 run draco_roundtrip stream_client ... --heartbeat-interval 2.5
+export ROS_ARGUMENTS='--ros-args --params-file path/to/custom.yaml'
 ```
+
+or by launching with an override YAML that tweaks the client parameters.
 
 ## Telemetry
 

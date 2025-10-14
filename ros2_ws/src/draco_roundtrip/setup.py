@@ -10,6 +10,13 @@ setup(
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/config', ['draco_roundtrip/configs/qos_override.yaml']),
+        (
+            'share/' + package_name + '/launch',
+            [
+                'launch/server.launch.py',
+                'launch/client.launch.py',
+            ],
+        ),
     ],
     install_requires=['setuptools', 'ament_index_python'],
     zip_safe=False,
