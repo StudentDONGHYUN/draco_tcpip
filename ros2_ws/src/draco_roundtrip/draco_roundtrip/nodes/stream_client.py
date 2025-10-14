@@ -196,6 +196,7 @@ def _launch_bag_to_ply(
     idle_timeout: float,
     best_effort: bool,
     max_frames: int,
+    use_sim_time: bool,
 ) -> subprocess.Popen:
     cmd = [
         sys.executable,
@@ -214,6 +215,10 @@ def _launch_bag_to_ply(
         cmd.append("--best-effort")
     if max_frames:
         cmd += ["--max-frames", str(max_frames)]
+        
+    if use_sim_time:
+        cmd += ["--ros-args", "--param", "use_sim_time:=true"]
+        
     return subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
 
 
@@ -442,6 +447,7 @@ class StreamClientNode(Node):
             self.idle_timeout,
             self.best_effort,
             self.max_frames,
+            self.use_sim_time,
         )
 
         processed: set[Path] = set()
