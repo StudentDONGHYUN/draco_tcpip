@@ -9,6 +9,7 @@ def generate_launch_description() -> LaunchDescription:
     server_port = LaunchConfiguration('server_port')
     bag_file = LaunchConfiguration('bag_file')
     topic_name = LaunchConfiguration('topic_name')
+    prefix = LaunchConfiguration('prefix')
     downlink_port = PythonExpression(['str(int(', server_port, ') + 1)'])
 
     return LaunchDescription([
@@ -29,6 +30,10 @@ def generate_launch_description() -> LaunchDescription:
             'topic_name',
             description='PointCloud2 topic inside the rosbag to replay.',
         ),
+        DeclareLaunchArgument(
+            'prefix',
+            description='Unique namespace prefix used when recording the rosbag.',
+        ),
         Node(
             package='draco_roundtrip',
             executable='stream_client',
@@ -41,6 +46,7 @@ def generate_launch_description() -> LaunchDescription:
                 '--downlink-port', downlink_port,
                 '--bag', bag_file,
                 '--topic', topic_name,
+                '--prefix', prefix,
             ],
         ),
     ])
