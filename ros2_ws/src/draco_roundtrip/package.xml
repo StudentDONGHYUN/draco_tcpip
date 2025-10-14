@@ -17,6 +17,8 @@
   <exec_depend>python3-plyfile</exec_depend>
   <exec_depend>python3-open3d</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
 
   <test_depend>ament_pytest</test_depend>
 
