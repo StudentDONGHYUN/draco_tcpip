@@ -14,6 +14,11 @@ __all__ = [
     "MSG_DATA",
     "MSG_ERROR",
     "MSG_EOF",
+    "MSG_ACK",
+    "MSG_POSE",
+    "MSG_TWIST",
+    "MSG_PATH",
+    "MSG_HEARTBEAT",
     "send_message",
     "recv_message",
 ]
@@ -25,6 +30,11 @@ _SEPARATOR = ":"
 MSG_DATA = "data"
 MSG_ERROR = "error"
 MSG_EOF = "eof"
+MSG_ACK = "ack"
+MSG_POSE = "pose"
+MSG_TWIST = "twist"
+MSG_PATH = "path"
+MSG_HEARTBEAT = "heartbeat"
 
 
 class ProtocolError(RuntimeError):

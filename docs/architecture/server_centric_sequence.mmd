@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Client
+    participant Server
+    participant ROS as Server ROS Graph
+    Client->>Server: MSG_DATA (Draco .drc frame)
+    Server->>ROS: Publish PointCloud2 (/server/points)
+    ROS-->>Server: SLAM/Planner outputs (Pose/Path/Twist)
+    Server-->>Client: MSG_POSE | MSG_PATH | MSG_TWIST (binary or JSON)
+    Client->>Client: Publish /server_pose, /planned_path, /cmd_vel
