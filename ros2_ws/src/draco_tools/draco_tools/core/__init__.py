@@ -1,9 +1,5 @@
 """Core helpers shared across Draco tooling."""
 
-from .encoder import EncoderOptions, encode_frame, find_draco_encoder
+from .encoder import EncodeResult, EncoderOptions, encode_points
 
-__all__ = [
-    "EncoderOptions",
-    "encode_frame",
-    "find_draco_encoder",
-]
+__all__ = ["EncoderOptions", "EncodeResult", "encode_points"]

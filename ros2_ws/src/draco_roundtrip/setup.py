@@ -18,7 +18,7 @@ setup(
             ],
         ),
     ],
-    install_requires=['setuptools', 'ament_index_python'],
+    install_requires=['setuptools', 'ament_index_python', 'DracoPy'],
     zip_safe=False,
     maintainer='GodokSa',
     maintainer_email='ppakdone@gmail.com',

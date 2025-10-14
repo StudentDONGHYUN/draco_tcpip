@@ -26,7 +26,7 @@ from sensor_msgs_py import point_cloud2 as pc2
 from std_msgs.msg import Header
 
 from draco_roundtrip.analysis.metrics import compute_basic_metrics
-from draco_roundtrip.draco.encoder import EncoderOptions, encode_frame, find_draco_encoder
+from draco_roundtrip.draco.encoder import EncoderOptions, encode_points
 from draco_roundtrip.io.ply_codec import load_xyz, load_xyz_from_bytes
 from draco_roundtrip.net.control_plane import (
     PathPayload,
@@ -264,7 +264,6 @@ class StreamClientNode(Node):
         self.decoded_dir = ensure_directory(
             Path(str(self.get_parameter("decoded_dir").value)).resolve()
         )
-        self.encoder_path = find_draco_encoder(str(self.get_parameter("encoder").value) or None)
         encoder_extra = self.get_parameter("encoder_extra").value
         extra_args = tuple(encoder_extra) if isinstance(encoder_extra, (list, tuple)) else ()
         self.encoder_options = EncoderOptions(
@@ -467,14 +466,9 @@ class StreamClientNode(Node):
                             if ply_path in processed:
                                 continue
                             try:
-                                result = encode_frame(
-                                    ply_path,
-                                    self.work_dir,
-                                    self.encoder_options,
-                                    encoder_hint=self.encoder_path,
-                                    skip_existing=False,
-                                )
-                                drc_bytes = result.output.read_bytes()
+                                pts_src = load_xyz(ply_path)
+                                result = encode_points(pts_src, self.encoder_options)
+                                drc_bytes = result.encoded_data
                             except Exception as exc:
                                 print(f"[CLIENT] ENCODE FAIL {ply_path.name}: {exc}")
                                 processed.add(ply_path)
@@ -511,10 +505,12 @@ class StreamClientNode(Node):
                             else:
                                 pts_dec = load_xyz_from_bytes(ply_path.read_bytes())
 
-                            pts_src = load_xyz(ply_path)
+                            pts_src_metrics = pts_src
                             # <-- 메트릭 계산 로직을 조건부로 변경
                             if self.calculate_metrics:
-                                metrics = compute_basic_metrics(pts_src, pts_dec, self.play_sample)
+                                metrics = compute_basic_metrics(
+                                    pts_src_metrics, pts_dec, self.play_sample
+                                )
                                 print(
                                     f"[CLIENT] Frame {frame_idx:05d} metrics — "
                                     f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "

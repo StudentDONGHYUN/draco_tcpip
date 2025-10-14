@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
+import io
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -20,11 +20,12 @@ from rclpy.utilities import remove_ros_args
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
+from plyfile import PlyData, PlyElement  # type: ignore
 from std_msgs.msg import Header
 
 import numpy as np
 
-from draco_roundtrip.io.ply_codec import load_xyz_from_bytes
+from draco_roundtrip.draco._draco_adapter import decode_points_np
 from draco_roundtrip.net.control_plane import (
     PATH_POSE_LIMIT,
     PathPayload,
@@ -46,7 +47,7 @@ from draco_roundtrip.net.protocol import (
     recv_message,
     send_message,
 )
-from draco_roundtrip.utils import ensure_directory, resolve_executable
+from draco_roundtrip.utils import ensure_directory
 
 
 @dataclass(slots=True)
@@ -56,20 +57,31 @@ class DownlinkBundle:
     path: Optional[PathPayload] = None
 
 
-def decode_drc(decoder: FSPath, drc_bytes: bytes, out_dir: FSPath, stem: str) -> bytes:
-    """Decode a Draco .drc byte stream to binary PLY bytes."""
-    ensure_directory(out_dir)
-    drc_path = out_dir / f"{stem}.drc"
-    ply_path = out_dir / f"{stem}.decoded.ply"
-    drc_path.write_bytes(drc_bytes)
-    cmd = [str(decoder), "-i", str(drc_path), "-o", str(ply_path)]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"draco_decoder failed (rc={proc.returncode}):\n"
-            f"STDOUT: {proc.stdout.strip()}\nSTDERR: {proc.stderr.strip()}"
+def decode_drc_to_points(drc_bytes: bytes) -> np.ndarray:
+    """Decode Draco bytes entirely in memory."""
+
+    return decode_points_np(drc_bytes)
+
+
+def points_to_ply_bytes(points: np.ndarray) -> bytes:
+    """Serialise XYZ points to binary PLY bytes."""
+
+    arr = np.asarray(points, dtype=np.float32)
+    if arr.ndim != 2 or arr.shape[1] < 3:
+        raise ValueError(
+            f"Expected points shaped (N, 3+) but received {arr.shape!r}"
         )
-    return ply_path.read_bytes()
+    if arr.shape[1] > 3:
+        arr = arr[:, :3]
+    verts = np.zeros(arr.shape[0], dtype=[("x", "<f4"), ("y", "<f4"), ("z", "<f4")])
+    verts["x"] = arr[:, 0]
+    verts["y"] = arr[:, 1]
+    verts["z"] = arr[:, 2]
+    element = PlyElement.describe(verts, "vertex")
+    ply = PlyData([element], text=False)
+    buffer = io.BytesIO()
+    ply.write(buffer)
+    return buffer.getvalue()
 
 
 class StreamServerNode(Node):
@@ -98,9 +110,10 @@ class StreamServerNode(Node):
         self.host = str(self.get_parameter("host").value)
         self.port = int(self.get_parameter("port").value)
         decoder_param = str(self.get_parameter("decoder").value or "")
-        self.decoder = resolve_executable(
-            "draco_decoder", decoder_param or None, env_var="DRACO_DECODER"
-        )
+        if decoder_param:
+            self.get_logger().warn(
+                "Parameter 'decoder' is deprecated; DracoPy handles decoding in-memory."
+            )
         work_dir_param = str(self.get_parameter("work_dir").value)
         self.work_dir = ensure_directory(FSPath(work_dir_param).resolve())
         qos = QoSProfile(depth=10)
@@ -227,18 +240,18 @@ class StreamServerNode(Node):
             bytes_in += len(msg.payload)
             self.get_logger().debug(f"Received {stem} ({len(msg.payload)} bytes)")
             try:
-                ply_bytes = decode_drc(self.decoder, msg.payload, self.work_dir, stem)
+                points = decode_drc_to_points(msg.payload)
             except Exception as exc:
                 error_msg = Message(kind=MSG_ERROR, name=stem, payload=str(exc).encode())
                 send_message(conn, error_msg)
                 self.get_logger().error(f"Failed to decode {stem}: {exc}")
                 continue
 
-            xyz = load_xyz_from_bytes(ply_bytes)
-            self._publish_point_cloud(xyz)
+            self._publish_point_cloud(points)
             self._update_autonomy_outputs()
 
             if self.legacy_downlink:
+                ply_bytes = points_to_ply_bytes(points)
                 reply = Message(kind=MSG_DATA, name=f"{stem}.decoded", payload=ply_bytes)
                 send_message(conn, reply)
                 bytes_out += len(reply.payload)

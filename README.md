@@ -16,13 +16,7 @@ Draco(구글의 3D 압축 라이브러리)를 이용해 LiDAR 포인트클라우
 
 ## 사전 준비
 1. **ROS 2**: Humble(권장) 또는 호환 버전 설치 후 `source /opt/ros/<distro>/setup.bash` 로 환경을 불러옵니다.
-2. **Draco 바이너리**: 공식 릴리스에서 `draco_encoder`, `draco_decoder`를 받아 PATH 에 추가하거나 아래처럼 환경변수를 설정합니다.
-   ```bash
-   export DRACO_HOME=/path/to/draco/build
-   export PATH="$DRACO_HOME:$PATH"
-   export DRACO_ENCODER=$DRACO_HOME/draco_encoder
-   export DRACO_DECODER=$DRACO_HOME/draco_decoder
-   ```
+2. **DracoPy**: Python용 Draco 바인딩인 [`DracoPy`](https://pypi.org/project/DracoPy/)를 설치합니다. `pip install DracoPy` 후 `python -c "import DracoPy"`가 성공하면 준비 완료입니다. 외부 `draco_encoder`/`draco_decoder` 바이너리는 더 이상 필요하지 않습니다.
 3. **Python 의존성**: `numpy`, `plyfile`, `scipy`, `open3d` 등이 필요합니다. 시스템 패키지 또는 `pip install numpy plyfile scipy open3d`로 설치하세요.
 4. **데이터**: 테스트 rosbag을 `data/bags/` 아래에 배치합니다. (예시: `data/bags/rosbag2_2024_09_24-14_28_57/`)
 

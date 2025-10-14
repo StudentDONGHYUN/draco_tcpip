@@ -4,7 +4,7 @@
 PLY(original) vs DRC(Draco) 품질/성능 비교 (멀티코어 + 진행바 강화판)
 
 기능
-- drc 디렉토리의 .drc 를 draco_decoder 로 병렬 디코딩(.ply 임시 생성)
+- drc 디렉토리의 .drc 를 DracoPy 로 메모리상 디코딩(요청 시에만 .ply 저장)
 - 원본 ply 와 1:1 매칭하여 기하 오차(양방향 최근접거리 기반, Chamfer-like),
   파일 크기/압축배율, 디코드 시간/디코드 FPS 계산
 - (옵션) voxel 다운샘플, 통계적 아웃라이어 제거, 무작위 샘플링
@@ -31,18 +31,16 @@ PLY(original) vs DRC(Draco) 품질/성능 비교 (멀티코어 + 진행바 강�
 from __future__ import annotations
 
 import argparse
-import os
+import io
 import re
 import sys
 import time
 import csv
 import math
-import random
-import subprocess as sp
 from pathlib import Path
 from datetime import datetime
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import List, Tuple, Dict, Optional
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 
@@ -61,21 +59,17 @@ try:
 except Exception:
     pass
 
-from draco_tools.analysis.quality import load_pair, summarize_pair
+from plyfile import PlyData, PlyElement  # type: ignore
+
+from draco_roundtrip.draco._draco_adapter import decode_points_np
+from draco_roundtrip.io.ply_codec import load_xyz, voxel_downsample
+from draco_tools.analysis.quality import summarize_pair
 
 
 # ---------- 유틸 ----------
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
     sys.stderr.flush()
-
-
-def which(cmd: str) -> Optional[str]:
-    for p in os.environ.get("PATH", "").split(os.pathsep):
-        c = Path(p) / cmd
-        if c.exists() and os.access(c, os.X_OK):
-            return str(c)
-    return None
 
 
 def ensure_dir(d: Path):
@@ -144,51 +138,71 @@ def parse_stat_outlier(s: Optional[str]) -> Optional[Tuple[int, float]]:
     return (int(k), float(nb))
 
 
-# ---------- 디코딩 ----------
-def _decode_one(decoder: str, drc: Path, out_ply: Path) -> Tuple[str, float, int]:
-    """
-    하나의 DRC를 PLY로 디코딩.
-    반환: (stem, decode_seconds, rc)
-    """
-    t0 = time.perf_counter()
-    cmd = [decoder, "-i", str(drc), "-o", str(out_ply)]
-    proc = sp.run(cmd, stdout=sp.PIPE, stderr=sp.PIPE, text=True)
-    dt = time.perf_counter() - t0
-    rc = proc.returncode
-    return (drc.stem, dt, rc)
+# ---------- 전처리/디코딩 ----------
 
-
-# ---------- 메트릭 ----------
-
-def _metric_one(
-    stem: str,
-    ply_src: Path,
-    ply_dec: Path,
-    thresholds: List[float],
+def _preprocess_xyz(
+    points: np.ndarray,
     voxel_size: Optional[float],
     stat_outlier: Optional[Tuple[int, float]],
     max_samples: Optional[int],
     seed: Optional[int],
+) -> np.ndarray:
+    arr = np.asarray(points, dtype=np.float32)
+    if arr.ndim != 2 or arr.shape[1] < 3:
+        raise ValueError(f"expected (N,3+) array, got {arr.shape!r}")
+    if arr.shape[1] > 3:
+        arr = arr[:, :3]
+
+    if voxel_size and voxel_size > 0 and len(arr):
+        arr = voxel_downsample(arr, voxel_size)
+
+    if stat_outlier and len(arr):
+        if _HAVE_O3D:
+            k, nb_std = stat_outlier
+            pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(arr.astype(np.float64)))
+            filtered, _ = pcd.remove_statistical_outlier(nb_neighbors=int(k), std_ratio=float(nb_std))
+            arr = np.asarray(filtered.points, dtype=np.float32)
+        else:
+            eprint("[WARN] 통계적 아웃라이어 제거를 위해 open3d가 필요하지만 설치되어 있지 않습니다.")
+
+    if max_samples and max_samples > 0 and len(arr) > max_samples:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(len(arr), size=max_samples, replace=False)
+        arr = arr[idx]
+
+    return np.ascontiguousarray(arr, dtype=np.float32)
+
+
+def _metric_one(
+    stem: str,
+    src_pts: np.ndarray,
+    dec_pts: np.ndarray,
+    thresholds: Iterable[float],
+    voxel_size: Optional[float],
+    stat_outlier: Optional[Tuple[int, float]],
+    max_samples: Optional[int],
+    seed: Optional[int],
+    src_name: str,
+    decoded_label: str,
 ) -> Dict[str, object]:
     t_metric = time.perf_counter()
     try:
-        src_pts, dec_pts = load_pair(ply_src, ply_dec)
-        src_pts = _preprocess_xyz(src_pts, voxel_size, stat_outlier, max_samples, seed)
-        dec_pts = _preprocess_xyz(dec_pts, voxel_size, stat_outlier, max_samples, seed)
+        src_proc = _preprocess_xyz(src_pts, voxel_size, stat_outlier, max_samples, seed)
+        dec_proc = _preprocess_xyz(dec_pts, voxel_size, stat_outlier, max_samples, seed)
 
-        if len(src_pts) == 0 or len(dec_pts) == 0:
+        if len(src_proc) == 0 or len(dec_proc) == 0:
             raise ValueError("empty cloud after preprocess")
 
         summary = summarize_pair(
             stem,
-            src_pts,
-            dec_pts,
+            src_proc,
+            dec_proc,
             sample=max_samples or 0,
             thresholds=thresholds,
         )
         summary.update({
-            "src": ply_src.name,
-            "drc_decoded": ply_dec.name,
+            "src": src_name,
+            "drc_decoded": decoded_label,
             "metric_s": float(time.perf_counter() - t_metric),
         })
         return summary
@@ -196,8 +210,8 @@ def _metric_one(
     except Exception as ex:
         return {
             "name": stem,
-            "src": ply_src.name,
-            "drc_decoded": ply_dec.name,
+            "src": src_name,
+            "drc_decoded": decoded_label,
             "n_src": "",
             "n_dec": "",
             "mean_src_to_dec": "",
@@ -212,6 +226,29 @@ def _metric_one(
         }
 
 
+def _decode_drc_file(drc_path: Path) -> tuple[str, np.ndarray, float]:
+    t0 = time.perf_counter()
+    pts = decode_points_np(drc_path.read_bytes())
+    dt = time.perf_counter() - t0
+    return drc_path.stem, pts, dt
+
+
+def _points_to_ply_bytes(points: np.ndarray) -> bytes:
+    arr = np.asarray(points, dtype=np.float32)
+    if arr.ndim != 2 or arr.shape[1] < 3:
+        raise ValueError(f"expected (N,3+) array, got {arr.shape!r}")
+    if arr.shape[1] > 3:
+        arr = arr[:, :3]
+    verts = np.zeros(arr.shape[0], dtype=[("x", "<f4"), ("y", "<f4"), ("z", "<f4")])
+    verts["x"] = arr[:, 0]
+    verts["y"] = arr[:, 1]
+    verts["z"] = arr[:, 2]
+    ply = PlyData([PlyElement.describe(verts, "vertex")], text=False)
+    buf = io.BytesIO()
+    ply.write(buf)
+    return buf.getvalue()
+
+
 
 # ---------- 메인 ----------
 def main():
@@ -221,13 +258,12 @@ def main():
     ap.add_argument("--decoded_dir", default="data/tmp_decoded_ply", help="복원 PLY 저장 디렉토리")
     ap.add_argument("--results_dir", default="data/results", help="결과 저장 디렉토리")
     ap.add_argument("--prefix", required=True, help="파일 접두어 (예: sample2)")
-    ap.add_argument("--decoder", default=None, help="draco_decoder 경로(미지정 시 PATH/관례 탐색)")
     ap.add_argument("--thresholds", nargs="*", type=float, default=[0.01, 0.03, 0.05],
                     help="오차 임계치(m) 목록")
     ap.add_argument("--limit", type=int, default=0, help="0이면 전부, 아니면 앞에서 N개만")
 
     # 성능 옵션
-    ap.add_argument("--decode-workers", type=int, default=1, help="DRC→PLY 디코드 병렬 프로세스 수")
+    ap.add_argument("--decode-workers", type=int, default=1, help="DracoPy 디코드 병렬 작업 수")
     ap.add_argument("--metric-workers", type=int, default=1, help="품질 계산 병렬 프로세스 수")
 
     # 전처리 옵션
@@ -255,44 +291,6 @@ def main():
     # tqdm 사용 여부
     use_tqdm = _HAVE_TQDM and (args.force_tqdm or (not args.no_tqdm))
 
-    # draco_decoder 찾기
-    decoder_path = None
-    # 1) 인자인 파일/폴더
-    if args.decoder:
-        p = Path(args.decoder).expanduser().resolve()
-        if p.is_file() and os.access(str(p), os.X_OK):
-            decoder_path = str(p)
-        elif p.is_dir():
-            cand = p / "draco_decoder"
-            if cand.exists() and os.access(str(cand), os.X_OK):
-                decoder_path = str(cand)
-    # 2) 환경변수
-    if decoder_path is None:
-        env = os.environ.get("DRACO_DECODER")
-        if env:
-            p = Path(env).expanduser().resolve()
-            if p.is_file() and os.access(str(p), os.X_OK):
-                decoder_path = str(p)
-    # 3) PATH
-    if decoder_path is None:
-        w = which("draco_decoder")
-        if w:
-            decoder_path = w
-    # 4) 관례 위치
-    if decoder_path is None:
-        home = Path.home()
-        for c in [
-            home / "draco" / "build" / "bin" / "draco_decoder",
-            home / "draco" / "build" / "draco_decoder",
-            Path(__file__).resolve().parents[1] / "draco" / "bin" / "draco_decoder",
-        ]:
-            if c.exists() and os.access(str(c), os.X_OK):
-                decoder_path = str(c)
-                break
-    if decoder_path is None:
-        eprint("[ERROR] draco_decoder 를 찾을 수 없습니다. --decoder 또는 PATH/DRACO_DECODER 확인.")
-        sys.exit(2)
-
     # 페어 매칭
     pairs = find_pairs(ply_dir, drc_dir, args.prefix)
     if args.limit and args.limit > 0:
@@ -310,21 +308,36 @@ def main():
 
     # 1) 디코딩 (병렬)
     dec_results: Dict[str, Dict[str, object]] = {}
-    tasks = []
-    with ProcessPoolExecutor(max_workers=max(1, args.decode_workers)) as pool:
+    decoded_points: Dict[str, np.ndarray] = {}
+    with ThreadPoolExecutor(max_workers=max(1, args.decode_workers)) as pool:
         if use_tqdm:
             pbar = tqdm(total=len(pairs), unit="file", desc="Decoding", leave=False)
         else:
             pbar = None
 
-        futures = []
-        for ply_path, drc_path, stem in pairs:
-            out_ply = dec_dir / f"{stem}.decoded.ply"
-            futures.append(pool.submit(_decode_one, decoder_path, drc_path, out_ply))
+        future_map = {}
+        for _, drc_path, stem in pairs:
+            future = pool.submit(_decode_drc_file, drc_path)
+            future_map[future] = (stem, drc_path)
 
-        for fut in as_completed(futures):
-            stem, dt, rc = fut.result()
-            dec_results[stem] = {"decode_s": float(dt), "decode_fps": (1.0 / dt) if dt > 0 else float("nan"), "rc": int(rc)}
+        for fut in as_completed(future_map):
+            stem, drc_path = future_map[fut]
+            try:
+                _, pts, dt = fut.result()
+            except Exception as exc:  # noqa: BLE001
+                dec_results[stem] = {
+                    "decode_s": "",
+                    "decode_fps": "",
+                    "status": f"decode_fail: {exc}",
+                }
+                eprint(f"[ERR] 디코드 실패 {drc_path.name}: {exc}")
+            else:
+                decoded_points[stem] = pts
+                dec_results[stem] = {
+                    "decode_s": float(dt),
+                    "decode_fps": (1.0 / dt) if dt > 0 else float("nan"),
+                    "status": "ok",
+                }
             if pbar:
                 pbar.update(1)
         if pbar:
@@ -334,39 +347,62 @@ def main():
     stat_out = parse_stat_outlier(args.stat_outlier)
     metric_rows: List[Dict[str, object]] = []
 
-    def submit_metric(pool, *, stem, ply_src, ply_dec):
-        return pool.submit(
-            _metric_one,
+    voxel_size = args.voxel_size if args.voxel_size > 0 else None
+    max_samples = args.max_samples if args.max_samples > 0 else None
+    decoded_label_template = "{stem}.decoded.ply" if args.keep_decoded else "in-memory"
+
+    def _metric_job(stem: str, ply_src: Path, dec_pts: np.ndarray, decoded_label: str) -> Dict[str, object]:
+        src_pts = load_xyz(ply_src)
+        return _metric_one(
             stem,
-            ply_src,
-            ply_dec,
+            src_pts,
+            dec_pts,
             args.thresholds,
-            args.voxel_size if args.voxel_size > 0 else None,
+            voxel_size,
             stat_out,
-            args.max_samples if args.max_samples > 0 else None,
+            max_samples,
             args.seed,
+            ply_src.name,
+            decoded_label,
         )
 
-    with ProcessPoolExecutor(max_workers=max(1, args.metric_workers)) as pool:
+    with ThreadPoolExecutor(max_workers=max(1, args.metric_workers)) as pool:
+        scheduled: Dict[Future, str] = {}
         if use_tqdm:
             pbar = tqdm(total=len(pairs), unit="pair", desc="Quality", leave=False)
         else:
             pbar = None
 
-        futures = []
         for ply_path, _, stem in pairs:
-            dec_p = dec_dir / f"{stem}.decoded.ply"
-            futures.append(submit_metric(pool, stem=stem, ply_src=ply_path, ply_dec=dec_p))
+            decoded = decoded_points.get(stem)
+            decoded_label = decoded_label_template.format(stem=stem)
+            if decoded is None:
+                metric_rows.append(
+                    {
+                        "name": stem,
+                        "src": ply_path.name,
+                        "drc_decoded": decoded_label,
+                        "status": dec_results.get(stem, {}).get("status", "decode_fail"),
+                    }
+                )
+                if pbar:
+                    pbar.update(1)
+                continue
+            fut = pool.submit(_metric_job, stem, ply_path, decoded, decoded_label)
+            scheduled[fut] = stem
 
-        for fut in as_completed(futures):
+        for fut in as_completed(scheduled):
+            stem = scheduled[fut]
             metric_rows.append(fut.result())
             if pbar:
                 pbar.update(1)
+
         if pbar:
             pbar.close()
 
     # 3) 결과 합치기 + 크기/압축배율
     rows = []
+    metric_map = {r.get("name"): r for r in metric_rows if r.get("name")}
     for ply_path, drc_path, stem in pairs:
         base = {
             "name": stem,
@@ -375,14 +411,21 @@ def main():
             "size_ply": ply_path.stat().st_size if ply_path.exists() else "",
             "size_drc": drc_path.stat().st_size if drc_path.exists() else "",
         }
-        dec = dec_results.get(stem, {})
-        base["decode_s"] = dec.get("decode_s", "")
-        base["decode_fps"] = dec.get("decode_fps", "")
-        # metric row 찾기
-        m = next((r for r in metric_rows if r.get("name") == stem), None)
-        if m:
-            base.update(m)
-        # 압축배율
+        dec_info = dec_results.get(stem, {})
+        base["decode_s"] = dec_info.get("decode_s", "")
+        base["decode_fps"] = dec_info.get("decode_fps", "")
+        if dec_info.get("status") and dec_info.get("status") != "ok":
+            base["decode_status"] = dec_info["status"]
+        metric = metric_map.get(stem)
+        if metric:
+            base.update(metric)
+        else:
+            base.setdefault("status", dec_info.get("status", "metric_missing"))
+
+        if args.keep_decoded and stem in decoded_points:
+            out_path = dec_dir / f"{stem}.decoded.ply"
+            out_path.write_bytes(_points_to_ply_bytes(decoded_points[stem]))
+
         try:
             sz_p = float(base["size_ply"])
             sz_d = float(base["size_drc"])
@@ -390,6 +433,8 @@ def main():
         except Exception:
             base["ratio_ply_over_drc"] = ""
         rows.append(base)
+
+    decoded_points.clear()
 
     # 4) CSV 저장
     ts = args.run_ts if args.run_ts else datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -451,16 +496,6 @@ def main():
         else:
             f.write("- 불일치 없음\n")
         f.write(f"\n- CSV: `{csv_path}`\n")
-
-    # 6) 임시 디코드 정리
-    if not args.keep_decoded:
-        try:
-            for _, _, stem in pairs:
-                p = dec_dir / f"{stem}.decoded.ply"
-                if p.exists():
-                    p.unlink()
-        except Exception:
-            pass
 
     print(f"[OK] CSV  : {csv_path}")
     print(f"[OK] SUMM : {md_path}")

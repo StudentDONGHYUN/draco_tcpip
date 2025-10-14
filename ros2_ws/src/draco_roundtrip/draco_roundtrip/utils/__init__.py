@@ -1,7 +1,6 @@
 """Backwards-compatible re-exports for legacy imports."""
 
 from .config import ensure_directory, resolve_qos_override
-from .executable import resolve_executable
 
 from draco_roundtrip.analysis.metrics import compute_basic_metrics, sample_indices
 from draco_roundtrip.io.ply_codec import (
@@ -23,7 +22,6 @@ from draco_roundtrip.net.protocol import (
 __all__ = [
     "ensure_directory",
     "resolve_qos_override",
-    "resolve_executable",
     "compute_basic_metrics",
     "sample_indices",
     "load_points",
