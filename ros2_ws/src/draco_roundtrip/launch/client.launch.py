@@ -15,7 +15,8 @@ def generate_launch_description() -> LaunchDescription:
     encoder = LaunchConfiguration('encoder')
     telemetry_rate = LaunchConfiguration('telemetry_rate')
     calculate_metrics = LaunchConfiguration('calculate_metrics') # <-- 신규 인자 선언
-
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    
     return LaunchDescription([
         DeclareLaunchArgument(
             'server_host',
@@ -60,6 +61,10 @@ def generate_launch_description() -> LaunchDescription:
             default_value='false',
             description='Enable/disable per-frame metric calculation on the client.',
         ),
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='false',
+            description='Use simulation (rosbag) clock if true'),
         Node(
             package='draco_roundtrip',
             executable='stream_client',

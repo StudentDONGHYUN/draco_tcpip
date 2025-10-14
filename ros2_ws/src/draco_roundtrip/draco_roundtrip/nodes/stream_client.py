@@ -255,6 +255,7 @@ class StreamClientNode(Node):
         self.declare_parameter("protocol", "binary")
         self.declare_parameter("socket_timeout", 3.0)
         self.declare_parameter("calculate_metrics", False)  # <-- 신규 파라미터 추가
+        self.declare_parameter("use_sim_time", False)  # <-- 신규 파라미터 추가
 
         self.bag_path = str(self.get_parameter("bag").value)
         self.topic = str(self.get_parameter("topic").value)
@@ -294,6 +295,7 @@ class StreamClientNode(Node):
         self.downlink_port = downlink_port_param if downlink_port_param else self.server_port + 1
         self.downlink_protocol = str(self.get_parameter("downlink_protocol").value)
         self.calculate_metrics = bool(self.get_parameter("calculate_metrics").value)
+        self.use_sim_time = bool(self.get_parameter("use_sim_time").value) # <-- 파라미터 값 읽어오기
 
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
@@ -420,6 +422,11 @@ class StreamClientNode(Node):
 
         bag_path = Path(self.bag_path).resolve()
         bag_cmd = ["ros2", "bag", "play", str(bag_path)]
+        
+        # use_sim_time 값에 따라 --clock 옵션 추가
+        if self.use_sim_time:
+            bag_cmd.append("--clock")
+        
         qos_override = resolve_qos_override()
         if qos_override is not None:
             bag_cmd += ["--qos-profile-overrides-path", str(qos_override)]
