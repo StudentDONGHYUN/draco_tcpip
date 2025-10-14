@@ -73,8 +73,9 @@ def decode_points_np(data: bytes) -> np.ndarray:
 
     if not data:
         raise ValueError("Cannot decode empty Draco payload")
-    decoded = _draco_decode(data)
-    arr = np.asarray(decoded, dtype=np.float32)
+    decoded_obj = _draco_decode(data)
+    # decoded_obj.points 로 실제 포인트 배열에 접근
+    arr = np.asarray(decoded_obj.points, dtype=np.float32)
     if arr.ndim != 2 or arr.shape[1] < 3:
         raise ValueError(
             f"Decoded Draco payload produced invalid shape {arr.shape!r}"
