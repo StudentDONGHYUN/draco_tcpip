@@ -294,6 +294,7 @@ class StreamClientNode(Node):
         downlink_port_param = int(self.get_parameter("downlink_port").value)
         self.downlink_port = downlink_port_param if downlink_port_param else self.server_port + 1
         self.downlink_protocol = str(self.get_parameter("downlink_protocol").value)
+        self.calculate_metrics = bool(self.get_parameter("calculate_metrics").value)
 
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
@@ -407,7 +408,7 @@ class StreamClientNode(Node):
         try:
             self._execute_streaming_loop()
         except Exception as exc:  # pragma: no cover - defensive logging
-            self.get_logger().exception(f"Client loop error: {exc}")
+            self.get_logger().error(f"Client loop error: {exc}")
             self._stop_event.set()
 
     def _execute_streaming_loop(self) -> None:
