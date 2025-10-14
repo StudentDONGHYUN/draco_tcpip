@@ -28,6 +28,7 @@ def generate_launch_description() -> LaunchDescription:
                 {
                     'port': port,
                     'downlink_port': downlink_port,
+                    'points_topic': '/stream_pair/decoded',  # <-- 이 줄을 추가합니다.
                 }
             ],
         ),
