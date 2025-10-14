@@ -255,7 +255,6 @@ class StreamClientNode(Node):
         self.declare_parameter("protocol", "binary")
         self.declare_parameter("socket_timeout", 3.0)
         self.declare_parameter("calculate_metrics", False)  # <-- 신규 파라미터 추가
-        self.declare_parameter("use_sim_time", False)  # <-- 신규 파라미터 추가
 
         self.bag_path = str(self.get_parameter("bag").value)
         self.topic = str(self.get_parameter("topic").value)
