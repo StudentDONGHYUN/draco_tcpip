@@ -10,12 +10,12 @@ import sys
 import threading
 import time
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path as FSPath
 from typing import Optional
 
 import rclpy
 from geometry_msgs.msg import PoseStamped, Twist
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path as NavPath
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import PointCloud2
@@ -56,9 +56,8 @@ class DownlinkBundle:
     path: Optional[PathPayload] = None
 
 
-def decode_drc(decoder: Path, drc_bytes: bytes, out_dir: Path, stem: str) -> bytes:
+def decode_drc(decoder: FSPath, drc_bytes: bytes, out_dir: FSPath, stem: str) -> bytes:
     """Decode a Draco .drc byte stream to binary PLY bytes."""
-
     ensure_directory(out_dir)
     drc_path = out_dir / f"{stem}.drc"
     ply_path = out_dir / f"{stem}.decoded.ply"
@@ -130,15 +129,14 @@ class StreamServerNode(Node):
         super().__init__("draco_stream_server")
         self.args = args
         self.decoder = resolve_executable("draco_decoder", args.decoder, env_var="DRACO_DECODER")
-        self.work_dir = ensure_directory(Path(args.work_dir).resolve())
+        self.work_dir = ensure_directory(FSPath(args.work_dir).resolve())
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
         qos.reliability = ReliabilityPolicy.RELIABLE
         self.pub_points = self.create_publisher(PointCloud2, args.points_topic, qos)
         self.pub_pose = self.create_publisher(PoseStamped, args.pose_topic, qos)
-        self.pub_path = self.create_publisher(Path, args.path_topic, qos)
+        self.pub_path = self.create_publisher(NavPath, args.path_topic, qos)
         self.pub_twist = self.create_publisher(Twist, args.twist_topic, qos)
-
         self.downlink_protocol = "json" if args.downlink_json else args.downlink_protocol
         self.downlink_rate = max(float(args.downlink_rate), 0.1)
         self.heartbeat_interval = max(float(args.heartbeat_interval), 0.1)
@@ -287,7 +285,7 @@ class StreamServerNode(Node):
         twist_msg = Twist()
         self.pub_twist.publish(twist_msg)
 
-        path_msg = Path()
+        path_msg = NavPath()
         path_msg.header = Header()
         path_msg.header.stamp = stamp_msg
         path_msg.header.frame_id = "map"
