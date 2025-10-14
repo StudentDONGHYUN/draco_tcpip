@@ -22,6 +22,8 @@ from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 from std_msgs.msg import Header
 
+import numpy as np
+
 from draco_roundtrip.io.ply_codec import load_xyz_from_bytes
 from draco_roundtrip.net.control_plane import (
     PATH_POSE_LIMIT,

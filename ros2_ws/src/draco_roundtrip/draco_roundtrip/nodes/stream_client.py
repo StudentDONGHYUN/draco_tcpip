@@ -377,6 +377,13 @@ def main(argv: Iterable[str] | None = None) -> None:
                     if not sent_any and now - last_send > heartbeat_interval:
                         send_message(sock, Message(kind=MSG_HEARTBEAT, name="hb", payload=b""))
                         last_send = now
+                        ack = recv_message(sock)
+                        if ack is None:
+                            raise ConnectionClosed("server closed uplink during heartbeat")
+                        if ack.kind != MSG_ACK:
+                            print(
+                                f"[CLIENT] Unexpected heartbeat reply kind={ack.kind}, name={ack.name}"
+                            )
                     time.sleep(0.1)
             except ConnectionClosed:
                 print("[CLIENT] Connection closed, stopping loop")
