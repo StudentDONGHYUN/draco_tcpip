@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import socket
 import subprocess
 import sys
@@ -17,6 +16,7 @@ import rclpy
 from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import Path as NavPath
 from rclpy.node import Node
+from rclpy.utilities import remove_ros_args
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
@@ -72,77 +72,67 @@ def decode_drc(decoder: FSPath, drc_bytes: bytes, out_dir: FSPath, stem: str) ->
     return ply_path.read_bytes()
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description="Server-centric Draco streaming bridge")
-    ap.add_argument("--host", default="0.0.0.0", help="Uplink listen address")
-    ap.add_argument("--port", type=int, default=5000, help="Uplink listen port")
-    ap.add_argument("--decoder", default=None, help="Path to draco_decoder executable")
-    ap.add_argument("--work-dir", default="data/server_tmp", help="Temporary working directory")
-    ap.add_argument("--points-topic", default="/server/points", help="PointCloud2 publish topic")
-    ap.add_argument("--points-frame-id", default="server_lidar", help="Frame ID for published PointCloud2")
-    ap.add_argument("--pose-topic", default="/server_pose", help="Downlink pose ROS topic")
-    ap.add_argument("--path-topic", default="/planned_path", help="Downlink path ROS topic")
-    ap.add_argument("--twist-topic", default="/cmd_vel", help="Downlink twist ROS topic")
-    ap.add_argument("--downlink-port", type=int, default=None, help="Control-plane downlink port (default: uplink port+1)")
-    ap.add_argument(
-        "--downlink-protocol",
-        choices=("binary", "json"),
-        default="binary",
-        help="Downlink payload encoding",
-    )
-    ap.add_argument(
-        "--downlink-json",
-        action="store_true",
-        help="Shortcut to force JSON downlink encoding",
-    )
-    ap.add_argument("--downlink-rate", type=float, default=10.0, help="Downlink publish rate in Hz (max)")
-    ap.add_argument(
-        "--legacy-downlink",
-        action="store_true",
-        help="Re-enable legacy decoded PLY downlink responses",
-    )
-    ap.add_argument(
-        "--heartbeat-interval",
-        type=float,
-        default=1.0,
-        help="Expected heartbeat interval from clients in seconds",
-    )
-    ap.add_argument(
-        "--path-length",
-        type=int,
-        default=20,
-        help="Number of poses to emit in stub path outputs (<=200)",
-    )
-    ap.add_argument(
-        "--stub-path-stride",
-        type=float,
-        default=0.25,
-        help="Spacing (m) between poses in stub path output",
-    )
-    return ap
-
-
 class StreamServerNode(Node):
     """Accept Draco uplink, publish ROS topics, and stream control-plane telemetry."""
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self) -> None:
         super().__init__("draco_stream_server")
-        self.args = args
-        self.decoder = resolve_executable("draco_decoder", args.decoder, env_var="DRACO_DECODER")
-        self.work_dir = ensure_directory(FSPath(args.work_dir).resolve())
+        self.declare_parameter("host", "0.0.0.0")
+        self.declare_parameter("port", 5000)
+        self.declare_parameter("decoder", "")
+        self.declare_parameter("work_dir", "data/server_tmp")
+        self.declare_parameter("points_topic", "/server/points")
+        self.declare_parameter("points_frame_id", "server_lidar")
+        self.declare_parameter("pose_topic", "/server_pose")
+        self.declare_parameter("path_topic", "/planned_path")
+        self.declare_parameter("twist_topic", "/cmd_vel")
+        self.declare_parameter("downlink_port", 0)
+        self.declare_parameter("downlink_protocol", "binary")
+        self.declare_parameter("downlink_json", False)
+        self.declare_parameter("downlink_rate", 10.0)
+        self.declare_parameter("legacy_downlink", False)
+        self.declare_parameter("heartbeat_interval", 1.0)
+        self.declare_parameter("path_length", 20)
+        self.declare_parameter("stub_path_stride", 0.25)
+
+        self.host = str(self.get_parameter("host").value)
+        self.port = int(self.get_parameter("port").value)
+        decoder_param = str(self.get_parameter("decoder").value or "")
+        self.decoder = resolve_executable(
+            "draco_decoder", decoder_param or None, env_var="DRACO_DECODER"
+        )
+        work_dir_param = str(self.get_parameter("work_dir").value)
+        self.work_dir = ensure_directory(FSPath(work_dir_param).resolve())
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
         qos.reliability = ReliabilityPolicy.RELIABLE
-        self.pub_points = self.create_publisher(PointCloud2, args.points_topic, qos)
-        self.pub_pose = self.create_publisher(PoseStamped, args.pose_topic, qos)
-        self.pub_path = self.create_publisher(NavPath, args.path_topic, qos)
-        self.pub_twist = self.create_publisher(Twist, args.twist_topic, qos)
-        self.downlink_protocol = "json" if args.downlink_json else args.downlink_protocol
-        self.downlink_rate = max(float(args.downlink_rate), 0.1)
-        self.heartbeat_interval = max(float(args.heartbeat_interval), 0.1)
-        self.path_length = max(1, min(int(args.path_length), PATH_POSE_LIMIT))
-        self.stub_stride = float(args.stub_path_stride)
-        self.legacy_downlink = bool(args.legacy_downlink)
+        self.pub_points = self.create_publisher(
+            PointCloud2, str(self.get_parameter("points_topic").value), qos
+        )
+        self.pub_pose = self.create_publisher(
+            PoseStamped, str(self.get_parameter("pose_topic").value), qos
+        )
+        self.pub_path = self.create_publisher(
+            NavPath, str(self.get_parameter("path_topic").value), qos
+        )
+        self.pub_twist = self.create_publisher(
+            Twist, str(self.get_parameter("twist_topic").value), qos
+        )
+        downlink_json = bool(self.get_parameter("downlink_json").value)
+        self.downlink_protocol = (
+            "json" if downlink_json else str(self.get_parameter("downlink_protocol").value)
+        )
+        self.downlink_rate = max(float(self.get_parameter("downlink_rate").value), 0.1)
+        self.heartbeat_interval = max(
+            float(self.get_parameter("heartbeat_interval").value), 0.1
+        )
+        self.path_length = max(
+            1, min(int(self.get_parameter("path_length").value), PATH_POSE_LIMIT)
+        )
+        self.stub_stride = float(self.get_parameter("stub_path_stride").value)
+        self.legacy_downlink = bool(self.get_parameter("legacy_downlink").value)
+        downlink_port_param = int(self.get_parameter("downlink_port").value)
+        self.downlink_port = downlink_port_param if downlink_port_param else self.port + 1
         if self.legacy_downlink:
             self.get_logger().warn(
                 "Legacy downlink enabled — decoded PLY responses are deprecated"
@@ -157,7 +147,7 @@ class StreamServerNode(Node):
         self._last_downlink_bytes = 0
         self._downlink_bytes_total = 0
         self._downlink_messages = 0
-        self._points_frame_id = args.points_frame_id
+        self._points_frame_id = str(self.get_parameter("points_frame_id").value)
 
         self._uplink_thread = threading.Thread(target=self._run_uplink, daemon=True)
         self._downlink_thread = threading.Thread(target=self._run_downlink, daemon=True)
@@ -171,8 +161,8 @@ class StreamServerNode(Node):
     # Networking
 
     def _run_uplink(self) -> None:
-        host = self.args.host
-        port = int(self.args.port)
+        host = self.host
+        port = int(self.port)
         try:
             with socket.create_server((host, port), reuse_port=True) as server:
                 self.get_logger().info(f"Listening for uplink on {host}:{port}")
@@ -193,8 +183,8 @@ class StreamServerNode(Node):
             self.get_logger().exception(f"Failed to start uplink server: {exc}")
 
     def _run_downlink(self) -> None:
-        port = int(self.args.downlink_port or (self.args.port + 1))
-        host = self.args.host
+        port = int(self.downlink_port)
+        host = self.host
         try:
             with socket.create_server((host, port), reuse_port=True) as server:
                 self.get_logger().info(f"Listening for downlink on {host}:{port}")
@@ -393,10 +383,33 @@ class StreamServerNode(Node):
                     pass
 
 
+def _partition_ros_args(argv: list[str]) -> tuple[list[str], list[str]]:
+    """Return ROS-compatible args and any extras to ignore."""
+
+    argv = list(argv)
+    filtered = remove_ros_args(["stream_server", *argv])[1:]
+    extras: list[str] = []
+    ros_args: list[str] = []
+    idx = 0
+    for arg in argv:
+        if idx < len(filtered) and arg == filtered[idx]:
+            extras.append(arg)
+            idx += 1
+        else:
+            ros_args.append(arg)
+    return ros_args, extras
+
+
 def main(argv: list[str] | None = None) -> None:
-    args = build_arg_parser().parse_args(argv)
-    rclpy.init()
-    node = StreamServerNode(args)
+    raw_args = list(argv) if argv is not None else sys.argv[1:]
+    ros_args, extras = _partition_ros_args(raw_args)
+    if extras:
+        print(
+            f"[stream_server] Ignoring legacy CLI arguments: {' '.join(extras)}",
+            file=sys.stderr,
+        )
+    rclpy.init(args=ros_args)
+    node = StreamServerNode()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
