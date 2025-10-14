@@ -398,10 +398,7 @@ class StreamClientNode(Node):
         uplink_mbps = bytes_sent * 8 / elapsed / 1e6
         downlink_mbps = bytes_received * 8 / elapsed / 1e6
         self.get_logger().info(
-            "Telemetry: frames=%d uplink=%.3f Mbps downlink=%.3f Mbps",
-            frames_sent,
-            uplink_mbps,
-            downlink_mbps,
+            f"Telemetry: frames={frames_sent} uplink={uplink_mbps:.3f} Mbps downlink={downlink_mbps:.3f} Mbps"
         )
 
     # ------------------------------------------------------------------
