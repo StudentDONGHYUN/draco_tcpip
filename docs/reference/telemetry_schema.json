@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Streaming Telemetry Schema",
+  "type": "object",
+  "properties": {
+    "frames_encoded": {"type": "integer", "minimum": 0},
+    "frames_decoded": {"type": "integer", "minimum": 0},
+    "bytes_uplink": {"type": "integer", "minimum": 0},
+    "bytes_downlink": {"type": "integer", "minimum": 0},
+    "downlink_tx_hz": {
+      "type": "number",
+      "description": "Measured downlink send frequency"
+    },
+    "downlink_bytes": {
+      "type": "integer",
+      "description": "Cumulative bytes transmitted over the control plane"
+    },
+    "pose_age_ms": {
+      "type": "number",
+      "description": "Age of the latest pose sample consumed by the client"
+    },
+    "path_len": {
+      "type": "integer",
+      "description": "Number of poses in the most recent path message"
+    }
+  },
+  "required": [
+    "frames_encoded",
+    "frames_decoded",
+    "bytes_uplink",
+    "bytes_downlink",
+    "downlink_tx_hz",
+    "downlink_bytes",
+    "pose_age_ms",
+    "path_len"
+  ],
+  "additionalProperties": true
+}
