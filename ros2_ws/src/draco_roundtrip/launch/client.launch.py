@@ -14,6 +14,7 @@ def generate_launch_description() -> LaunchDescription:
     work_dir = LaunchConfiguration('work_dir')
     encoder = LaunchConfiguration('encoder')
     telemetry_rate = LaunchConfiguration('telemetry_rate')
+    calculate_metrics = LaunchConfiguration('calculate_metrics') # <-- 신규 인자 선언
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -53,6 +54,12 @@ def generate_launch_description() -> LaunchDescription:
             default_value='10.0',
             description='Telemetry reporting rate in Hz.',
         ),
+        # <-- 신규 인자 정의
+        DeclareLaunchArgument(
+            'calculate_metrics',
+            default_value='false',
+            description='Enable/disable per-frame metric calculation on the client.',
+        ),
         Node(
             package='draco_roundtrip',
             executable='stream_client',
@@ -69,6 +76,7 @@ def generate_launch_description() -> LaunchDescription:
                     'work_dir': work_dir,
                     'encoder': encoder,
                     'telemetry_rate': telemetry_rate,
+                    'calculate_metrics': calculate_metrics, # <-- 파라미터를 노드에 전달
                 }
             ],
         ),

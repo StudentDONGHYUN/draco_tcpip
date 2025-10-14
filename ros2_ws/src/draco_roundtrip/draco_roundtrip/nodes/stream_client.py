@@ -254,6 +254,7 @@ class StreamClientNode(Node):
         self.declare_parameter("max_inflight", 8)
         self.declare_parameter("protocol", "binary")
         self.declare_parameter("socket_timeout", 3.0)
+        self.declare_parameter("calculate_metrics", False)  # <-- 신규 파라미터 추가
 
         self.bag_path = str(self.get_parameter("bag").value)
         self.topic = str(self.get_parameter("topic").value)
@@ -511,13 +512,15 @@ class StreamClientNode(Node):
                                 pts_dec = load_xyz_from_bytes(ply_path.read_bytes())
 
                             pts_src = load_xyz(ply_path)
-                            metrics = compute_basic_metrics(pts_src, pts_dec, self.play_sample)
-                            print(
-                                f"[CLIENT] Frame {frame_idx:05d} metrics — "
-                                f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "
-                                f"bboxΔ=({metrics['bbox_delta'][0]:+.3f},{metrics['bbox_delta'][1]:+.3f},{metrics['bbox_delta'][2]:+.3f}) "
-                                f"Chamfer(mean/max)={metrics['chamfer_mean']}/{metrics['chamfer_max']}"
-                            )
+                            # <-- 메트릭 계산 로직을 조건부로 변경
+                            if self.calculate_metrics:
+                                metrics = compute_basic_metrics(pts_src, pts_dec, self.play_sample)
+                                print(
+                                    f"[CLIENT] Frame {frame_idx:05d} metrics — "
+                                    f"Δpts={metrics['diff']} centroid_norm={metrics['centroid_norm']:.3f} "
+                                    f"bboxΔ=({metrics['bbox_delta'][0]:+.3f},{metrics['bbox_delta'][1]:+.3f},{metrics['bbox_delta'][2]:+.3f}) "
+                                    f"Chamfer(mean/max)={metrics['chamfer_mean']}/{metrics['chamfer_max']}"
+                                )
                             self._enqueue_playback(
                                 PlaybackJob(frame_idx, ply_path.stem, pts_src, pts_dec, self.play_frame_id)
                             )
