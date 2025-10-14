@@ -3,7 +3,7 @@
 
 rtabmap:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     frame_id: lidar_link
     map_frame_id: map
     odom_frame_id: odom
@@ -17,7 +17,7 @@ rtabmap:
     subscribe_user_data: false
     subscribe_odom_info: true
     queue_size: 10
-    approx_sync: false
+    approx_sync: true
     detection_rate: 1.0
     Mem/NotLinkedNodesKept: "true"
     Mem/STMSize: "30"
@@ -42,7 +42,7 @@ rtabmap:
 
 icp_odometry:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     frame_id: lidar_link
     odom_frame_id: odom
     publish_tf: true
