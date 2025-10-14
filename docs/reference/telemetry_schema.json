@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Streaming Telemetry Schema",
+  "title": "스트리밍 텔레메트리 스키마",
   "type": "object",
   "properties": {
     "frames_encoded": {"type": "integer", "minimum": 0},
@@ -9,19 +9,19 @@
     "bytes_downlink": {"type": "integer", "minimum": 0},
     "downlink_tx_hz": {
       "type": "number",
-      "description": "Measured downlink send frequency"
+      "description": "측정된 다운링크 전송 주파수"
     },
     "downlink_bytes": {
       "type": "integer",
-      "description": "Cumulative bytes transmitted over the control plane"
+      "description": "제어 평면을 통해 전송된 누적 바이트"
     },
     "pose_age_ms": {
       "type": "number",
-      "description": "Age of the latest pose sample consumed by the client"
+      "description": "클라이언트가 소비한 최신 포즈 샘플의 나이"
     },
     "path_len": {
       "type": "integer",
-      "description": "Number of poses in the most recent path message"
+      "description": "가장 최근 경로 메시지의 포즈 수"
     }
   },
   "required": [
