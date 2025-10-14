@@ -182,12 +182,12 @@ def main():
     ap.add_argument("--qg", type=int, default=DEFAULT_QG)
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--thresholds", nargs="*", type=float, default=[0.01, 0.03, 0.05])
-    ap.add_argument("--decoder", default="draco_decoder")
 
     # 디렉토리
     ap.add_argument("--ply-dir", default="data/ply_raw")
     ap.add_argument("--drc-dir", default="data/draco_out")
     ap.add_argument("--decoded-dir", default="data/tmp_decoded_ply")
+    ap.add_argument("--decoder", default=None, help="(deprecated) DracoPy 사용으로 무시됨.")
     ap.add_argument("--results-dir", default="data/results")
 
     ap.add_argument("--ros-domain-id", type=int, default=None,
@@ -211,6 +211,9 @@ def main():
 
 
     args = ap.parse_args()
+
+    if args.decoder:
+        _eprint("[WARN] --decoder 옵션은 DracoPy 백엔드에서 무시됩니다.")
 
     # VSCode 터미널 등에서 ROS 환경이 누락될 때 대비해 선택적으로 덮어쓰기
     if args.ros_domain_id is not None:
@@ -356,15 +359,23 @@ def main():
     cycle_csv_path = res_dir / f"cycle_{args.prefix}_{run_ts}.csv"
     if not args.no_qa:
         qa_cmd = [
-            sys.executable, "-m", "draco_tools.analysis.analyze_draco_quality",
-            "--ply_dir", str(ply_dir),
-            "--drc_dir", str(drc_dir),
-            "--decoded_dir", str(dec_dir),
-            "--results_dir", str(res_dir),
-            "--prefix", args.prefix,
-            "--decoder", args.decoder,
-            "--thresholds", *[str(t) for t in args.thresholds],
-            "--run-ts", run_ts
+            sys.executable,
+            "-m",
+            "draco_tools.analysis.analyze_draco_quality",
+            "--ply_dir",
+            str(ply_dir),
+            "--drc_dir",
+            str(drc_dir),
+            "--decoded_dir",
+            str(dec_dir),
+            "--results_dir",
+            str(res_dir),
+            "--prefix",
+            args.prefix,
+            "--thresholds",
+            *[str(t) for t in args.thresholds],
+            "--run-ts",
+            run_ts,
         ]
         if getattr(args, "force_tqdm", False):
             qa_cmd.append("--force-tqdm")
