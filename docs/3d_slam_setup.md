@@ -22,8 +22,9 @@ sudo apt install ros-humble-hdl-graph-slam
 
 ```bash
 source /opt/ros/humble/setup.bash
-cd ~/draco-ros2-roundtrip-git/draco-ros2-roundtrip
-ros2 launch draco-ros2-roundtrip hdl_graph_slam_stream.launch.py
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+source install/setup.bash
+ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
 ```
 
 만약 다른 파라미터 파일을 사용하고 싶다면 `params_file` 인자를 덮어쓰면 됩니다.

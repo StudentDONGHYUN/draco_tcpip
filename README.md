@@ -28,8 +28,8 @@ Draco(구글의 3D 압축 라이브러리)를 이용해 LiDAR 포인트클라우
 
 ## 빌드 절차
 ```bash
-source /opt/ros/<distro>/setup.bash         # 예: humble, iron
-cd /home/kkit/draco-ros2-roundtrip-git/ros2_ws
+source /opt/ros/humble/setup.bash
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
 colcon build --symlink-install
 source install/setup.bash
 ```
@@ -42,6 +42,9 @@ source install/setup.bash
 **1. 서버 PC (고성능 머신)**
 
 ```bash
+source /opt/ros/humble/setup.bash
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+source install/setup.bash
 ros2 launch draco_roundtrip server.launch.py [port:=5000]
 ```
 
@@ -51,11 +54,15 @@ ros2 launch draco_roundtrip server.launch.py [port:=5000]
 **2. 클라이언트 PC (로봇)**
 
 ```bash
+source /opt/ros/humble/setup.bash
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+source install/setup.bash
 ros2 launch draco_roundtrip client.launch.py \
     server_host:=192.168.3.16 \
     server_port:=5000 \
-    bag_file:=/absolute/path/to/your.bag \
-    topic_name:=/sensing/lidar/top/pointcloud
+    bag_file:=/home/kkit/newdisk/draco_tcpip/ros2_ws/data/bags/rosbag2_2024_09_24-14_28_57 \
+    topic_name:=/sensing/lidar/top/pointcloud \
+    prefix:=client_test
 ```
 
 - `server_host` (필수): 서버 PC의 IP 또는 호스트명. 다운링크 접속에도 동일 값이 사용됩니다.
@@ -69,10 +76,16 @@ ros2 launch draco_roundtrip client.launch.py \
 ### 3. 보조 유틸리티
 - PLY 생성만 필요한 경우:
   ```bash
+  source /opt/ros/humble/setup.bash
+  cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+  source install/setup.bash
   ros2 run draco_tools bag_to_ply --topic /sensing/lidar/top/pointcloud --out data/ply --best-effort
   ```
 - SLAM 연동 런치 예시:
   ```bash
+  source /opt/ros/humble/setup.bash
+  cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+  source install/setup.bash
   ros2 launch slam_stream_bridge hdl_graph_slam_stream.launch.py
   ```
 

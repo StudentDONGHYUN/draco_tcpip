@@ -15,6 +15,9 @@
 ### 서버 PC (업링크/다운링크 허브)
 
 ```bash
+source /opt/ros/humble/setup.bash
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+source install/setup.bash
 ros2 launch draco_roundtrip server.launch.py [port:=5000]
 ```
 
@@ -25,11 +28,15 @@ ros2 launch draco_roundtrip server.launch.py [port:=5000]
 ### 클라이언트 PC (로봇)
 
 ```bash
+source /opt/ros/humble/setup.bash
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+source install/setup.bash
 ros2 launch draco_roundtrip client.launch.py \
   server_host:=192.168.3.16 \
   server_port:=5000 \
-  bag_file:=/path/to/recording \
-  topic_name:=/lidar/points
+  bag_file:=/home/kkit/newdisk/draco_tcpip/ros2_ws/data/bags/rosbag2_2024_09_24-14_28_57 \
+  topic_name:=/sensing/lidar/top/pointcloud \
+  prefix:=client_test
 ```
 
 * `server_host`는 필수이며 네트워크를 통해 접근 가능한 서버 PC를 가리켜야 합니다. 
