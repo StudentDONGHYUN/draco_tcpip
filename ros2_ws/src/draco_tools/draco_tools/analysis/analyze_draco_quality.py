@@ -308,42 +308,7 @@ def main():
 
     # 1) 디코딩 (병렬)
     dec_results: Dict[str, Dict[str, object]] = {}
-    decoded_points: Dict[str, np.ndarray] = {}
-    with ThreadPoolExecutor(max_workers=max(1, args.decode_workers)) as pool:
-        if use_tqdm:
-            pbar = tqdm(total=len(pairs), unit="file", desc="Decoding", leave=False)
-        else:
-            pbar = None
-
-        future_map = {}
-        for _, drc_path, stem in pairs:
-            future = pool.submit(_decode_drc_file, drc_path)
-            future_map[future] = (stem, drc_path)
-
-        for fut in as_completed(future_map):
-            stem, drc_path = future_map[fut]
-            try:
-                _, pts, dt = fut.result()
-            except Exception as exc:  # noqa: BLE001
-                dec_results[stem] = {
-                    "decode_s": "",
-                    "decode_fps": "",
-                    "status": f"decode_fail: {exc}",
-                }
-                eprint(f"[ERR] 디코드 실패 {drc_path.name}: {exc}")
-            else:
-                decoded_points[stem] = pts
-                dec_results[stem] = {
-                    "decode_s": float(dt),
-                    "decode_fps": (1.0 / dt) if dt > 0 else float("nan"),
-                    "status": "ok",
-                }
-            if pbar:
-                pbar.update(1)
-        if pbar:
-            pbar.close()
-
-    # 2) 품질 계산 (병렬)
+    ply_by_stem = {stem: ply_path for ply_path, _, stem in pairs}
     stat_out = parse_stat_outlier(args.stat_outlier)
     metric_rows: List[Dict[str, object]] = []
 
@@ -366,39 +331,80 @@ def main():
             decoded_label,
         )
 
-    with ThreadPoolExecutor(max_workers=max(1, args.metric_workers)) as pool:
-        scheduled: Dict[Future, str] = {}
-        if use_tqdm:
-            pbar = tqdm(total=len(pairs), unit="pair", desc="Quality", leave=False)
-        else:
-            pbar = None
+    metric_futures: Dict[Future, str] = {}
+    decode_workers = max(1, args.decode_workers)
+    metric_workers = max(1, args.metric_workers)
 
-        for ply_path, _, stem in pairs:
-            decoded = decoded_points.get(stem)
-            decoded_label = decoded_label_template.format(stem=stem)
-            if decoded is None:
-                metric_rows.append(
-                    {
-                        "name": stem,
-                        "src": ply_path.name,
-                        "drc_decoded": decoded_label,
-                        "status": dec_results.get(stem, {}).get("status", "decode_fail"),
+    if use_tqdm:
+        decode_pbar = tqdm(total=len(pairs), unit="file", desc="Decoding", leave=False)
+        metric_pbar = tqdm(total=len(pairs), unit="pair", desc="Quality", leave=False)
+    else:
+        decode_pbar = None
+        metric_pbar = None
+
+    with ThreadPoolExecutor(max_workers=metric_workers) as metric_pool:
+        with ThreadPoolExecutor(max_workers=decode_workers) as decode_pool:
+            future_map = {}
+            for _, drc_path, stem in pairs:
+                future = decode_pool.submit(_decode_drc_file, drc_path)
+                future_map[future] = (stem, drc_path)
+
+            for fut in as_completed(future_map):
+                stem, drc_path = future_map[fut]
+                if decode_pbar:
+                    decode_pbar.update(1)
+                try:
+                    _, pts, dt = fut.result()
+                except Exception as exc:  # noqa: BLE001
+                    dec_results[stem] = {
+                        "decode_s": "",
+                        "decode_fps": "",
+                        "status": f"decode_fail: {exc}",
                     }
+                    metric_rows.append(
+                        {
+                            "name": stem,
+                            "src": ply_by_stem[stem].name,
+                            "drc_decoded": decoded_label_template.format(stem=stem),
+                            "status": dec_results[stem]["status"],
+                        }
+                    )
+                    if metric_pbar:
+                        metric_pbar.update(1)
+                    eprint(f"[ERR] 디코드 실패 {drc_path.name}: {exc}")
+                    continue
+
+                decoded_label = decoded_label_template.format(stem=stem)
+                if args.keep_decoded:
+                    decoded_path = dec_dir / decoded_label
+                    decoded_path.write_bytes(_points_to_ply_bytes(pts))
+                    decoded_label = decoded_path.name
+
+                dec_results[stem] = {
+                    "decode_s": float(dt),
+                    "decode_fps": (1.0 / dt) if dt > 0 else float("nan"),
+                    "status": "ok",
+                }
+
+                fut_metric = metric_pool.submit(
+                    _metric_job,
+                    stem,
+                    ply_by_stem[stem],
+                    pts,
+                    decoded_label,
                 )
-                if pbar:
-                    pbar.update(1)
-                continue
-            fut = pool.submit(_metric_job, stem, ply_path, decoded, decoded_label)
-            scheduled[fut] = stem
+                metric_futures[fut_metric] = stem
 
-        for fut in as_completed(scheduled):
-            stem = scheduled[fut]
+        if decode_pbar:
+            decode_pbar.close()
+
+        for fut in as_completed(metric_futures):
             metric_rows.append(fut.result())
-            if pbar:
-                pbar.update(1)
+            if metric_pbar:
+                metric_pbar.update(1)
 
-        if pbar:
-            pbar.close()
+    if metric_pbar:
+        metric_pbar.close()
 
     # 3) 결과 합치기 + 크기/압축배율
     rows = []
