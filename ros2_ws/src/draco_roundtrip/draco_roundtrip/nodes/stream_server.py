@@ -176,11 +176,11 @@ class StreamServerNode(Node):
                         except ConnectionClosed:
                             self.get_logger().info("Uplink connection closed by peer")
                         except Exception as exc:
-                            self.get_logger().exception(f"Uplink session error: {exc}")
+                            self.get_logger().error(f"Uplink session error: {exc}")
                         finally:
                             self.get_logger().info("Uplink session finished")
         except Exception as exc:  # pragma: no cover - defensive logging
-            self.get_logger().exception(f"Failed to start uplink server: {exc}")
+            self.get_logger().error(f"Failed to start uplink server: {exc}")
 
     def _run_downlink(self) -> None:
         port = int(self.downlink_port)
@@ -205,7 +205,7 @@ class StreamServerNode(Node):
                             self._downlink_conn = None
                         self.get_logger().info("Downlink connection closed")
         except Exception as exc:  # pragma: no cover
-            self.get_logger().exception(f"Downlink server error: {exc}")
+            self.get_logger().error(f"Downlink server error: {exc}")
 
     def _serve_client(self, conn: socket.socket) -> None:
         bytes_in = 0
