@@ -1,4 +1,5 @@
 from glob import glob
+import os # 추가
 from setuptools import find_packages, setup
 
 package_name = 'slam_stream_bridge'
@@ -11,11 +12,12 @@ setup(
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', glob(package_name + '/launch/*.py')),
+        (os.path.join('share', package_name, 'configs'), glob(os.path.join('configs', '*.yaml'))),
     ],
     install_requires=['setuptools'],
     zip_safe=False,
-    maintainer='GodokSa',
-    maintainer_email='ppakdone@gmail.com',
+    maintainer='DONGHYUN',
+    maintainer_email='agfee104@outlook.kr',
     description='Launch files bridging SLAM pipelines with Draco streaming utilities.',
     license='TODO',
     tests_require=['pytest'],
