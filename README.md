@@ -45,24 +45,26 @@ source install/setup.bash
 ros2 launch draco_roundtrip server.launch.py [port:=5000]
 ```
 
-- `port` (옵션): 업링크(TCP) 포트. 기본값은 `5000`이며, 다운링크 포트는 자동으로 `port + 1` 로 계산됩니다.
+- `port` (옵션): 업링크(TCP) 포트. 기본값은 `5000`이며, `downlink_port`를 지정하지 않으면 다운링크 포트가 자동으로 `port + 1` 로 계산됩니다.
+- `downlink_port` (옵션): 다운링크 제어 포트. `0`(기본값)으로 두면 서버 노드가 실행 시점에 `port + 1`을 사용합니다.
 
 **2. 클라이언트 PC (로봇)**
 
 ```bash
 ros2 launch draco_roundtrip client.launch.py \
-    server_ip:=192.168.3.16 \
+    server_host:=192.168.3.16 \
     server_port:=5000 \
     bag_file:=/absolute/path/to/your.bag \
     topic_name:=/sensing/lidar/top/pointcloud
 ```
 
-- `server_ip` (필수): 서버 PC의 IP 또는 호스트명. 다운링크 접속에도 동일 값이 사용됩니다.
+- `server_host` (필수): 서버 PC의 IP 또는 호스트명. 다운링크 접속에도 동일 값이 사용됩니다.
 - `server_port` (옵션): 서버 런치에서 사용한 업링크 포트(기본값 `5000`). 다운링크 포트는 자동으로 `server_port + 1` 로 설정됩니다.
 - `bag_file` (필수): 스트리밍할 rosbag2 디렉터리 또는 DB3 파일의 절대 경로.
 - `topic_name` (필수): rosbag 안의 `sensor_msgs/msg/PointCloud2` 토픽 이름.
+- `work_dir`, `encoder`, `telemetry_rate` 등의 추가 인자는 런치 인자로 전달하면 해당 ROS 2 파라미터가 설정됩니다.
 
-각 런치 파일은 신규(기본) 모드로 노드를 실행하며, 필요 시 `--encoder`, `--decoder` 등 세부 인자는 환경 변수나 `ROS_ARGUMENTS` 를 통해 각 노드에 전달할 수 있습니다. 클라이언트가 실행되면 `data/ply_stream/`에 생성된 PLY 파일을 인코딩한 뒤 서버로 전송하고, 서버에서 돌려받은 복원 결과는 `data/decoded_from_server/`에 저장되며 동시에 ROS 토픽(`stream_pair/source`, `stream_pair/decoded`)으로 퍼블리시됩니다. RViz에서 두 토픽을 비교하면 복원 품질을 시각적으로 확인할 수 있습니다.
+각 런치 파일은 ROS 2 파라미터 기반으로 노드를 구성합니다. 세부 동작을 바꾸고 싶다면 `ros2 launch ... telemetry_rate:=5.0` 처럼 런치 인자에서 원하는 값을 덮어쓰거나, `--ros-args --params-file custom.yaml` 을 추가해 YAML 파라미터 파일을 전달하면 됩니다. 클라이언트가 실행되면 `data/ply_stream/`에 생성된 PLY 파일을 인코딩한 뒤 서버로 전송하고, 서버에서 돌려받은 복원 결과는 `data/decoded_from_server/`에 저장되며 동시에 ROS 토픽(`stream_pair/source`, `stream_pair/decoded`)으로 퍼블리시됩니다. RViz에서 두 토픽을 비교하면 복원 품질을 시각적으로 확인할 수 있습니다.
 
 ### 3. 보조 유틸리티
 - PLY 생성만 필요한 경우:

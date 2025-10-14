@@ -13,8 +13,9 @@ to the `kind` string:
 
 Binary payloads use network byte order and fixed sizes to enable zero-copy
 parsing. Strings are padded with `\0` and truncated at 64 bytes. JSON payloads
-mirror the same fields and are emitted when `--downlink-protocol json` or
-`--downlink-json` is set.
+mirror the same fields and are emitted when the server node sets the
+`downlink_protocol` parameter to `json` or toggles the boolean
+`downlink_json` parameter.
 
 ## Structures
 
@@ -61,12 +62,12 @@ The path pose count is capped at 200 (~33 kiB payload) to bound bandwidth.
 
 ## Timing and liveness
 
-* Downlink rate is throttled to `--downlink-rate` Hz (default 10 Hz).
+* Downlink rate is throttled to the `downlink_rate` parameter (default 10 Hz).
 * Clients send heartbeats (`heartbeat` kind with empty payload) every
-  `--heartbeat-interval` seconds (default 1 s). The server suppresses downlink
-  if no heartbeat is observed within twice this interval.
-* Legacy PLY replies remain behind the `--legacy-downlink` flag. When legacy is
-  disabled the server ACKs uploads with `ack` messages.
+  `heartbeat_interval` seconds (default 1 s). The server suppresses downlink if
+  no heartbeat is observed within twice this interval.
+* Legacy PLY replies remain behind the `legacy_downlink` parameter. When legacy
+  mode is disabled the server ACKs uploads with `ack` messages.
 
 ## Error handling
 
