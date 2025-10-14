@@ -1,12 +1,12 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description() -> LaunchDescription:
     port = LaunchConfiguration('port')
-    downlink_port = PythonExpression(['str(int(', port, ') + 1)'])
+    downlink_port = LaunchConfiguration('downlink_port')
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -14,14 +14,21 @@ def generate_launch_description() -> LaunchDescription:
             default_value='5000',
             description='Uplink port for the server to listen on.',
         ),
+        DeclareLaunchArgument(
+            'downlink_port',
+            default_value='0',
+            description='Downlink control port (0 uses uplink port + 1).',
+        ),
         Node(
             package='draco_roundtrip',
             executable='stream_server',
             name='stream_server',
             output='screen',
-            arguments=[
-                '--port', port,
-                '--downlink-port', downlink_port,
+            parameters=[
+                {
+                    'port': port,
+                    'downlink_port': downlink_port,
+                }
             ],
         ),
     ])
