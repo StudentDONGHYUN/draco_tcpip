@@ -4,7 +4,10 @@
 rtabmap:
   ros__parameters:
     use_sim_time: true
-    frame_id: base_link
+    # Incoming point clouds are published in lidar_frame. Aligning the
+    # SLAM node with that frame avoids TF lookup failures when consuming
+    # streamed data.
+    frame_id: lidar_frame
     map_frame_id: map
     odom_frame_id: odom
     publish_tf: true
@@ -43,7 +46,9 @@ rtabmap:
 icp_odometry:
   ros__parameters:
     use_sim_time: true
-    frame_id: base_link
+    # Keep the odometry frame aligned with the LiDAR data source so ICP can
+    # register consecutive scans without extra TF transforms.
+    frame_id: lidar_frame
     odom_frame_id: odom
     publish_tf: true
     wait_for_transform: 0.2
