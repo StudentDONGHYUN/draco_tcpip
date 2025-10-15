@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import queue
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -50,7 +49,7 @@ from draco_roundtrip.net.protocol import (
     recv_message,
     send_message,
 )
-from draco_roundtrip.utils import ensure_directory, resolve_qos_override
+from draco_roundtrip.utils import ensure_directory
 
 QueueItem = Tuple[str, object]
 
@@ -189,39 +188,6 @@ def _decode_downlink_message(msg: Message, protocol: str) -> Optional[tuple[str,
     return None
 
 
-def _launch_bag_to_ply(
-    topic: str,
-    ply_dir: Path,
-    prefix: str,
-    idle_timeout: float,
-    best_effort: bool,
-    max_frames: int,
-    use_sim_time: bool,
-) -> subprocess.Popen:
-    cmd = [
-        sys.executable,
-        "-m",
-        "draco_roundtrip.io.bag_recorder",
-        "--topic",
-        topic,
-        "--out",
-        str(ply_dir.resolve()),
-        "--prefix",
-        prefix,
-        "--idle-timeout-sec",
-        str(idle_timeout),
-    ]
-    if best_effort:
-        cmd.append("--best-effort")
-    if max_frames:
-        cmd += ["--max-frames", str(max_frames)]
-        
-    if use_sim_time:
-        cmd += ["--ros-args", "--param", "use_sim_time:=true"]
-        
-    return subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
-
-
 class StreamClientNode(Node):
     """Streaming client that uses ROS 2 parameters for configuration."""
 
@@ -229,8 +195,6 @@ class StreamClientNode(Node):
         super().__init__("draco_stream_client")
 
         # Declare parameters for configuration compatibility.
-        self.declare_parameter("bag", "")
-        self.declare_parameter("topic", "")
         self.declare_parameter("prefix", "")
         self.declare_parameter("ply_dir", "data/ply_stream")
         self.declare_parameter("encoder", "")
@@ -238,9 +202,6 @@ class StreamClientNode(Node):
         self.declare_parameter("qp", 12)
         self.declare_parameter("qg", 10)
         self.declare_parameter("encoder_extra", [])
-        self.declare_parameter("idle_timeout", 10.0)
-        self.declare_parameter("max_frames", 0)
-        self.declare_parameter("best_effort", False)
         self.declare_parameter("work_dir", "data/client_tmp")
         self.declare_parameter("decoded_dir", "data/decoded_from_server")
         self.declare_parameter("server_host", "127.0.0.1")
@@ -259,10 +220,8 @@ class StreamClientNode(Node):
         self.declare_parameter("max_inflight", 8)
         self.declare_parameter("protocol", "binary")
         self.declare_parameter("socket_timeout", 3.0)
-        self.declare_parameter("calculate_metrics", False)  # <-- 신규 파라미터 추가
+        self.declare_parameter("calculate_metrics", False)
 
-        self.bag_path = str(self.get_parameter("bag").value)
-        self.topic = str(self.get_parameter("topic").value)
         self.prefix = str(self.get_parameter("prefix").value)
         self.ply_dir = ensure_directory(Path(str(self.get_parameter("ply_dir").value)).resolve())
         self.work_dir = ensure_directory(Path(str(self.get_parameter("work_dir").value)).resolve())
@@ -277,9 +236,6 @@ class StreamClientNode(Node):
             generic_quantization_bits=int(self.get_parameter("qg").value),
             extra_args=extra_args,
         )
-        self.idle_timeout = float(self.get_parameter("idle_timeout").value)
-        self.max_frames = int(self.get_parameter("max_frames").value)
-        self.best_effort = bool(self.get_parameter("best_effort").value)
         self.server_host = str(self.get_parameter("server_host").value)
         self.server_port = int(self.get_parameter("server_port").value)
         self.play_frame_id = str(self.get_parameter("play_frame_id").value)
@@ -299,7 +255,7 @@ class StreamClientNode(Node):
         self.downlink_port = downlink_port_param if downlink_port_param else self.server_port + 1
         self.downlink_protocol = str(self.get_parameter("downlink_protocol").value)
         self.calculate_metrics = bool(self.get_parameter("calculate_metrics").value)
-        self.use_sim_time = bool(self.get_parameter("use_sim_time").value) # <-- 파라미터 값 읽어오기
+        self.use_sim_time = bool(self.get_parameter("use_sim_time").value)
 
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
@@ -332,8 +288,6 @@ class StreamClientNode(Node):
         self._stop_event = threading.Event()
         self._downlink_stop = threading.Event()
         self._downlink_thread: Optional[threading.Thread] = None
-        self._bag_process: Optional[subprocess.Popen] = None
-        self._saver_process: Optional[subprocess.Popen] = None
         self._worker_thread = threading.Thread(target=self._run_client, daemon=True)
         self._worker_thread.start()
 
@@ -417,49 +371,12 @@ class StreamClientNode(Node):
             self._stop_event.set()
 
     def _execute_streaming_loop(self) -> None:
-        if not self.bag_path or not self.topic or not self.prefix:
+        if not self.prefix:
             self.get_logger().error(
-                "Parameters 'bag', 'topic', and 'prefix' must be set before starting the client"
+                "Parameter 'prefix' must be set before starting the client"
             )
             self._stop_event.set()
             return
-
-        bag_path = Path(self.bag_path).resolve()
-        bag_cmd = ["ros2", "bag", "play", str(bag_path)]
-        
-        # use_sim_time 값에 따라 --clock 옵션 추가
-        if self.use_sim_time:
-            bag_cmd.append("--clock")
-        
-        qos_override = resolve_qos_override()
-        if qos_override is not None:
-            bag_cmd += ["--qos-profile-overrides-path", str(qos_override)]
-        else:
-            print(
-                "[CLIENT] WARN: QoS override file not found, falling back to recorded QoS",
-                file=sys.stderr,
-            )
-        # --- 수정 시작 ---
-        # 1. ply_saver를 먼저 실행합니다.
-        self.get_logger().info("Starting ply_saver process...")
-        self._saver_process = _launch_bag_to_ply(
-            self.topic,
-            self.ply_dir,
-            self.prefix,
-            self.idle_timeout,
-            self.best_effort,
-            self.max_frames,
-            self.use_sim_time,
-        )
-
-        # 2. ply_saver 노드가 초기화되고 구독을 준비할 시간을 줍니다.
-        self.get_logger().info("Waiting for ply_saver to initialize...")
-        time.sleep(2.0)
-
-        # 3. 그 다음에 ros2 bag play를 실행합니다.
-        self.get_logger().info("Starting ros2 bag play process...")
-        self._bag_process = subprocess.Popen(bag_cmd)
-        # --- 수정 끝 ---
 
         processed: set[Path] = set()
         frame_idx = 0
@@ -530,7 +447,6 @@ class StreamClientNode(Node):
                                 pts_dec = load_xyz_from_bytes(ply_path.read_bytes())
 
                             pts_src_metrics = pts_src
-                            # <-- 메트릭 계산 로직을 조건부로 변경
                             if self.calculate_metrics:
                                 metrics = compute_basic_metrics(
                                     pts_src_metrics, pts_dec, self.play_sample
@@ -567,10 +483,6 @@ class StreamClientNode(Node):
             self._downlink_stop.set()
             if self._downlink_thread and self._downlink_thread.is_alive():
                 self._downlink_thread.join(timeout=2.0)
-            if self._bag_process and self._bag_process.poll() is None:
-                self._bag_process.terminate()
-            if self._saver_process and self._saver_process.poll() is None:
-                self._saver_process.terminate()
             elapsed = max(time.monotonic() - start_time, 1e-6)
             with self._metrics_lock:
                 self._bytes_sent = bytes_sent
@@ -625,10 +537,6 @@ class StreamClientNode(Node):
             self._worker_thread.join(timeout=2.0)
         if self._downlink_thread and self._downlink_thread.is_alive():
             self._downlink_thread.join(timeout=2.0)
-        if self._bag_process and self._bag_process.poll() is None:
-            self._bag_process.terminate()
-        if self._saver_process and self._saver_process.poll() is None:
-            self._saver_process.terminate()
         super().destroy_node()
 
 
