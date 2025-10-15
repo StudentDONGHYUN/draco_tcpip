@@ -439,7 +439,9 @@ class StreamClientNode(Node):
                 "[CLIENT] WARN: QoS override file not found, falling back to recorded QoS",
                 file=sys.stderr,
             )
-        self._bag_process = subprocess.Popen(bag_cmd)
+        # --- 수정 시작 ---
+        # 1. ply_saver를 먼저 실행합니다.
+        self.get_logger().info("Starting ply_saver process...")
         self._saver_process = _launch_bag_to_ply(
             self.topic,
             self.ply_dir,
@@ -449,6 +451,15 @@ class StreamClientNode(Node):
             self.max_frames,
             self.use_sim_time,
         )
+
+        # 2. ply_saver 노드가 초기화되고 구독을 준비할 시간을 줍니다.
+        self.get_logger().info("Waiting for ply_saver to initialize...")
+        time.sleep(2.0)
+
+        # 3. 그 다음에 ros2 bag play를 실행합니다.
+        self.get_logger().info("Starting ros2 bag play process...")
+        self._bag_process = subprocess.Popen(bag_cmd)
+        # --- 수정 끝 ---
 
         processed: set[Path] = set()
         frame_idx = 0
