@@ -73,27 +73,26 @@ class TimeJumpResetNode(Node):
                     self._trigger_reset(jump)
             else:
                 self.get_logger().debug(
-                    "감지된 시간 점프(%fs)가 임계값보다 작아 무시되었습니다.", jump
+                    f"감지된 시간 점프({jump:.3f}s)가 임계값보다 작아 무시되었습니다."
                 )
 
         self._last_clock_sec = current_sec
 
     def _trigger_reset(self, jump: float) -> None:
         self.get_logger().warn(
-            "시뮬레이션 시간이 %0.3fs 만큼 과거로 이동했습니다. 관련 노드를 리셋합니다.",
-            jump,
+            f"시뮬레이션 시간이 {jump:.3f}s 만큼 과거로 이동했습니다. 관련 노드를 리셋합니다."
         )
         for name, client in self._service_clients.items():
             if not client.wait_for_service(timeout_sec=0.0):
                 if name not in self._missing_service_logs:
                     self.get_logger().warning(
-                        "리셋 서비스 %s 를 아직 사용할 수 없습니다. 이후 다시 시도합니다.", name
+                        f"리셋 서비스 {name} 를 아직 사용할 수 없습니다. 이후 다시 시도합니다."
                     )
                     self._missing_service_logs.add(name)
                 continue
 
             if name in self._missing_service_logs:
-                self.get_logger().info("리셋 서비스 %s 가 사용 가능해졌습니다.", name)
+                self.get_logger().info(f"리셋 서비스 {name} 가 사용 가능해졌습니다.")
                 self._missing_service_logs.remove(name)
 
             request = Empty.Request()
@@ -110,10 +109,10 @@ class TimeJumpResetNode(Node):
             future.result()
         except Exception as exc:  # noqa: BLE001 - 구체 오류 메시지 전달이 목적
             self.get_logger().error(
-                "리셋 서비스 %s 호출에 실패했습니다: %s", service_name, exc
+                f"리셋 서비스 {service_name} 호출에 실패했습니다: {exc}"
             )
         else:
-            self.get_logger().info("리셋 서비스 %s 호출을 완료했습니다.", service_name)
+            self.get_logger().info(f"리셋 서비스 {service_name} 호출을 완료했습니다.")
         finally:
             if future in self._pending_calls:
                 self._pending_calls.remove(future)

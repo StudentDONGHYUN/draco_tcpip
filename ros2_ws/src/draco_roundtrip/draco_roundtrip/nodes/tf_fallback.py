@@ -76,24 +76,20 @@ class TfFallbackNode(Node):
                     parent, child, rclpy.time.Time(), self._timeout
                 ):
                     if (parent, child) in self._missing:
-                        self.get_logger().info(
-                            "TF %s -> %s 가 다시 제공되고 있어 임시 변환을 중단합니다.",
-                            parent,
-                            child,
-                        )
-                        self._missing.remove((parent, child))
-                    continue
-            except TransformException:
-                pass
-
-            if (parent, child) not in self._missing:
-                self.get_logger().warn(
-                    "TF %s -> %s 를 찾을 수 없습니다. 항등 변환을 발행합니다.",
-                    parent,
-                    child,
+                self.get_logger().info(
+                    f"TF {parent} -> {child} 가 다시 제공되고 있어 임시 변환을 중단합니다."
                 )
-                self._missing.add((parent, child))
-            self._broadcast_identity(parent, child, stamp)
+                self._missing.remove((parent, child))
+            continue
+        except TransformException:
+            pass
+
+        if (parent, child) not in self._missing:
+            self.get_logger().warn(
+                f"TF {parent} -> {child} 를 찾을 수 없습니다. 항등 변환을 발행합니다."
+            )
+            self._missing.add((parent, child))
+        self._broadcast_identity(parent, child, stamp)
 
     def _broadcast_identity(self, parent: str, child: str, stamp) -> None:
         msg = TransformStamped()
