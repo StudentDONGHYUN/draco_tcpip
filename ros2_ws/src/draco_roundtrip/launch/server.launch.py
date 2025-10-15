@@ -34,7 +34,6 @@ def generate_launch_description() -> LaunchDescription:
                     'port': port,
                     'downlink_port': downlink_port,
                     'points_topic': '/stream_pair/decoded',  # <-- 이 줄을 추가합니다.
-                    'points_frame_id': 'lidar_link',  # <-- 이 줄을 추가합니다.
                 },
                 {'use_sim_time': use_sim_time} # <-- 이 줄을 추가합니다.
             ],

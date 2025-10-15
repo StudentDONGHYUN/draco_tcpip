@@ -275,7 +275,9 @@ class SenderNode(Node):
 
                     try:
                         drc_bytes = bytes(msg.data)
-                        message = Message(kind=MSG_DATA, name=msg.frame_name, payload=drc_bytes)
+        msg = Message(
+            kind=MSG_DATA, name=ros_msg.frame_name, payload=bytes(ros_msg.data), frame_id=ros_msg.header.frame_id
+        )
                         send_message(sock, message)
 
                         with self._metrics_lock:

@@ -50,17 +50,21 @@ class Message:
     kind: str
     name: str
     payload: bytes
+    frame_id: str = ""
 
     def as_meta(self) -> str:
-        return f"{self.kind}{_SEPARATOR}{self.name}" if self.name else self.kind
+        return f"{self.kind}{_SEPARATOR}{self.name}{_SEPARATOR}{self.frame_id}"
 
     @classmethod
     def from_meta(cls, meta: str, payload: bytes) -> "Message":
-        if _SEPARATOR in meta:
-            kind, name = meta.split(_SEPARATOR, 1)
+        parts = meta.split(_SEPARATOR, 2)
+        if len(parts) == 3:
+            kind, name, frame_id = parts
+        elif len(parts) == 2:
+            kind, name, frame_id = parts[0], parts[1], ""
         else:
-            kind, name = MSG_DATA, meta
-        return cls(kind=kind or MSG_DATA, name=name, payload=payload)
+            kind, name, frame_id = meta, "", ""
+        return cls(kind=kind or MSG_DATA, name=name, payload=payload, frame_id=frame_id)
 
 
 def _read_exact(sock: socket.socket, size: int) -> bytes:

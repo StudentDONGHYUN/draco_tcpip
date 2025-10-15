@@ -94,7 +94,7 @@ class StreamServerNode(Node):
         self.declare_parameter("decoder", "")
         self.declare_parameter("work_dir", "data/server_tmp")
         self.declare_parameter("points_topic", "/server/points")
-        self.declare_parameter("points_frame_id", "server_lidar")
+        self.declare_parameter("points_frame_id", "")
         self.declare_parameter("pose_topic", "/server_pose")
         self.declare_parameter("path_topic", "/planned_path")
         self.declare_parameter("twist_topic", "/cmd_vel")
@@ -247,7 +247,7 @@ class StreamServerNode(Node):
                 self.get_logger().error(f"Failed to decode {stem}: {exc}")
                 continue
 
-            self._publish_point_cloud(points)
+            self._publish_point_cloud(points, frame_id=msg.frame_id)
             self._update_autonomy_outputs()
 
             if self.legacy_downlink:
@@ -266,10 +266,10 @@ class StreamServerNode(Node):
     # ------------------------------------------------------------------
     # ROS publishing helpers
 
-    def _publish_point_cloud(self, xyz: np.ndarray) -> None:
+    def _publish_point_cloud(self, xyz: np.ndarray, frame_id: str) -> None:
         header = Header()
         header.stamp = self.get_clock().now().to_msg()
-        header.frame_id = self._points_frame_id
+        header.frame_id = self._points_frame_id or frame_id
         msg = pc2.create_cloud_xyz32(header, xyz)
         self.pub_points.publish(msg)
 
