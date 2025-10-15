@@ -265,7 +265,7 @@ class SenderNode(Node):
                 self.get_logger().info(f"Connected to {self.server_host}:{self.server_port}")
                 while not self._stop_event.is_set():
                     try:
-                        msg = self._msg_queue.get(timeout=self.heartbeat_interval)
+                        ros_msg = self._msg_queue.get(timeout=self.heartbeat_interval)
                     except queue.Empty:
                         send_message(sock, Message(kind=MSG_HEARTBEAT, name="hb", payload=b""))
                         ack = recv_message(sock)
@@ -274,17 +274,17 @@ class SenderNode(Node):
                         continue
 
                     try:
-                        drc_bytes = bytes(msg.data)
-        msg = Message(
-            kind=MSG_DATA, name=ros_msg.frame_name, payload=bytes(ros_msg.data), frame_id=ros_msg.header.frame_id
-        )
+                        drc_bytes = bytes(ros_msg.data)
+                        message = Message(
+                            kind=MSG_DATA, name=ros_msg.frame_name, payload=drc_bytes, frame_id=ros_msg.header.frame_id
+                        )
                         send_message(sock, message)
 
                         with self._metrics_lock:
                             self._bytes_sent += len(drc_bytes)
                             self._frames_sent += 1
 
-                        self.get_logger().info(f"Sent {msg.frame_name} ({len(drc_bytes)} bytes)")
+                        self.get_logger().info(f"Sent {message.name} ({len(drc_bytes)} bytes)")
 
                         reply = recv_message(sock)
                         if reply is None:
@@ -292,7 +292,7 @@ class SenderNode(Node):
                         if reply.kind == MSG_ERROR:
                             detail = reply.payload.decode(errors="ignore")
                             self.get_logger().error(
-                                f"SERVER ERROR for {msg.frame_name}: {reply.name} -> {detail}"
+                                f"SERVER ERROR for {message.name}: {reply.name} -> {detail}"
                             )
                             continue
 
