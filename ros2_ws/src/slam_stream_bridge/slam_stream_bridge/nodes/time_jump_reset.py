@@ -32,7 +32,7 @@ class TimeJumpResetNode(Node):
                 "reset_services",
                 [
                     "/icp_odometry/reset",
-                    "/rtabmap/reset",
+                    "/rtabmap/reset_odom",
                 ],
             )
             .get_parameter_value()
