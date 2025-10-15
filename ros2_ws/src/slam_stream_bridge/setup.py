@@ -22,4 +22,9 @@ setup(
     description='Launch files bridging SLAM pipelines with Draco streaming utilities.',
     license='TODO',
     tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'time_jump_reset = slam_stream_bridge.nodes.time_jump_reset:main',
+        ],
+    },
 )

@@ -54,7 +54,6 @@ icp_odometry:
     scan_cloud_max_pts: 120000
     scan_cloud_min_pts: 50
     Icp/PointToPlane: "true"
-    Icp/GuessMotion: "true"
     Icp/VoxelSize: "0.05"
     Icp/Epsilon: "0.001"
     Icp/CorrespondenceRatio: "0.1"
@@ -62,7 +61,8 @@ icp_odometry:
     Icp/PointToPlaneK: "20"
     Icp/PointToPlaneRadius: "0"
     Odom/ScanKeyFrameThr: "0.4"
-    Odom/KeyFrameOnTimeJump: "true"
+    Odom/GuessMotion: "false"
+    Odom/ResetCountdown: "1"
     OdomF2M/ScanSubtractRadius: "0.2"
     OdomF2M/ScanMaxSize: "15000"
     OdomF2M/BundleAdjustment: "false"

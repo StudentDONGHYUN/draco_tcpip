@@ -35,6 +35,12 @@ def generate_launch_description():
         description='Use simulation clock if true.'
     )
 
+    time_jump_threshold_arg = DeclareLaunchArgument(
+        'time_jump_threshold',
+        default_value='0.5',
+        description='Simulation time jump size (seconds) that triggers odometry reset.'
+    )
+
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -78,12 +84,25 @@ def generate_launch_description():
         arguments=['--delete_db_on_start']
     )
 
+    time_jump_reset_node = Node(
+        package='slam_stream_bridge',
+        executable='time_jump_reset',
+        name='time_jump_reset',
+        output='screen',
+        parameters=[{
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'jump_back_threshold_sec': LaunchConfiguration('time_jump_threshold'),
+        }]
+    )
+
     return LaunchDescription([
         params_arg,
         cloud_topic_arg,
         use_sim_time_arg,
+        time_jump_threshold_arg,
         robot_state_publisher_node,
         static_transform_publisher_node,
         icp_odometry_node,
         rtabmap_node,
+        time_jump_reset_node,
     ])
