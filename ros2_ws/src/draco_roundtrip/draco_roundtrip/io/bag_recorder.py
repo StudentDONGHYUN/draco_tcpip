@@ -7,7 +7,6 @@ ROS2 PointCloud2 -> PLY 저장 노드 (Open3D 우선 + plyfile 폴백)
 - PointCloud2 → (N,3) float32 변환 경로를 견고하게 수정(read_points_numpy 우선)
 """
 
-import argparse
 import csv
 import re
 import sys
@@ -128,25 +127,44 @@ def save_ply_o3d_then_verify(path: Path, xyz_f32: np.ndarray) -> None:
 
 
 class PcdSaver(Node):
-    def __init__(self, topic: str, out_dir: Path, prefix: str,
-                 every: int, qos_reliable: bool, max_frames: int,
-                 idle_timeout_sec: float, log_csv: Path | None,
-                 voxel_size: float):
+    def __init__(self):
         super().__init__('ply_saver')
 
-        self.topic = topic
-        self.out_dir = out_dir
-        self.prefix = prefix
-        self.every = max(1, every)
-        self.max_frames = max_frames  # 0이면 무제한
-        self.idle_timeout_sec = float(idle_timeout_sec)
-        self.voxel_size = float(max(0.0, voxel_size))
+        # Declare parameters
+        self.declare_parameter('topic', '')
+        self.declare_parameter('out', '')
+        self.declare_parameter('prefix', 'sample')
+        self.declare_parameter('every', 1)
+        self.declare_parameter('best_effort', True)
+        self.declare_parameter('max_frames', 0)
+        self.declare_parameter('idle_timeout_sec', 10.0)
+        self.declare_parameter('voxel_size', 0.0)
+        self.declare_parameter('log_csv', '')
 
+        # Get parameters
+        self.topic = self.get_parameter('topic').value
+        out_str = self.get_parameter('out').value
+        self.prefix = self.get_parameter('prefix').value
+        self.every = max(1, self.get_parameter('every').value)
+        qos_best_effort = self.get_parameter('best_effort').value
+        self.max_frames = self.get_parameter('max_frames').value
+        self.idle_timeout_sec = self.get_parameter('idle_timeout_sec').value
+        self.voxel_size = max(0.0, self.get_parameter('voxel_size').value)
+        log_csv_str = self.get_parameter('log_csv').value
+
+        if not self.topic or not out_str:
+            self.get_logger().error("'topic' and 'out' parameters must be set.")
+            # Prevent further execution by returning early or raising an exception
+            # For a node, it's better to just log and not crash, but let's make it exit
+            # to make the problem obvious.
+            sys.exit("Missing required parameters 'topic' or 'out'.")
+
+        self.out_dir = Path(out_str).expanduser().resolve()
         self.out_dir.mkdir(parents=True, exist_ok=True)
 
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
-        qos.reliability = ReliabilityPolicy.RELIABLE if qos_reliable else ReliabilityPolicy.BEST_EFFORT
+        qos.reliability = ReliabilityPolicy.BEST_EFFORT if qos_best_effort else ReliabilityPolicy.RELIABLE
 
         self.sub = self.create_subscription(PointCloud2, self.topic, self.cb, qos)
 
@@ -157,12 +175,12 @@ class PcdSaver(Node):
 
         self.get_logger().info(
             f"Subscribing topic={self.topic}  out={self.out_dir}  every={self.every}  "
-            f"QoS={'RELIABLE' if qos_reliable else 'BEST_EFFORT'}"
+            f"QoS={'BEST_EFFORT' if qos_best_effort else 'RELIABLE'}"
         )
 
         self.timer = self.create_timer(0.5, self._on_timer)
 
-        self._log_path = log_csv
+        self._log_path = Path(log_csv_str).expanduser().resolve() if log_csv_str else None
         self._log_fp = None
         self._log_writer: csv.writer | None = None
         if self._log_path is not None:
@@ -224,37 +242,8 @@ class PcdSaver(Node):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="PointCloud2 -> PLY saver (Open3D 우선+plyfile 폴백)")
-    ap.add_argument("--topic", required=True, help="구독할 PointCloud2 토픽")
-    ap.add_argument("--out", required=True, help="PLY 저장 디렉토리")
-    ap.add_argument("--prefix", default="sample", help="파일 접두어")
-    ap.add_argument("--every", type=int, default=1, help="N프레임마다 1회 저장")
-    qos_group = ap.add_mutually_exclusive_group()
-    qos_group.add_argument("--reliable", action="store_true", help="QoS RELIABLE")
-    qos_group.add_argument("--best-effort", action="store_true", help="QoS BEST_EFFORT(기본)")
-    ap.add_argument("--max-frames", type=int, default=0, help="저장할 프레임 수(0=무제한)")
-    ap.add_argument("--idle-timeout-sec", type=float, default=10.0,
-                    help="수신 없을 때 자동 종료까지 대기 초(0=비활성)")
-    ap.add_argument("--voxel-size", type=float, default=0.0,
-                    help=">0이면 저장 전 voxel downsample 적용 (m)")
-    ap.add_argument("--log-csv", default=None, help="프레임 저장 시간 로그 CSV")
-    args = ap.parse_args()
-
-    out_dir = Path(args.out).expanduser().resolve()
-    log_csv = Path(args.log_csv).expanduser().resolve() if args.log_csv else None
-
     rclpy.init(args=None)
-    node = PcdSaver(
-        topic=args.topic,
-        out_dir=out_dir,
-        prefix=args.prefix,
-        every=args.every,
-        qos_reliable=bool(args.reliable and not args.best_effort),
-        max_frames=args.max_frames,
-        idle_timeout_sec=args.idle_timeout_sec,
-        log_csv=log_csv,
-        voxel_size=float(args.voxel_size),
-    )
+    node = PcdSaver()
     try:
         rclpy.spin(node)
     finally:
@@ -262,10 +251,9 @@ def main():
             node.close_log()
         except Exception:
             pass
-        try:
-            rclpy.try_shutdown()
-        except Exception:
-            pass
+        # Use try_shutdown() to avoid errors if already shutdown
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":
