@@ -62,6 +62,11 @@ def generate_launch_description() -> LaunchDescription:
         default_value='1.0',
         description='Rate at which to play the rosbag file.',
     )
+    declare_loop = DeclareLaunchArgument(
+        'loop',
+        default_value='false',
+        description='If true, loop the rosbag playback.',
+    )
 
     # Arguments for ply_saver, only used if save_ply_files is true
     declare_idle_timeout = DeclareLaunchArgument(
@@ -114,6 +119,8 @@ def generate_launch_description() -> LaunchDescription:
         ]
         if context.launch_configurations['use_sim_time'] == 'true':
             bag_play_cmd.append('--clock')
+        if context.launch_configurations['loop'] == 'true':
+            bag_play_cmd.append('--loop')
         
         pkg_share = get_package_share_directory('draco_roundtrip')
         qos_override_path = os.path.join(pkg_share, 'config', 'qos_override.yaml')
@@ -167,6 +174,7 @@ def generate_launch_description() -> LaunchDescription:
         declare_save_ply_files,
         declare_qos_best_effort,
         declare_play_rate,
+        declare_loop,
         DeclareLaunchArgument('telemetry_rate', default_value='10.0'),
         declare_idle_timeout,
         declare_max_frames,
