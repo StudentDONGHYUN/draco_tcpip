@@ -1,5 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -8,6 +9,7 @@ def generate_launch_description() -> LaunchDescription:
     port = LaunchConfiguration('port')
     downlink_port = LaunchConfiguration('downlink_port')
     use_sim_time = LaunchConfiguration('use_sim_time')
+    publish_tf_fallback = LaunchConfiguration('publish_tf_fallback')
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -24,6 +26,10 @@ def generate_launch_description() -> LaunchDescription:
             'use_sim_time',
             default_value='false',
             description='Use simulation (rosbag) clock if true'),
+        DeclareLaunchArgument(
+            'publish_tf_fallback',
+            default_value='true',
+            description='Publish identity TFs when map/odom frames are missing.'),
         Node(
             package='draco_roundtrip',
             executable='stream_server',
@@ -37,5 +43,18 @@ def generate_launch_description() -> LaunchDescription:
                 'points_frame_id': 'lidar_frame'
             }],
         ),
+        Node(
+            condition=IfCondition(publish_tf_fallback),
+            package='draco_roundtrip',
+            executable='tf_fallback',
+            name='tf_fallback',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'world_frame_id': 'map',
+                'odom_frame_id': 'odom',
+                'base_frame_id': '',
+                'sensor_frame_id': 'lidar_frame',
+            }],
+        ),
     ])
-

@@ -17,6 +17,7 @@ setup(
             'encoder_node = draco_roundtrip.nodes.encoder_node:main',
             'sender_node = draco_roundtrip.nodes.sender_node:main',
             'stream_server = draco_roundtrip.nodes.stream_server:main',
+            'tf_fallback = draco_roundtrip.nodes.tf_fallback:main',
             'stream_monitor = draco_roundtrip.tools.monitor:main',
             'stream_replay = draco_roundtrip.tools.replay:main',
             'ply_saver = draco_roundtrip.io.bag_recorder:main',
