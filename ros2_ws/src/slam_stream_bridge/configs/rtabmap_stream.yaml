@@ -4,7 +4,7 @@
 rtabmap:
   ros__parameters:
     use_sim_time: true
-    frame_id: lidar_link
+    frame_id: base_link
     map_frame_id: map
     odom_frame_id: odom
     publish_tf: true
@@ -43,7 +43,7 @@ rtabmap:
 icp_odometry:
   ros__parameters:
     use_sim_time: true
-    frame_id: lidar_link
+    frame_id: base_link
     odom_frame_id: odom
     publish_tf: true
     wait_for_transform: 0.2

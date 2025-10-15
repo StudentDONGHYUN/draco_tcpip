@@ -8,7 +8,7 @@ imu_topic: ""
 odom_topic: ""
 
 # Frames
-base_frame_id: lidar_link
+base_frame_id: base_link
 odom_frame_id: odom
 map_frame_id: map
 
