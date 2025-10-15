@@ -13,6 +13,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', glob(package_name + '/launch/*.py')),
         (os.path.join('share', package_name, 'configs'), glob(os.path.join('configs', '*.yaml'))),
+        (os.path.join('share', package_name, 'urdf'), glob(os.path.join('urdf', '*.urdf'))),
     ],
     install_requires=['setuptools'],
     zip_safe=False,
