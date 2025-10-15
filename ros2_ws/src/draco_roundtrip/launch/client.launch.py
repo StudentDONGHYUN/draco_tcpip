@@ -29,30 +29,46 @@ def generate_launch_description() -> LaunchDescription:
     )
     declare_topic_name = DeclareLaunchArgument(
         'topic_name',
-        description='PointCloud2 topic inside the rosbag to replay.',
+        default_value='/sensing/lidar/top/pointcloud',
+        description='PointCloud2 topic to stream.',
     )
     declare_prefix = DeclareLaunchArgument(
         'prefix',
-        description='Unique namespace prefix used when recording the rosbag.',
+        default_value='client',
+        description='Unique namespace prefix, used for PLY file names in file mode.',
     )
     declare_ply_dir = DeclareLaunchArgument(
         'ply_dir',
         default_value='data/ply_stream',
-        description='Directory to store intermediate PLY files.',
+        description='Directory to store intermediate PLY files (if save_ply_files is true).',
     )
     declare_use_sim_time = DeclareLaunchArgument(
         'use_sim_time',
         default_value='false',
         description='Use simulation (rosbag) clock if true.',
     )
+    declare_save_ply_files = DeclareLaunchArgument(
+        'save_ply_files',
+        default_value='false',
+        description='If true, save intermediate PLY files and use them as the source.'
+    )
+    declare_qos_best_effort = DeclareLaunchArgument(
+        'qos_best_effort',
+        default_value='false',
+        description='Use Best Effort QoS for the PointCloud2 subscriber.'
+    )
+    declare_play_rate = DeclareLaunchArgument(
+        'play_rate',
+        default_value='1.0',
+        description='Rate at which to play the rosbag file.',
+    )
+
+    # Arguments for ply_saver, only used if save_ply_files is true
     declare_idle_timeout = DeclareLaunchArgument(
         'idle_timeout', default_value='10.0', description='Idle timeout for ply_saver.'
     )
     declare_max_frames = DeclareLaunchArgument(
         'max_frames', default_value='0', description='Max frames for ply_saver.'
-    )
-    declare_best_effort = DeclareLaunchArgument(
-        'best_effort', default_value='false', description='Best effort QoS for ply_saver.'
     )
 
     # Get launch configurations
@@ -63,16 +79,18 @@ def generate_launch_description() -> LaunchDescription:
     prefix = LaunchConfiguration('prefix')
     ply_dir = LaunchConfiguration('ply_dir')
     use_sim_time = LaunchConfiguration('use_sim_time')
+    save_ply_files = LaunchConfiguration('save_ply_files')
+    qos_best_effort = LaunchConfiguration('qos_best_effort')
     idle_timeout = LaunchConfiguration('idle_timeout')
     max_frames = LaunchConfiguration('max_frames')
-    best_effort = LaunchConfiguration('best_effort')
+    play_rate = LaunchConfiguration('play_rate')
 
-    # Node for saving PointCloud2 to PLY files
+    # Node for saving PointCloud2 to PLY files (conditional)
     ply_saver_node = Node(
         package='draco_roundtrip',
         executable='ply_saver',
         name='ply_saver',
-        output='screen',
+        output='log',
         parameters=[
             {
                 'topic': topic_name,
@@ -80,47 +98,60 @@ def generate_launch_description() -> LaunchDescription:
                 'prefix': prefix,
                 'idle_timeout_sec': idle_timeout,
                 'max_frames': max_frames,
-                'best_effort': best_effort,
+                'best_effort': qos_best_effort,
                 'use_sim_time': use_sim_time,
             }
         ],
+        condition=IfCondition(save_ply_files)
     )
 
     # OpaqueFunction to configure and run ros2 bag play
     def run_bag_play(context, *args, **kwargs):
-        bag_play_cmd = ['ros2', 'bag', 'play', context.launch_configurations['bag_file']]
+        bag_play_cmd = [
+            'ros2', 'bag', 'play',
+            context.launch_configurations['bag_file'],
+            '--rate', context.launch_configurations['play_rate']
+        ]
         if context.launch_configurations['use_sim_time'] == 'true':
             bag_play_cmd.append('--clock')
         
-        # Resolve QoS override path
         pkg_share = get_package_share_directory('draco_roundtrip')
         qos_override_path = os.path.join(pkg_share, 'config', 'qos_override.yaml')
         if os.path.exists(qos_override_path):
             bag_play_cmd += ['--qos-profile-overrides-path', qos_override_path]
 
-        return [ExecuteProcess(cmd=bag_play_cmd, output='screen')]
+        return [ExecuteProcess(cmd=bag_play_cmd, output='log')]
 
     bag_play_process = OpaqueFunction(function=run_bag_play)
 
-    # Streaming client node
-    stream_client_node = Node(
+    # Encoder node
+    encoder_node = Node(
         package='draco_roundtrip',
-        executable='stream_client',
-        name='stream_client',
-        output='screen',
+        executable='encoder_node',
+        name='encoder_node',
+        output='log',
+        parameters=[
+            {
+                'topic_name': topic_name,
+                'qos_best_effort': qos_best_effort,
+                'prefix': prefix,
+                'use_sim_time': use_sim_time,
+            }
+        ],
+    )
+
+    # Sender node
+    sender_node = Node(
+        package='draco_roundtrip',
+        executable='sender_node',
+        name='sender_node',
+        output='log',
         parameters=[
             {
                 'server_host': server_host,
                 'server_port': server_port,
                 'downlink_host': server_host,
-                'prefix': prefix,
-                'ply_dir': ply_dir,
-                'use_sim_time': use_sim_time,
-                # Pass other relevant parameters
-                'work_dir': LaunchConfiguration('work_dir', default='data/client_tmp'),
-                'encoder': LaunchConfiguration('encoder', default=''),
                 'telemetry_rate': LaunchConfiguration('telemetry_rate', default='10.0'),
-                'calculate_metrics': LaunchConfiguration('calculate_metrics', default='false'),
             }
         ],
     )
@@ -133,17 +164,15 @@ def generate_launch_description() -> LaunchDescription:
         declare_prefix,
         declare_ply_dir,
         declare_use_sim_time,
+        declare_save_ply_files,
+        declare_qos_best_effort,
+        declare_play_rate,
+        DeclareLaunchArgument('telemetry_rate', default_value='10.0'),
         declare_idle_timeout,
         declare_max_frames,
-        declare_best_effort,
-        
-        # Declare other arguments used by stream_client
-        DeclareLaunchArgument('work_dir', default_value='data/client_tmp'),
-        DeclareLaunchArgument('encoder', default_value=''),
-        DeclareLaunchArgument('telemetry_rate', default_value='10.0'),
-        DeclareLaunchArgument('calculate_metrics', default_value='false'),
 
         ply_saver_node,
         bag_play_process,
-        stream_client_node,
+        encoder_node,
+        sender_node,
     ])

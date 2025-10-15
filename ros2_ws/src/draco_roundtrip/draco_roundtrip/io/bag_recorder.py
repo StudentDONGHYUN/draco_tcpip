@@ -129,6 +129,7 @@ def save_ply_o3d_then_verify(path: Path, xyz_f32: np.ndarray) -> None:
 class PcdSaver(Node):
     def __init__(self):
         super().__init__('ply_saver')
+        self.get_logger().set_level(rclpy.logging.LoggingSeverity.WARN)
 
         # Declare parameters
         self.declare_parameter('topic', '')

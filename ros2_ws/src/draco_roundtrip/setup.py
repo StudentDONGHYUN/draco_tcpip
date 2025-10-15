@@ -5,19 +5,6 @@ package_name = 'draco_roundtrip'
 setup(
     name=package_name,
     version='0.1.0',
-    packages=find_packages(include=['draco_roundtrip', 'draco_roundtrip.*']),
-    data_files=[
-        ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/config', ['draco_roundtrip/configs/qos_override.yaml']),
-        (
-            'share/' + package_name + '/launch',
-            [
-                'launch/server.launch.py',
-                'launch/client.launch.py',
-            ],
-        ),
-    ],
     install_requires=['setuptools', 'ament_index_python', 'DracoPy'],
     zip_safe=False,
     maintainer='GodokSa',
@@ -27,7 +14,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'stream_client = draco_roundtrip.nodes.stream_client:main',
+            'encoder_node = draco_roundtrip.nodes.encoder_node:main',
+            'sender_node = draco_roundtrip.nodes.sender_node:main',
             'stream_server = draco_roundtrip.nodes.stream_server:main',
             'stream_monitor = draco_roundtrip.tools.monitor:main',
             'stream_replay = draco_roundtrip.tools.replay:main',

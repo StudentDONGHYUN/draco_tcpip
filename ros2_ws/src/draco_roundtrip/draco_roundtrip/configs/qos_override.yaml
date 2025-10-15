@@ -1,5 +1,5 @@
 /sensing/lidar/top/pointcloud:
-  reliability: best_effort
+  reliability: reliable
   durability: volatile
   history: keep_last
   depth: 10
