@@ -41,6 +41,18 @@ def generate_launch_description():
         description='Simulation time jump size (seconds) that triggers odometry reset.'
     )
 
+    odometry_topic_arg = DeclareLaunchArgument(
+        'odometry_topic',
+        default_value='/odom',
+        description='Odometry topic published by the ICP odometry node.'
+    )
+
+    map_data_topic_arg = DeclareLaunchArgument(
+        'map_data_topic',
+        default_value='/rtabmap/map_data',
+        description='MapData topic published by the RTAB-Map node.'
+    )
+
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -95,14 +107,30 @@ def generate_launch_description():
         }]
     )
 
+    rtabmap_feedback_loop_node = Node(
+        package='slam_stream_bridge',
+        executable='rtabmap_feedback_loop',
+        name='rtabmap_feedback_loop',
+        output='screen',
+        parameters=[{
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'cloud_topic': LaunchConfiguration('cloud_topic'),
+            'odometry_topic': LaunchConfiguration('odometry_topic'),
+            'map_data_topic': LaunchConfiguration('map_data_topic'),
+        }]
+    )
+
     return LaunchDescription([
         params_arg,
         cloud_topic_arg,
         use_sim_time_arg,
         time_jump_threshold_arg,
+        odometry_topic_arg,
+        map_data_topic_arg,
         robot_state_publisher_node,
         static_transform_publisher_node,
         icp_odometry_node,
         rtabmap_node,
         time_jump_reset_node,
+        rtabmap_feedback_loop_node,
     ])
