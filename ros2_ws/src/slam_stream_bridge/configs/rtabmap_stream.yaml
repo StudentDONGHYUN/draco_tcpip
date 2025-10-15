@@ -62,6 +62,7 @@ icp_odometry:
     Icp/PointToPlaneK: "20"
     Icp/PointToPlaneRadius: "0"
     Odom/ScanKeyFrameThr: "0.4"
+    Odom/KeyFrameOnTimeJump: "true"
     OdomF2M/ScanSubtractRadius: "0.2"
     OdomF2M/ScanMaxSize: "15000"
     OdomF2M/BundleAdjustment: "false"
