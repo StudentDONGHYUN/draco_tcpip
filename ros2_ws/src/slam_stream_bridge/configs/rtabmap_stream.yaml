@@ -54,6 +54,7 @@ icp_odometry:
     scan_cloud_max_pts: 120000
     scan_cloud_min_pts: 50
     Icp/PointToPlane: "true"
+    Icp/GuessMotion: "true"
     Icp/VoxelSize: "0.05"
     Icp/Epsilon: "0.001"
     Icp/CorrespondenceRatio: "0.1"
