@@ -86,10 +86,10 @@ class TfFallbackNode(Node):
 
             if (parent, child) not in self._missing:
                 self.get_logger().warn(
-                f"TF {parent} -> {child} 를 찾을 수 없습니다. 항등 변환을 발행합니다."
-            )
-            self._missing.add((parent, child))
-        self._broadcast_identity(parent, child, stamp)
+                    f"TF {parent} -> {child} 를 찾을 수 없습니다. 항등 변환을 발행합니다."
+                )
+                self._missing.add((parent, child))
+            self._broadcast_identity(parent, child, stamp)
 
     def _broadcast_identity(self, parent: str, child: str, stamp) -> None:
         msg = TransformStamped()
