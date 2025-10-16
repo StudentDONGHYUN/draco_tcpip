@@ -72,13 +72,6 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('launch_robot_state_publisher'))
     )
 
-    static_transform_publisher_node = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='static_transform_publisher_lidar',
-        arguments=['0', '0', '0.5', '0', '0', '0', 'base_link', 'lidar_frame'],
-    )
-
     icp_odometry_node = Node(
         package='rtabmap_odom',
         executable='icp_odometry',
@@ -137,7 +130,6 @@ def generate_launch_description():
         odometry_topic_arg,
         map_data_topic_arg,
         robot_state_publisher_node,
-        static_transform_publisher_node,
         icp_odometry_node,
         rtabmap_node,
         time_jump_reset_node,
