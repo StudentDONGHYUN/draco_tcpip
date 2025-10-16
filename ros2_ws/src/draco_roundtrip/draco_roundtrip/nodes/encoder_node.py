@@ -7,8 +7,11 @@ from __future__ import annotations
 import queue
 import sys
 import threading
+import time
 from concurrent.futures import Future, ProcessPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import rclpy
@@ -50,6 +53,7 @@ class EncodingJob:
     frame_name: str
     header: object  # std_msgs.msg.Header
     future: Future[EncodeResult]
+    original_size: int
 
 
 class EncoderNode(Node):
@@ -114,6 +118,11 @@ class EncoderNode(Node):
         self._encoder_thread.start()
         self._publisher_thread.start()
 
+        # Metrics
+        self._metrics = []
+        self._start_time = time.monotonic()
+        self._report_generated = False
+
     def _on_pointcloud_msg(self, msg: PointCloud2):
         try:
             self._msg_queue.put_nowait(msg)
@@ -133,8 +142,14 @@ class EncoderNode(Node):
             frame_name = f"{self.prefix}_{frame_idx:010d}"
             try:
                 pts_src = to_xyz_array_from_pc2(msg)
+                original_size = pts_src.nbytes
                 future = self._executor.submit(encode_points, pts_src, self.encoder_options)
-                job = EncodingJob(frame_name=frame_name, header=msg.header, future=future)
+                job = EncodingJob(
+                    frame_name=frame_name,
+                    header=msg.header,
+                    future=future,
+                    original_size=original_size,
+                )
                 self._future_queue.put(job)
                 frame_idx += 1
             except Exception as exc:
@@ -151,22 +166,65 @@ class EncoderNode(Node):
             try:
                 result = job.future.result()  # Wait for encoding to complete
                 drc_bytes = result.encoded_data
+                compression_time_ns = int(result.duration * 1e9)
 
                 # Create and publish the custom message
                 msg = CompressedPointCloud()
                 msg.header = job.header
                 msg.frame_name = job.frame_name
                 msg.data = list(drc_bytes)
+                msg.original_size = job.original_size
+                msg.compression_time_ns = compression_time_ns
                 self.pub_compressed.publish(msg)
 
                 self.get_logger().info(f"Published compressed frame {job.frame_name} ({len(drc_bytes)} bytes)")
+
+                # Store metrics
+                self._metrics.append({
+                    'frame_name': job.frame_name,
+                    'original_size': job.original_size,
+                    'compressed_size': len(drc_bytes),
+                    'compression_time_ns': compression_time_ns,
+                })
 
             except Exception as exc:
                 self.get_logger().error(f"PUBLISH FAIL {job.frame_name}: {exc}")
                 continue
 
+    def _generate_report(self):
+        if self._report_generated or not self._metrics:
+            return
+        self._report_generated = True
+
+        total_time = time.monotonic() - self._start_time
+        num_frames = len(self._metrics)
+        fps = num_frames / total_time if total_time > 0 else 0
+
+        total_original_size = sum(m['original_size'] for m in self._metrics)
+        total_compressed_size = sum(m['compressed_size'] for m in self._metrics)
+        compression_ratio = total_original_size / total_compressed_size if total_compressed_size > 0 else 0
+
+        report_str = f"""
+Encoder Performance Report
+==========================
+Timestamp: {datetime.now().isoformat()}
+Duration: {total_time:.2f} seconds
+Total Frames: {num_frames}
+Average FPS: {fps:.2f}
+
+Total Original Size: {total_original_size} bytes
+Total Compressed Size: {total_compressed_size} bytes
+Average Compression Ratio: {compression_ratio:.2f}
+"""
+        log_dir = Path('logs')
+        log_dir.mkdir(exist_ok=True)
+        report_file = log_dir / f"encoder_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        report_file.write_text(report_str)
+        self.get_logger().info(f"Encoder report saved to {report_file}")
+
     def destroy_node(self) -> None:
         self.get_logger().info("Shutting down encoder node...")
+        self._generate_report()
         self._stop_event.set()
         if self._encoder_thread.is_alive():
             self._encoder_thread.join(timeout=1.0)

@@ -7,10 +7,12 @@ from __future__ import annotations
 import json
 import queue
 import socket
+import struct
 import sys
 import threading
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -213,6 +215,9 @@ class SenderNode(Node):
         self._dropped_frames = 0
         self._last_drop_log = 0.0
 
+        self._metrics = []
+        self._report_generated = False
+
         self._sender_thread = threading.Thread(target=self._run_sender_loop, daemon=True)
         self._sender_thread.start()
 
@@ -278,36 +283,53 @@ class SenderNode(Node):
                             continue
 
                         try:
-                            drc_bytes = bytes(ros_msg.data)
-                            message = Message(
-                                kind=MSG_DATA,
-                                name=ros_msg.frame_name,
-                                payload=drc_bytes,
-                                frame_id=ros_msg.header.frame_id,
-                            )
-                            send_message(sock, message)
+                            seq = int(ros_msg.frame_name.split('_')[-1])
+                        except (ValueError, IndexError):
+                            seq = self._frames_sent
 
+                        send_time_ns = time.monotonic_ns()
+                        drc_bytes = bytes(ros_msg.data)
+
+                        metadata = struct.pack('!IQQQ', seq, ros_msg.original_size, ros_msg.compression_time_ns, send_time_ns)
+                        payload = metadata + drc_bytes
+
+                        message = Message(
+                            kind=MSG_DATA,
+                            name=ros_msg.frame_name,
+                            payload=payload,
+                            frame_id=ros_msg.header.frame_id,
+                        )
+                        send_message(sock, message)
+
+                        with self._metrics_lock:
+                            self._bytes_sent += len(payload)
+                            self._frames_sent += 1
+                            self._metrics.append({
+                                'seq': seq,
+                                'original_size': ros_msg.original_size,
+                                'compressed_size': len(drc_bytes),
+                                'payload_size': len(payload),
+                                'compression_time_ns': ros_msg.compression_time_ns,
+                                'send_time_ns': send_time_ns,
+                            })
+
+                        self.get_logger().info(
+                            f"Sent {message.name} ({len(payload)} bytes)"
+                        )
+
+                        reply = recv_message(sock)
+                        if reply is None:
+                            raise ConnectionClosed("server closed uplink")
+                        if reply.kind == MSG_ERROR:
+                            detail = reply.payload.decode(errors="ignore")
+                            self.get_logger().error(
+                                f"SERVER ERROR for {message.name}: {reply.name} -> {detail}"
+                            )
+                            continue
+
+                        if reply.kind == MSG_DATA:
                             with self._metrics_lock:
-                                self._bytes_sent += len(drc_bytes)
-                                self._frames_sent += 1
-
-                            self.get_logger().info(
-                                f"Sent {message.name} ({len(drc_bytes)} bytes)"
-                            )
-
-                            reply = recv_message(sock)
-                            if reply is None:
-                                raise ConnectionClosed("server closed uplink")
-                            if reply.kind == MSG_ERROR:
-                                detail = reply.payload.decode(errors="ignore")
-                                self.get_logger().error(
-                                    f"SERVER ERROR for {message.name}: {reply.name} -> {detail}"
-                                )
-                                continue
-
-                            if reply.kind == MSG_DATA:
-                                with self._metrics_lock:
-                                    self._bytes_received += len(reply.payload)
+                                self._bytes_received += len(reply.payload)
                         finally:
                             self._msg_queue.task_done()
 
@@ -391,8 +413,38 @@ class SenderNode(Node):
                 self._downlink_stop.wait(backoff)
                 backoff = min(backoff * 2.0, 5.0)
 
+    def _generate_report(self):
+        if self._report_generated or not self._metrics:
+            return
+        self._report_generated = True
+
+        total_time = time.monotonic() - self._start_time
+        num_frames = len(self._metrics)
+        fps = num_frames / total_time if total_time > 0 else 0
+
+        total_payload_size = sum(m['payload_size'] for m in self._metrics)
+        bandwidth_mbps = (total_payload_size * 8) / (total_time * 1e6) if total_time > 0 else 0
+
+        report_str = f"""
+Sender Performance Report
+=========================
+Timestamp: {datetime.now().isoformat()}
+Duration: {total_time:.2f} seconds
+Total Frames Sent: {num_frames}
+
+Average FPS: {fps:.2f}
+Total Payload Sent: {total_payload_size} bytes
+Average Uplink Bandwidth: {bandwidth_mbps:.3f} Mbps
+"""
+        log_dir = Path('logs')
+        log_dir.mkdir(exist_ok=True)
+        report_file = log_dir / f"sender_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        report_file.write_text(report_str)
+        self.get_logger().info(f"Sender report saved to {report_file}")
+
     def destroy_node(self) -> None:
         self.get_logger().info("Shutting down sender node...")
+        self._generate_report()
         self._stop_event.set()
         self._downlink_stop.set()
         if self._sender_thread and self._sender_thread.is_alive():
