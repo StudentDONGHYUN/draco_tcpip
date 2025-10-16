@@ -37,11 +37,6 @@ def generate_launch_description() -> LaunchDescription:
             'use_sim_time',
             default_value='false',
             description='Use simulation (rosbag) clock if true'),
-        DeclareLaunchArgument(
-            'publish_tf_fallback',
-            default_value='true',
-            description='Publish identity TFs when map/odom frames are missing.'),
-        
         # Add robot_state_publisher
         Node(
             package='robot_state_publisher',
@@ -67,18 +62,20 @@ def generate_launch_description() -> LaunchDescription:
                 'points_frame_id': 'lidar_frame'
             }],
         ),
+
+        # Fallback TF publishers to create a static TF tree for visualization
         Node(
-            condition=IfCondition(publish_tf_fallback),
-            package='draco_roundtrip',
-            executable='tf_fallback',
-            name='tf_fallback',
-            output='screen',
-            parameters=[{
-                'use_sim_time': use_sim_time,
-                'world_frame_id': 'map',
-                'odom_frame_id': 'odom',
-                'base_frame_id': 'base_link',
-                'sensor_frame_id': 'lidar_frame',
-            }],
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_map_to_odom',
+            arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+            parameters=[{'use_sim_time': use_sim_time}],
+        ),
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_odom_to_base_link',
+            arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link'],
+            parameters=[{'use_sim_time': use_sim_time}],
         ),
     ])
