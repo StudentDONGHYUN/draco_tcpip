@@ -35,14 +35,12 @@ class TimeJumpResetNode(Node):
 
         # 파라미터 선언
         self.managed_nodes: List[str] = (
-            self.declare_parameter("managed_nodes", ["icp_odometry", "rtabmap"])
+            self.declare_parameter("managed_nodes", [])
             .get_parameter_value()
             .string_array_value
         )
         self.reset_services: List[str] = (
-            self.declare_parameter(
-                "reset_services", ["/icp_odometry/reset", "/rtabmap/reset"]
-            )
+            self.declare_parameter("reset_services", [])
             .get_parameter_value()
             .string_array_value
         )

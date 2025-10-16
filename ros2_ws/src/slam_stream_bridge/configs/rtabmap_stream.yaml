@@ -4,6 +4,7 @@
 rtabmap:
   ros__parameters:
     use_sim_time: true
+    approx_sync_max_interval: 0.2
     # Incoming point clouds arrive in lidar_frame, but the static robot
     # description already publishes base_link -> lidar_frame. Keeping the
     # SLAM output in base_link maintains a single TF parent for lidar_frame.
@@ -49,6 +50,7 @@ rtabmap:
 icp_odometry:
   ros__parameters:
     use_sim_time: true
+    always_process_most_recent_frame: false
     # Keep ICP odometry anchored at base_link so lidar_frame retains a single
     # TF parent from the robot description.
     frame_id: base_link

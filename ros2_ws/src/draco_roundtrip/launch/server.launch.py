@@ -29,7 +29,6 @@ def generate_launch_description() -> LaunchDescription:
     port = LaunchConfiguration('port')
     downlink_port = LaunchConfiguration('downlink_port')
     use_sim_time = LaunchConfiguration('use_sim_time')
-    run_slam = LaunchConfiguration('run_slam')
 
     project_root = _find_project_root(Path(__file__).resolve())
     log_dir = project_root / 'logs'
@@ -38,15 +37,11 @@ def generate_launch_description() -> LaunchDescription:
     log_file_path = log_dir / f'ros2_server_{log_timestamp.strftime("%Y%m%d_%H%M%S_%f")}.log'
     header_lines = [
         '# 로그 생성 정보',
-        f'# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true run_slam:=true',
+        f'# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true',
         f'# 생성 시각: {log_timestamp.isoformat()}',
         '',
     ]
     log_file_path.write_text('\n'.join(header_lines), encoding='utf-8')
-
-    map_dir = project_root / 'data' / 'maps'
-    map_dir.mkdir(parents=True, exist_ok=True)
-    map_db_path = map_dir / f'rtabmap_{log_timestamp.strftime("%Y%m%d_%H%M%S_%f")}.db'
 
     def _append_launch_output(event: ProcessIO) -> None:
         message = event.text.decode(encoding='utf-8', errors='replace')
@@ -72,7 +67,6 @@ def generate_launch_description() -> LaunchDescription:
 
     # Get directories
     draco_roundtrip_share = get_package_share_directory('draco_roundtrip')
-    slam_stream_bridge_share = get_package_share_directory('slam_stream_bridge')
 
     # Find and read the URDF file
     urdf_path = os.path.join(draco_roundtrip_share, 'urdf', 'robot.urdf')
@@ -82,7 +76,6 @@ def generate_launch_description() -> LaunchDescription:
     return LaunchDescription([
         log_event_handler,
         LogInfo(msg=f'런치 출력 로그 파일: {log_file_path}'),
-        LogInfo(msg=f'RTAB-Map DB 저장 위치: {map_db_path}'),
         DeclareLaunchArgument(
             'port',
             default_value='5000',
@@ -97,10 +90,6 @@ def generate_launch_description() -> LaunchDescription:
             'use_sim_time',
             default_value='true',
             description='Use simulation (rosbag) clock if true'),
-        DeclareLaunchArgument(
-            'run_slam',
-            default_value='false',
-            description='Whether to launch the SLAM system or just the visualization fallback.'),
 
         # Always launch the robot_state_publisher and stream_server
         Node(
@@ -127,9 +116,8 @@ def generate_launch_description() -> LaunchDescription:
             }],
         ),
 
-        # === Visualization/Testing Mode (run_slam:=false) ===
+        # Dummy transform for visualization
         Node(
-            condition=UnlessCondition(run_slam),
             package='tf2_ros',
             executable='static_transform_publisher',
             name='static_map_to_odom',
@@ -137,24 +125,10 @@ def generate_launch_description() -> LaunchDescription:
             parameters=[{'use_sim_time': use_sim_time}],
         ),
         Node(
-            condition=UnlessCondition(run_slam),
             package='tf2_ros',
             executable='static_transform_publisher',
             name='static_odom_to_base_link',
             arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link'],
             parameters=[{'use_sim_time': use_sim_time}],
-        ),
-
-        # === SLAM Mode (run_slam:=true) ===
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(slam_stream_bridge_share, 'launch', 'rtabmap_stream.launch.py')
-            ),
-            condition=IfCondition(run_slam),
-            launch_arguments={
-                'use_sim_time': use_sim_time,
-                'launch_robot_state_publisher': 'false', # Already launched above
-                'database_path': str(map_db_path),
-            }.items(),
         ),
     ])
