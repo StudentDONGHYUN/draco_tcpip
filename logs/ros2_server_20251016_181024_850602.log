@@ -1,0 +1,516 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true run_slam:=true
+# 생성 시각: 2025-10-16T18:10:24.850602
+[2025-10-16 18:10:24.941045][robot_state_publisher-1][STDERR] [INFO] [1760605824.939074407] [robot_state_publisher]: got segment base_link
+[2025-10-16 18:10:24.941045][robot_state_publisher-1][STDERR] [INFO] [1760605824.939195181] [robot_state_publisher]: got segment lidar_frame
+[2025-10-16 18:10:25.356721][time_jump_reset-5][STDERR] [WARN] [1760605825.356168562] [time_jump_reset]: icp_odometry 노드의 change_state 서비스가 아직 발견되지 않았습니다. 추후 재시도합니다.
+[2025-10-16 18:10:25.359185][time_jump_reset-5][STDERR] [WARN] [1760605825.358402721] [time_jump_reset]: rtabmap 노드의 change_state 서비스가 아직 발견되지 않았습니다. 추후 재시도합니다.
+[2025-10-16 18:10:25.365838][time_jump_reset-5][STDERR] [INFO] [1760605825.363956436] [time_jump_reset]: 라이프사이클 매니저 시작. 관리 대상: ['icp_odometry', 'rtabmap']
+[2025-10-16 18:10:25.389461][icp_odometry-3][STDERR] [INFO] [1760605825.388513277] [icp_odometry]: Odometry: frame_id               = base_link
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388814096] [icp_odometry]: Odometry: odom_frame_id          = odom
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388840819] [icp_odometry]: Odometry: publish_tf             = true
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388855252] [icp_odometry]: Odometry: wait_for_transform     = 0.500000
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388880569] [icp_odometry]: Odometry: log_to_rosout_level    = 4
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388954522] [icp_odometry]: Odometry: initial_pose           = xyz=0.000000,0.000000,0.000000 rpy=0.000000,-0.000000,0.000000
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388971664] [icp_odometry]: Odometry: ground_truth_frame_id  = 
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388984908] [icp_odometry]: Odometry: ground_truth_base_frame_id = base_link
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.388998611] [icp_odometry]: Odometry: config_path            = 
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389009688] [icp_odometry]: Odometry: publish_null_when_lost = true
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389021835] [icp_odometry]: Odometry: publish_compressed_sensor_data = false
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389287534] [icp_odometry]: Odometry: guess_frame_id         = 
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389319412] [icp_odometry]: Odometry: guess_min_translation  = 0.000000
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389339831] [icp_odometry]: Odometry: guess_min_rotation     = 0.000000
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389353604] [icp_odometry]: Odometry: guess_min_time         = 0.000000
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389367430] [icp_odometry]: Odometry: guess_linear_variance  = 0.001000
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389384308] [icp_odometry]: Odometry: guess_angular_variance = 0.001000
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389509053] [icp_odometry]: Odometry: expected_update_rate   = 0.000000 Hz
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389601320] [icp_odometry]: Odometry: max_update_rate        = 0.000000 Hz
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389620042] [icp_odometry]: Odometry: min_update_rate        = 0.000000 Hz
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389633977] [icp_odometry]: Odometry: wait_imu_to_init       = false
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389646925] [icp_odometry]: Odometry: always_check_imu_tf    = true
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389666477] [icp_odometry]: Odometry: sensor_data_compression_format = .jpg
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389679964] [icp_odometry]: Odometry: sensor_data_parallel_compression = true
+[2025-10-16 18:10:25.392110][icp_odometry-3][STDERR] [INFO] [1760605825.389713207] [icp_odometry]: Odometry: stereoParams_=0 visParams_=0 icpParams_=1
+[2025-10-16 18:10:25.392900][rtabmap-4][STDERR] [WARN] [1760605825.390633588] [rtabmap]: Parameter "queue_size" has been renamed to "sync_queue_size" and will be removed in future versions! The value (10) is copied to "sync_queue_size".
+[2025-10-16 18:10:25.393404][icp_odometry-3][STDERR] [INFO] [1760605825.391534736] [icp_odometry]: Setting odometry parameter "Icp/CorrespondenceRatio"="0.07"
+[2025-10-16 18:10:25.393404][icp_odometry-3][STDERR] [INFO] [1760605825.391744403] [icp_odometry]: Setting odometry parameter "Icp/Epsilon"="0.001"
+[2025-10-16 18:10:25.393404][icp_odometry-3][STDERR] [INFO] [1760605825.391995447] [icp_odometry]: Setting odometry parameter "Icp/MaxRotation"="1.0"
+[2025-10-16 18:10:25.393404][icp_odometry-3][STDERR] [INFO] [1760605825.392064516] [icp_odometry]: Setting odometry parameter "Icp/MaxTranslation"="0.35"
+[2025-10-16 18:10:25.393682][icp_odometry-3][STDERR] [INFO] [1760605825.392465161] [icp_odometry]: Setting odometry parameter "Icp/PointToPlaneK"="20"
+[2025-10-16 18:10:25.393682][icp_odometry-3][STDERR] [INFO] [1760605825.392749578] [icp_odometry]: Setting odometry parameter "Icp/PointToPlaneRadius"="0"
+[2025-10-16 18:10:25.404055][icp_odometry-3][STDERR] [INFO] [1760605825.394077880] [icp_odometry]: Setting odometry parameter "Icp/VoxelSize"="0.12"
+[2025-10-16 18:10:25.404055][icp_odometry-3][STDERR] [INFO] [1760605825.397227556] [icp_odometry]: Setting odometry parameter "Odom/ResetCountdown"="3"
+[2025-10-16 18:10:25.404055][icp_odometry-3][STDERR] [INFO] [1760605825.397413820] [icp_odometry]: Setting odometry parameter "Odom/ScanKeyFrameThr"="0.4"
+[2025-10-16 18:10:25.404055][icp_odometry-3][STDERR] [INFO] [1760605825.397589385] [icp_odometry]: Setting odometry parameter "OdomF2M/BundleAdjustment"="false"
+[2025-10-16 18:10:25.404055][icp_odometry-3][STDERR] [INFO] [1760605825.397989891] [icp_odometry]: Setting odometry parameter "OdomF2M/ScanMaxSize"="15000"
+[2025-10-16 18:10:25.404055][icp_odometry-3][STDERR] [INFO] [1760605825.398142273] [icp_odometry]: Setting odometry parameter "OdomF2M/ScanSubtractRadius"="0.2"
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406157354] [rtabmap]: rtabmap(maps): latch                      = true
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406200267] [rtabmap]: rtabmap(maps): map_filter_radius          = 0.000000
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406234525] [rtabmap]: rtabmap(maps): map_filter_angle           = 30.000000
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406258221] [rtabmap]: rtabmap(maps): map_cleanup                = true
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406279173] [rtabmap]: rtabmap(maps): map_always_update          = false
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406300903] [rtabmap]: rtabmap(maps): map_empty_ray_tracing      = true
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406318720] [rtabmap]: rtabmap(maps): cloud_output_voxelized     = true
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406329878] [rtabmap]: rtabmap(maps): cloud_subtract_filtering   = false
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406352764] [rtabmap]: rtabmap(maps): cloud_subtract_filtering_min_neighbors = 2
+[2025-10-16 18:10:25.416068][rtabmap-4][STDERR] [INFO] [1760605825.406414551] [rtabmap]: rtabmap(maps): octomap_tree_depth         = 16
+[2025-10-16 18:10:25.417545][icp_odometry-3][STDERR] [WARN] [1760605825.414892121] [icp_odometry]: IcpOdometry: Transferring value 0.12 of "Icp/VoxelSize" to ros parameter "scan_voxel_size" for convenience. "Icp/VoxelSize" is set to 0.
+[2025-10-16 18:10:25.417545][icp_odometry-3][STDERR] [WARN] [1760605825.414986908] [icp_odometry]: IcpOdometry: Transferring value 20 of "Icp/PointToPlaneK" to ros parameter "scan_normal_k" for convenience.
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434285131] [icp_odometry]: IcpOdometry: qos                    = 0
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434331445] [icp_odometry]: IcpOdometry: scan_cloud_max_points  = -1
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434347704] [icp_odometry]: IcpOdometry: scan_cloud_is_2d       = false
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434577781] [icp_odometry]: IcpOdometry: scan_downsampling_step = 1
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434608999] [icp_odometry]: IcpOdometry: scan_range_min         = 0.000000 m
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434682158] [icp_odometry]: IcpOdometry: scan_range_max         = 0.000000 m
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434700152] [icp_odometry]: IcpOdometry: scan_voxel_size        = 0.120000 m
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434715113] [icp_odometry]: IcpOdometry: scan_normal_k          = 20
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434730180] [icp_odometry]: IcpOdometry: scan_normal_radius     = 0.000000 m
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434742941] [icp_odometry]: IcpOdometry: scan_normal_ground_up  = 0.000000
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434755518] [icp_odometry]: IcpOdometry: deskewing              = false
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434768495] [icp_odometry]: IcpOdometry: deskewing_slerp        = false
+[2025-10-16 18:10:25.443091][icp_odometry-3][STDERR] [INFO] [1760605825.434780202] [icp_odometry]: IcpOdometry: topic_queue_size       = 1
+[2025-10-16 18:10:25.445609][icp_odometry-3][STDERR] [INFO] [1760605825.443256056] [icp_odometry]: 
+[2025-10-16 18:10:25.445609][icp_odometry-3][STDERR] icp_odometry subscribed to /scan and /stream_pair/decoded (make sure only one of this topic is published, otherwise remap one to a dummy topic name).
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.446906965] [rtabmap]: rtabmap: frame_id      = base_link
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.446962897] [rtabmap]: rtabmap: odom_frame_id = odom
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.446983750] [rtabmap]: rtabmap: map_frame_id  = map
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.446997081] [rtabmap]: rtabmap: log_to_rosout_level  = 4
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.447011547] [rtabmap]: rtabmap: initial_pose  = 
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.447030244] [rtabmap]: rtabmap: use_action_for_goal  = false
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.447045100] [rtabmap]: rtabmap: tf_delay      = 0.050000
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.447074744] [rtabmap]: rtabmap: tf_tolerance  = 0.100000
+[2025-10-16 18:10:25.448154][rtabmap-4][STDERR] [INFO] [1760605825.447094839] [rtabmap]: rtabmap: odom_sensor_sync   = false
+[2025-10-16 18:10:25.448933][rtabmap-4][STDERR] [INFO] [1760605825.447140541] [rtabmap]: rtabmap: pub_loc_pose_only_when_localizing = false
+[2025-10-16 18:10:25.448933][rtabmap-4][STDERR] [INFO] [1760605825.447158588] [rtabmap]: rtabmap: wait_for_transform = 0.200000
+[2025-10-16 18:10:25.448933][rtabmap-4][STDERR] [INFO] [1760605825.447172898] [rtabmap]: rtabmap: staleness_factor = 0.000000
+[2025-10-16 18:10:25.448933][rtabmap-4][STDERR] [INFO] [1760605825.447189433] [rtabmap]: rtabmap: gen_scan  = false
+[2025-10-16 18:10:25.448933][rtabmap-4][STDERR] [INFO] [1760605825.447203500] [rtabmap]: rtabmap: gen_depth  = false
+[2025-10-16 18:10:25.448933][rtabmap-4][STDERR] [INFO] [1760605825.447217788] [rtabmap]: rtabmap: scan_cloud_max_points = 0
+[2025-10-16 18:10:25.449365][rtabmap-4][STDERR] [INFO] [1760605825.447240719] [rtabmap]: rtabmap: scan_cloud_is_2d = false
+[2025-10-16 18:10:25.473723][rtabmap-4][STDERR] [WARN] [1760605825.473276139] [rtabmap]: rtabmap: 노드가 비활성(inactive) 상태로 시작합니다. lifecycle 'change_state -> ACTIVATE' 또는 /rtabmap/resume 서비스를 호출해 활성화하세요.
+[2025-10-16 18:10:25.477832][rtabmap-4][STDERR] [INFO] [1760605825.477309000] [rtabmap]: Setting RTAB-Map parameter "Grid/3D"="true" (rosparam)
+[2025-10-16 18:10:25.478384][rtabmap-4][STDERR] [INFO] [1760605825.477425205] [rtabmap]: Setting RTAB-Map parameter "Grid/CellSize"="0.2" (rosparam)
+[2025-10-16 18:10:25.478767][rtabmap-4][STDERR] [INFO] [1760605825.477507333] [rtabmap]: Setting RTAB-Map parameter "Grid/ClusterRadius"="0.5" (rosparam)
+[2025-10-16 18:10:25.479242][rtabmap-4][STDERR] [INFO] [1760605825.478885679] [rtabmap]: Setting RTAB-Map parameter "Grid/Sensor"="true" (rosparam)
+[2025-10-16 18:10:25.483267][rtabmap-4][STDERR] [INFO] [1760605825.482405745] [rtabmap]: Setting RTAB-Map parameter "Icp/CorrespondenceRatio"="0.07" (rosparam)
+[2025-10-16 18:10:25.487867][rtabmap-4][STDERR] [INFO] [1760605825.482786552] [rtabmap]: Setting RTAB-Map parameter "Icp/Epsilon"="0.001" (rosparam)
+[2025-10-16 18:10:25.487867][rtabmap-4][STDERR] [INFO] [1760605825.483043597] [rtabmap]: Setting RTAB-Map parameter "Icp/Iterations"="30" (rosparam)
+[2025-10-16 18:10:25.487867][rtabmap-4][STDERR] [INFO] [1760605825.483224352] [rtabmap]: Setting RTAB-Map parameter "Icp/MaxRotation"="1.0" (rosparam)
+[2025-10-16 18:10:25.487867][rtabmap-4][STDERR] [INFO] [1760605825.483321416] [rtabmap]: Setting RTAB-Map parameter "Icp/MaxTranslation"="0.35" (rosparam)
+[2025-10-16 18:10:25.492160][rtabmap-4][STDERR] [INFO] [1760605825.490305229] [rtabmap]: Setting RTAB-Map parameter "Mem/NotLinkedNodesKept"="true" (rosparam)
+[2025-10-16 18:10:25.493558][rtabmap-4][STDERR] [INFO] [1760605825.490883698] [rtabmap]: Setting RTAB-Map parameter "Mem/STMSize"="30" (rosparam)
+[2025-10-16 18:10:25.493558][rtabmap-4][STDERR] [INFO] [1760605825.491777535] [rtabmap]: Setting RTAB-Map parameter "Optimizer/GravitySigma"="0" (rosparam)
+[2025-10-16 18:10:25.494901][rtabmap-4][STDERR] [INFO] [1760605825.493200420] [rtabmap]: Setting RTAB-Map parameter "RGBD/AngularUpdate"="0" (rosparam)
+[2025-10-16 18:10:25.496387][rtabmap-4][STDERR] [INFO] [1760605825.494678694] [rtabmap]: Setting RTAB-Map parameter "RGBD/LinearUpdate"="0" (rosparam)
+[2025-10-16 18:10:25.499778][rtabmap-4][STDERR] [INFO] [1760605825.497904119] [rtabmap]: Setting RTAB-Map parameter "RGBD/ProximityPathMaxNeighbors"="1" (rosparam)
+[2025-10-16 18:10:25.499778][rtabmap-4][STDERR] [INFO] [1760605825.498400976] [rtabmap]: Setting RTAB-Map parameter "Reg/Strategy"="1" (rosparam)
+[2025-10-16 18:10:25.500874][rtabmap-4][STDERR] [INFO] [1760605825.499463668] [rtabmap]: Setting RTAB-Map parameter "Rtabmap/SaveWMState"="false" (rosparam)
+[2025-10-16 18:10:25.506545][rtabmap-4][STDERR] [INFO] [1760605825.506095955] [rtabmap]: Setting "Icp/PointToPlaneRadius" parameter to 0 (default 0.000000) as "subscribe_scan_cloud" is true.
+[2025-10-16 18:10:25.508927][rtabmap-4][STDERR] [INFO] [1760605825.506533017] [rtabmap]: RTAB-Map detection rate = 1.000000 Hz
+[2025-10-16 18:10:25.508927][rtabmap-4][STDERR] [INFO] [1760605825.506603857] [rtabmap]: rtabmap: Using database from "/home/kkit/newdisk/draco_tcpip/data/maps/rtabmap_20251016_181024_850602.db" (0 MB).
+[2025-10-16 18:10:25.662619][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605825.662199587] [rtabmap_feedback_loop]: RTAB-Map 피드백 루프 노드를 시작했습니다. 토픽과 서비스 상태를 모니터링합니다.
+[2025-10-16 18:10:25.690288][rtabmap-4][STDERR] [INFO] [1760605825.689864729] [rtabmap]: rtabmap: Database version = "0.22.1".
+[2025-10-16 18:10:25.690288][rtabmap-4][STDERR] [INFO] [1760605825.689911831] [rtabmap]: rtabmap: SLAM mode (Mem/IncrementalMemory=true)
+[2025-10-16 18:10:25.718283][rtabmap-4][STDERR] [INFO] [1760605825.717799504] [rtabmap]: Setup callbacks
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.717947100] [rtabmap]: rtabmap: subscribe_depth = false
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.717969555] [rtabmap]: rtabmap: subscribe_rgb = false
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.717983825] [rtabmap]: rtabmap: subscribe_stereo = false
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.717997254] [rtabmap]: rtabmap: subscribe_rgbd = false (rgbd_cameras=1)
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718006025] [rtabmap]: rtabmap: subscribe_sensor_data = false
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718013748] [rtabmap]: rtabmap: subscribe_odom_info = true
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718021202] [rtabmap]: rtabmap: subscribe_user_data = false
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718028203] [rtabmap]: rtabmap: subscribe_scan = false
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718048235] [rtabmap]: rtabmap: subscribe_scan_cloud = true
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718055416] [rtabmap]: rtabmap: subscribe_scan_descriptor = false
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718062583] [rtabmap]: rtabmap: topic_queue_size = 10
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718069723] [rtabmap]: rtabmap: sync_queue_size  = 10
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718076642] [rtabmap]: rtabmap: qos_image       = 0
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718083632] [rtabmap]: rtabmap: qos_camera_info = 0
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718093114] [rtabmap]: rtabmap: qos_scan        = 0
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718100110] [rtabmap]: rtabmap: qos_odom        = 0
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718106988] [rtabmap]: rtabmap: qos_user_data   = 0
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718113665] [rtabmap]: rtabmap: approx_sync     = true
+[2025-10-16 18:10:25.719842][rtabmap-4][STDERR] [INFO] [1760605825.718128283] [rtabmap]: Setup scan callback
+[2025-10-16 18:10:25.720451][rtabmap-4][STDERR] [INFO] [1760605825.719799944] [rtabmap]: 
+[2025-10-16 18:10:25.720451][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:10:25.720451][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:10:25.720451][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:10:25.722017][rtabmap-4][STDERR] [WARN] [1760605825.721644018] [rtabmap]: There is no image subscription, bag-of-words loop closure detection will be disabled...
+[2025-10-16 18:10:25.722486][rtabmap-4][STDERR] [WARN] [1760605825.721689347] [rtabmap]: Setting Kp/MaxFeatures=-1 (bag-of-words disabled)
+[2025-10-16 18:10:27.645118][stream_server-2][STDERR] [INFO] [1760605827.644735526] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-16 18:10:27.645512][stream_server-2][STDERR] [INFO] [1760605827.644964045] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-16 18:12:53.074285][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760605973.073594738] [rtabmap_feedback_loop]: 포인트클라우드 입력 토픽(/stream_pair/decoded)이 147.6s 동안 수신되지 않았습니다.
+[2025-10-16 18:12:53.074833][time_jump_reset-5][STDERR] [INFO] [1760605973.074032477] [time_jump_reset]: /clock 토픽 수신 시작. SLAM 시스템을 활성화합니다.
+[2025-10-16 18:12:53.075278][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605973.074425762] [rtabmap_feedback_loop]: 스트리밍 노드 상태를 확인해 주세요. cloud_restart_service 파라미터가 비어 있어 자동 복구를 수행하지 않습니다.
+[2025-10-16 18:12:53.075695][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605973.075311864] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 147.6s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:12:53.077157][time_jump_reset-5][STDERR] [INFO] [1760605973.076343407] [time_jump_reset]: 시스템 활성화: 모든 노드를 'active' 상태로 전환합니다.
+[2025-10-16 18:12:53.079095][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605973.078070479] [rtabmap_feedback_loop]: ICP Odometry 리셋 서비스(/icp_odometry/reset)를 아직 사용할 수 없습니다.
+[2025-10-16 18:12:53.080913][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605973.079004768] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 147.6s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:12:53.083463][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605973.082563987] [rtabmap_feedback_loop]: RTAB-Map 캐시 정리 서비스(/rtabmap/cleanup)를 아직 사용할 수 없습니다.
+[2025-10-16 18:12:53.084355][time_jump_reset-5][STDERR] [INFO] [1760605973.082758403] [time_jump_reset]: icp_odometry change_state 서비스 경로를 /change_state 로 설정했습니다.
+[2025-10-16 18:12:53.084961][icp_odometry-3][STDERR] [WARN] [1760605973.084194378] [icp_odometry]: Lifecycle transition 3 실패: 현재 상태에서 activate 전환을 수행할 수 없습니다.
+[2025-10-16 18:12:53.088263][time_jump_reset-5][STDERR] [ERROR] [1760605973.087908846] [time_jump_reset]: icp_odometry 전환 실패(id=3). 성공=False
+[2025-10-16 18:12:53.091980][time_jump_reset-5][STDERR] [INFO] [1760605973.091588682] [time_jump_reset]: rtabmap change_state 서비스 경로를 /rtabmap/change_state 로 설정했습니다.
+[2025-10-16 18:12:53.092748][rtabmap-4][STDERR] [WARN] [1760605973.092227979] [rtabmap]: Lifecycle transition 3 실패: 현재 상태에서 activate 전환을 수행할 수 없습니다.
+[2025-10-16 18:12:53.095028][time_jump_reset-5][STDERR] [ERROR] [1760605973.094595589] [time_jump_reset]: rtabmap 전환 실패(id=3). 성공=False
+[2025-10-16 18:12:53.097267][time_jump_reset-5][STDERR] [ERROR] [1760605973.096073716] [time_jump_reset]: 시스템 활성화 실패.
+[2025-10-16 18:12:53.100419][time_jump_reset-5][STDERR] [INFO] [1760605973.099866853] [time_jump_reset]: /clock 토픽 수신 시작. SLAM 시스템을 활성화합니다.
+[2025-10-16 18:12:53.101115][time_jump_reset-5][STDERR] [INFO] [1760605973.100634134] [time_jump_reset]: 초기 설정 시퀀스 시작: 모든 노드를 'inactive' 상태로 전환합니다.
+[2025-10-16 18:12:53.102828][icp_odometry-3][STDERR] [INFO] [1760605973.102268584] [icp_odometry]: Lifecycle 상태가 'inactive'로 전환되었습니다.
+[2025-10-16 18:12:53.106209][rtabmap-4][STDERR] [INFO] [1760605973.105743884] [rtabmap]: rtabmap: Lifecycle 상태가 'inactive'로 전환되었습니다.
+[2025-10-16 18:12:53.106700][rtabmap-4][STDERR] [INFO] [1760605973.106258108] [rtabmap]: Parameters event received!
+[2025-10-16 18:12:53.106700][rtabmap-4][STDERR] [INFO] [1760605973.106325463] [rtabmap]: rtabmap: Updating parameters
+[2025-10-16 18:12:53.107162][rtabmap-4][STDERR] [INFO] [1760605973.106436481] [rtabmap]: RTAB-Map rate detection = 1.000000 Hz
+[2025-10-16 18:12:53.108951][time_jump_reset-5][STDERR] [INFO] [1760605973.108499195] [time_jump_reset]: 초기 설정 완료. 모든 노드가 'inactive' 상태로 대기 중입니다.
+[2025-10-16 18:12:53.109758][time_jump_reset-5][STDERR] [INFO] [1760605973.109252701] [time_jump_reset]: 시스템 활성화: 모든 노드를 'active' 상태로 전환합니다.
+[2025-10-16 18:12:53.111111][icp_odometry-3][STDERR] [INFO] [1760605973.110471737] [icp_odometry]: Lifecycle 상태가 'active'로 전환되었습니다.
+[2025-10-16 18:12:53.114752][rtabmap-4][STDERR] [INFO] [1760605973.113716817] [rtabmap]: rtabmap: Lifecycle 상태가 'active'로 전환되었습니다.
+[2025-10-16 18:12:53.116820][rtabmap-4][STDERR] [INFO] [1760605973.115013997] [rtabmap]: Parameters event received!
+[2025-10-16 18:12:53.116820][rtabmap-4][STDERR] [INFO] [1760605973.115292688] [rtabmap]: rtabmap: Updating parameters
+[2025-10-16 18:12:53.116820][rtabmap-4][STDERR] [INFO] [1760605973.115343640] [rtabmap]: RTAB-Map rate detection = 1.000000 Hz
+[2025-10-16 18:12:53.117458][time_jump_reset-5][STDERR] [INFO] [1760605973.116432493] [time_jump_reset]: 시스템 활성화 완료.
+[2025-10-16 18:12:55.055672][stream_server-2][STDERR] [INFO] [1760605975.055233081] [stream_server]: Downlink client connected from ('127.0.0.1', 48768)
+[2025-10-16 18:12:55.056470][stream_server-2][STDERR] [INFO] [1760605975.056084292] [stream_server]: Uplink client connected from ('127.0.0.1', 32830)
+[2025-10-16 18:12:55.451887][icp_odometry-3][STDERR] [WARN] [1760605975.451451403] [icp_odometry]: icp_odometry: Did not receive data since 5 seconds! Make sure the input topics are published ("$ rostopic hz my_topic") and the timestamps in their header are set. 
+[2025-10-16 18:12:55.451887][icp_odometry-3][STDERR] icp_odometry subscribed to /scan and /stream_pair/decoded (make sure only one of this topic is published, otherwise remap one to a dummy topic name).
+[2025-10-16 18:12:55.724378][rtabmap-4][STDERR] [WARN] [1760605975.723818701] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:12:55.724378][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:12:55.724378][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:12:55.724378][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:12:57.217018][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605977.216621533] [rtabmap_feedback_loop]: 포인트클라우드 입력 토픽(/stream_pair/decoded) 수신을 시작했습니다.
+[2025-10-16 18:12:57.218772][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605977.217346510] [rtabmap_feedback_loop]: 포인트클라우드 입력 토픽(/stream_pair/decoded) 수신이 4.1s 만에 복구되었습니다.
+[2025-10-16 18:12:57.368527][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605977.367611135] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom) 수신을 시작했습니다.
+[2025-10-16 18:12:57.369626][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605977.368432354] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom) 수신이 4.3s 만에 복구되었습니다.
+[2025-10-16 18:12:57.370512][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605977.369154526] [rtabmap_feedback_loop]: ICP Odometry가 4.3s 정지 후 정상화되었습니다.
+[2025-10-16 18:12:57.377634][icp_odometry-3][STDERR] [INFO] [1760605977.377167728] [icp_odometry]: Odom: ratio=0.000000, std dev=99.995000m|99.995000rad, update time=0.021537s delay=1.275908s
+[2025-10-16 18:12:57.449838][rtabmap-4][STDERR] [INFO] [1760605977.449369065] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0037s, RTAB-Map=0.0609s, Maps update=0.0006s pub=0.0000s delay=1.3500s (local map=1, WM=1)
+[2025-10-16 18:12:58.448234][stream_server-2][STDERR] [INFO] [1760605978.447732311] [stream_server]: Downlink connection closed
+[2025-10-16 18:12:58.800777][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605978.800255390] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 153.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:12:59.148257][icp_odometry-3][STDERR] [INFO] [1760605979.147812213] [icp_odometry]: Odom: ratio=0.781802, std dev=0.013869m|0.004386rad, update time=0.571402s delay=1.900022s
+[2025-10-16 18:12:59.202135][rtabmap-4][STDERR] [INFO] [1760605979.201757878] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0022s, RTAB-Map=0.0472s, Maps update=0.0001s pub=0.0000s delay=1.9500s (local map=2, WM=2)
+[2025-10-16 18:12:59.615114][stream_server-2][STDERR] [INFO] [1760605979.614214157] [stream_server]: Downlink client connected from ('127.0.0.1', 48772)
+[2025-10-16 18:13:00.382506][icp_odometry-3][STDERR] [INFO] [1760605980.382111429] [icp_odometry]: Odom: ratio=0.747973, std dev=0.019035m|0.006019rad, update time=0.579369s delay=1.825235s
+[2025-10-16 18:13:00.435424][rtabmap-4][STDERR] [INFO] [1760605980.435019004] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0026s, RTAB-Map=0.0477s, Maps update=0.0002s pub=0.0000s delay=1.8750s (local map=3, WM=3)
+[2025-10-16 18:13:01.777982][icp_odometry-3][STDERR] [INFO] [1760605981.777407039] [icp_odometry]: Odom: ratio=0.781803, std dev=0.009984m|0.003157rad, update time=0.864544s delay=1.974952s
+[2025-10-16 18:13:01.828537][rtabmap-4][STDERR] [INFO] [1760605981.827976390] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0009s, RTAB-Map=0.0456s, Maps update=0.0001s pub=0.0000s delay=2.0250s (local map=4, WM=4)
+[2025-10-16 18:13:02.651317][icp_odometry-3][STDERR] [INFO] [1760605982.650894515] [icp_odometry]: Odom: ratio=0.842189, std dev=0.002080m|0.000658rad, update time=0.586181s delay=1.750014s
+[2025-10-16 18:13:02.701237][rtabmap-4][STDERR] [INFO] [1760605982.700705036] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0019s, RTAB-Map=0.0460s, Maps update=0.0001s pub=0.0000s delay=1.8000s (local map=5, WM=5)
+[2025-10-16 18:13:03.691120][icp_odometry-3][STDERR] [INFO] [1760605983.690652781] [icp_odometry]: Odom: ratio=0.860494, std dev=0.000571m|0.000181rad, update time=0.410509s delay=1.600039s
+[2025-10-16 18:13:03.755194][rtabmap-4][STDERR] [INFO] [1760605983.754695650] [rtabmap]: rtabmap (6): Rate=1.00s, Limit=0.000s, Conversion=0.0029s, RTAB-Map=0.0593s, Maps update=0.0002s pub=0.0000s delay=1.6751s (local map=6, WM=6)
+[2025-10-16 18:13:04.797022][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605984.796519206] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 159.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:04.797776][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760605984.797114116] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:04.809451][rtabmap-4][STDERR] [INFO] [1760605984.809035669] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:04.919401][icp_odometry-3][STDERR] [INFO] [1760605984.918909809] [icp_odometry]: Odom: ratio=0.826016, std dev=0.003452m|0.001092rad, update time=0.530501s delay=1.675019s
+[2025-10-16 18:13:04.967913][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605984.967531667] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:05.016299][rtabmap-4][STDERR] [INFO] [1760605985.015795083] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0027s, RTAB-Map=0.0485s, Maps update=0.0001s pub=0.0000s delay=1.7750s (local map=1, WM=1)
+[2025-10-16 18:13:06.324157][icp_odometry-3][STDERR] [INFO] [1760605986.323721399] [icp_odometry]: Odom: ratio=0.765318, std dev=0.012445m|0.003935rad, update time=0.773306s delay=1.925024s
+[2025-10-16 18:13:06.372742][rtabmap-4][STDERR] [INFO] [1760605986.372428038] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0019s, RTAB-Map=0.0442s, Maps update=0.0001s pub=0.0000s delay=1.9750s (local map=2, WM=2)
+[2025-10-16 18:13:07.278138][icp_odometry-3][STDERR] [INFO] [1760605987.277437544] [icp_odometry]: Odom: ratio=0.829477, std dev=0.002000m|0.000632rad, update time=0.531088s delay=1.800018s
+[2025-10-16 18:13:07.325829][rtabmap-4][STDERR] [INFO] [1760605987.325474782] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0019s, RTAB-Map=0.0438s, Maps update=0.0001s pub=0.0000s delay=1.8500s (local map=3, WM=3)
+[2025-10-16 18:13:08.391732][icp_odometry-3][STDERR] [INFO] [1760605988.391282110] [icp_odometry]: Odom: ratio=0.793011, std dev=0.006940m|0.002195rad, update time=0.517291s delay=1.625080s
+[2025-10-16 18:13:08.453892][rtabmap-4][STDERR] [INFO] [1760605988.453359038] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0014s, RTAB-Map=0.0581s, Maps update=0.0001s pub=0.0000s delay=1.7000s (local map=4, WM=4)
+[2025-10-16 18:13:09.474788][icp_odometry-3][STDERR] [INFO] [1760605989.474333811] [icp_odometry]: Odom: ratio=0.766180, std dev=0.010805m|0.003417rad, update time=0.451184s delay=1.600043s
+[2025-10-16 18:13:09.529129][rtabmap-4][STDERR] [INFO] [1760605989.528625034] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0020s, RTAB-Map=0.0504s, Maps update=0.0002s pub=0.0000s delay=1.6500s (local map=5, WM=5)
+[2025-10-16 18:13:09.796978][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605989.796583454] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 164.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:09.797406][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760605989.797034539] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:09.797765][rtabmap-4][STDERR] [INFO] [1760605989.797380656] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:09.948101][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605989.947732715] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:10.757600][icp_odometry-3][STDERR] [INFO] [1760605990.757149079] [icp_odometry]: Odom: ratio=0.782445, std dev=0.009285m|0.002936rad, update time=0.522767s delay=1.775060s
+[2025-10-16 18:13:10.810525][rtabmap-4][STDERR] [INFO] [1760605990.810102858] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0024s, RTAB-Map=0.0475s, Maps update=0.0002s pub=0.0000s delay=1.8250s (local map=1, WM=1)
+[2025-10-16 18:13:11.895776][icp_odometry-3][STDERR] [INFO] [1760605991.895232610] [icp_odometry]: Odom: ratio=0.825434, std dev=0.003076m|0.000973rad, update time=0.524379s delay=1.650023s
+[2025-10-16 18:13:11.943966][rtabmap-4][STDERR] [INFO] [1760605991.943407436] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0025s, RTAB-Map=0.0428s, Maps update=0.0002s pub=0.0000s delay=1.7001s (local map=2, WM=2)
+[2025-10-16 18:13:13.108713][icp_odometry-3][STDERR] [INFO] [1760605993.108185951] [icp_odometry]: Odom: ratio=0.776972, std dev=0.010962m|0.003466rad, update time=0.592666s delay=1.799063s
+[2025-10-16 18:13:13.156499][rtabmap-4][STDERR] [INFO] [1760605993.156099139] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0011s, RTAB-Map=0.0450s, Maps update=0.0001s pub=0.0000s delay=1.8499s (local map=3, WM=3)
+[2025-10-16 18:13:14.490536][icp_odometry-3][STDERR] [INFO] [1760605994.490142587] [icp_odometry]: Odom: ratio=0.801792, std dev=0.006567m|0.002077rad, update time=0.808585s delay=1.950017s
+[2025-10-16 18:13:14.552180][rtabmap-4][STDERR] [INFO] [1760605994.551299338] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0014s, RTAB-Map=0.0584s, Maps update=0.0002s pub=0.0000s delay=2.0250s (local map=4, WM=4)
+[2025-10-16 18:13:14.804429][rtabmap_feedback_loop-6][STDERR] [WARN] [1760605994.802873383] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 169.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:14.804429][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760605994.803558585] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:14.808193][rtabmap-4][STDERR] [INFO] [1760605994.807386417] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:15.009450][rtabmap_feedback_loop-6][STDERR] [INFO] [1760605995.008977361] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:15.414398][icp_odometry-3][STDERR] [INFO] [1760605995.413894835] [icp_odometry]: Odom: ratio=0.720137, std dev=0.021733m|0.006873rad, update time=0.523517s delay=1.725025s
+[2025-10-16 18:13:15.466146][rtabmap-4][STDERR] [INFO] [1760605995.465742469] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0022s, RTAB-Map=0.0469s, Maps update=0.0001s pub=0.0000s delay=1.7750s (local map=1, WM=1)
+[2025-10-16 18:13:16.587407][icp_odometry-3][STDERR] [INFO] [1760605996.586801270] [icp_odometry]: Odom: ratio=0.792584, std dev=0.008905m|0.002816rad, update time=0.575744s delay=1.675032s
+[2025-10-16 18:13:16.637217][rtabmap-4][STDERR] [INFO] [1760605996.636583106] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0012s, RTAB-Map=0.0471s, Maps update=0.0001s pub=0.0000s delay=1.7250s (local map=2, WM=2)
+[2025-10-16 18:13:17.804322][icp_odometry-3][STDERR] [INFO] [1760605997.803766215] [icp_odometry]: Odom: ratio=0.760063, std dev=0.014058m|0.004445rad, update time=0.583909s delay=1.800015s
+[2025-10-16 18:13:17.853279][rtabmap-4][STDERR] [INFO] [1760605997.852846000] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0020s, RTAB-Map=0.0457s, Maps update=0.0001s pub=0.0000s delay=1.8500s (local map=3, WM=3)
+[2025-10-16 18:13:19.171751][icp_odometry-3][STDERR] [INFO] [1760605999.171165857] [icp_odometry]: Odom: ratio=0.838476, std dev=0.000901m|0.000285rad, update time=0.829454s delay=1.975006s
+[2025-10-16 18:13:19.222126][rtabmap-4][STDERR] [INFO] [1760605999.221712288] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0024s, RTAB-Map=0.0468s, Maps update=0.0001s pub=0.0000s delay=2.0250s (local map=4, WM=4)
+[2025-10-16 18:13:20.052346][icp_odometry-3][STDERR] [INFO] [1760606000.051858730] [icp_odometry]: Odom: ratio=0.775008, std dev=0.011343m|0.003587rad, update time=0.561910s delay=1.725036s
+[2025-10-16 18:13:20.100762][rtabmap-4][STDERR] [INFO] [1760606000.100369930] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0020s, RTAB-Map=0.0445s, Maps update=0.0001s pub=0.0000s delay=1.7750s (local map=5, WM=5)
+[2025-10-16 18:13:20.797579][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606000.797162901] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 175.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:20.798094][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606000.797814826] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:20.799250][rtabmap-4][STDERR] [INFO] [1760606000.798910454] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:20.962196][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606000.961782423] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:21.210684][icp_odometry-3][STDERR] [INFO] [1760606001.210233160] [icp_odometry]: Odom: ratio=0.762391, std dev=0.017336m|0.005482rad, update time=0.505882s delay=1.700064s
+[2025-10-16 18:13:21.261083][rtabmap-4][STDERR] [INFO] [1760606001.260629596] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0020s, RTAB-Map=0.0459s, Maps update=0.0001s pub=0.0000s delay=1.7500s (local map=1, WM=1)
+[2025-10-16 18:13:22.425846][icp_odometry-3][STDERR] [INFO] [1760606002.425350825] [icp_odometry]: Odom: ratio=0.742529, std dev=0.017902m|0.005661rad, update time=0.558906s delay=1.724997s
+[2025-10-16 18:13:22.480643][rtabmap-4][STDERR] [INFO] [1760606002.479949943] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0026s, RTAB-Map=0.0470s, Maps update=0.0002s pub=0.0000s delay=1.7750s (local map=2, WM=2)
+[2025-10-16 18:13:23.487996][icp_odometry-3][STDERR] [INFO] [1760606003.487437118] [icp_odometry]: Odom: ratio=0.789165, std dev=0.005785m|0.001829rad, update time=0.492245s delay=1.600016s
+[2025-10-16 18:13:23.537875][rtabmap-4][STDERR] [INFO] [1760606003.537462348] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0011s, RTAB-Map=0.0471s, Maps update=0.0001s pub=0.0000s delay=1.6500s (local map=3, WM=3)
+[2025-10-16 18:13:24.654098][icp_odometry-3][STDERR] [INFO] [1760606004.653441451] [icp_odometry]: Odom: ratio=0.688923, std dev=0.018534m|0.005861rad, update time=0.497214s delay=1.650021s
+[2025-10-16 18:13:24.709092][rtabmap-4][STDERR] [INFO] [1760606004.708556885] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0020s, RTAB-Map=0.0490s, Maps update=0.0002s pub=0.0000s delay=1.7001s (local map=4, WM=4)
+[2025-10-16 18:13:25.801695][icp_odometry-3][STDERR] [INFO] [1760606005.801156039] [icp_odometry]: Odom: ratio=0.674418, std dev=0.019222m|0.006078rad, update time=0.435509s delay=1.650016s
+[2025-10-16 18:13:25.855942][rtabmap-4][STDERR] [INFO] [1760606005.855528782] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0019s, RTAB-Map=0.0498s, Maps update=0.0001s pub=0.0000s delay=1.7000s (local map=5, WM=5)
+[2025-10-16 18:13:26.804536][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606006.800567732] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 181.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:26.804536][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606006.802834733] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:26.812218][rtabmap-4][STDERR] [INFO] [1760606006.808257372] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:26.972825][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606006.972492505] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:27.000982][icp_odometry-3][STDERR] [INFO] [1760606007.000502016] [icp_odometry]: Odom: ratio=0.700013, std dev=0.011190m|0.003539rad, update time=0.533791s delay=1.699483s
+[2025-10-16 18:13:27.050566][rtabmap-4][STDERR] [INFO] [1760606007.050109772] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0011s, RTAB-Map=0.0472s, Maps update=0.0002s pub=0.0000s delay=1.7495s (local map=1, WM=1)
+[2025-10-16 18:13:28.094146][icp_odometry-3][STDERR] [INFO] [1760606008.093631589] [icp_odometry]: Odom: ratio=0.643643, std dev=0.019744m|0.006244rad, update time=0.427025s delay=1.599639s
+[2025-10-16 18:13:28.141654][rtabmap-4][STDERR] [INFO] [1760606008.141112939] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0012s, RTAB-Map=0.0446s, Maps update=0.0001s pub=0.0000s delay=1.6497s (local map=2, WM=2)
+[2025-10-16 18:13:29.463416][icp_odometry-3][STDERR] [INFO] [1760606009.462947096] [icp_odometry]: Odom: ratio=0.630604, std dev=0.020494m|0.006481rad, update time=0.672931s delay=1.800032s
+[2025-10-16 18:13:29.516499][rtabmap-4][STDERR] [INFO] [1760606009.515926860] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0016s, RTAB-Map=0.0496s, Maps update=0.0001s pub=0.0000s delay=1.8500s (local map=3, WM=3)
+[2025-10-16 18:13:30.527129][icp_odometry-3][STDERR] [INFO] [1760606010.526575263] [icp_odometry]: Odom: ratio=0.640674, std dev=0.018937m|0.005988rad, update time=0.534755s delay=1.749210s
+[2025-10-16 18:13:30.574262][rtabmap-4][STDERR] [INFO] [1760606010.573812373] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0010s, RTAB-Map=0.0448s, Maps update=0.0002s pub=0.0000s delay=1.7992s (local map=4, WM=4)
+[2025-10-16 18:13:31.589717][icp_odometry-3][STDERR] [INFO] [1760606011.589179805] [icp_odometry]: Odom: ratio=0.628357, std dev=0.020244m|0.006402rad, update time=0.481630s delay=1.600000s
+[2025-10-16 18:13:31.636638][rtabmap-4][STDERR] [INFO] [1760606011.636134084] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0014s, RTAB-Map=0.0444s, Maps update=0.0001s pub=0.0000s delay=1.6500s (local map=5, WM=5)
+[2025-10-16 18:13:32.719349][icp_odometry-3][STDERR] [INFO] [1760606012.718647952] [icp_odometry]: Odom: ratio=0.623494, std dev=0.017962m|0.005680rad, update time=0.454817s delay=1.600027s
+[2025-10-16 18:13:32.769161][rtabmap-4][STDERR] [INFO] [1760606012.768726161] [rtabmap]: rtabmap (6): Rate=1.00s, Limit=0.000s, Conversion=0.0026s, RTAB-Map=0.0457s, Maps update=0.0001s pub=0.0000s delay=1.6500s (local map=6, WM=6)
+[2025-10-16 18:13:32.797593][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606012.797219853] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 187.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:32.798098][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606012.797858720] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:32.798516][rtabmap-4][STDERR] [INFO] [1760606012.798244974] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:32.952534][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606012.952040566] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:33.994848][icp_odometry-3][STDERR] [INFO] [1760606013.994458797] [icp_odometry]: Odom: ratio=0.628464, std dev=0.019956m|0.006311rad, update time=0.512252s delay=1.725026s
+[2025-10-16 18:13:34.043164][rtabmap-4][STDERR] [INFO] [1760606014.042685175] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0025s, RTAB-Map=0.0444s, Maps update=0.0001s pub=0.0000s delay=1.7750s (local map=1, WM=1)
+[2025-10-16 18:13:35.026795][icp_odometry-3][STDERR] [INFO] [1760606015.026222329] [icp_odometry]: Odom: ratio=0.732795, std dev=0.006375m|0.002016rad, update time=0.443581s delay=1.575076s
+[2025-10-16 18:13:35.077887][rtabmap-4][STDERR] [INFO] [1760606015.077482882] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0023s, RTAB-Map=0.0461s, Maps update=0.0001s pub=0.0000s delay=1.6250s (local map=2, WM=2)
+[2025-10-16 18:13:36.135818][icp_odometry-3][STDERR] [INFO] [1760606016.135236183] [icp_odometry]: Odom: ratio=0.751598, std dev=0.008672m|0.002742rad, update time=0.402712s delay=1.550041s
+[2025-10-16 18:13:36.185788][rtabmap-4][STDERR] [INFO] [1760606016.185327797] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0009s, RTAB-Map=0.0480s, Maps update=0.0001s pub=0.0000s delay=1.6000s (local map=3, WM=3)
+[2025-10-16 18:13:37.491066][icp_odometry-3][STDERR] [INFO] [1760606017.490622625] [icp_odometry]: Odom: ratio=0.729731, std dev=0.016883m|0.005339rad, update time=0.572195s delay=1.798693s
+[2025-10-16 18:13:37.538448][rtabmap-4][STDERR] [INFO] [1760606017.537972485] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0013s, RTAB-Map=0.0447s, Maps update=0.0002s pub=0.0000s delay=1.8487s (local map=4, WM=4)
+[2025-10-16 18:13:38.701385][icp_odometry-3][STDERR] [INFO] [1760606018.700715721] [icp_odometry]: Odom: ratio=0.729213, std dev=0.012223m|0.003865rad, update time=0.659517s delay=1.775017s
+[2025-10-16 18:13:38.752093][rtabmap-4][STDERR] [INFO] [1760606018.751528485] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0028s, RTAB-Map=0.0466s, Maps update=0.0002s pub=0.0000s delay=1.8251s (local map=5, WM=5)
+[2025-10-16 18:13:38.797848][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606018.797300898] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 193.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:38.798535][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606018.798066821] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:38.799201][rtabmap-4][STDERR] [INFO] [1760606018.798496455] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:38.948296][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606018.947925406] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:39.988683][icp_odometry-3][STDERR] [INFO] [1760606019.988260922] [icp_odometry]: Odom: ratio=0.657787, std dev=0.015082m|0.004769rad, update time=0.785901s delay=2.000021s
+[2025-10-16 18:13:40.037349][rtabmap-4][STDERR] [INFO] [1760606020.036994215] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0019s, RTAB-Map=0.0458s, Maps update=0.0001s pub=0.0000s delay=2.0500s (local map=1, WM=1)
+[2025-10-16 18:13:40.810631][icp_odometry-3][STDERR] [INFO] [1760606020.810056680] [icp_odometry]: Odom: ratio=0.611933, std dev=0.018553m|0.005867rad, update time=0.467372s delay=1.600024s
+[2025-10-16 18:13:40.858436][rtabmap-4][STDERR] [INFO] [1760606020.857980078] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0009s, RTAB-Map=0.0457s, Maps update=0.0001s pub=0.0000s delay=1.6500s (local map=2, WM=2)
+[2025-10-16 18:13:42.048320][icp_odometry-3][STDERR] [INFO] [1760606022.047874360] [icp_odometry]: Odom: ratio=0.600375, std dev=0.021612m|0.006834rad, update time=0.477695s delay=1.773829s
+[2025-10-16 18:13:42.100517][rtabmap-4][STDERR] [INFO] [1760606022.100007767] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0033s, RTAB-Map=0.0457s, Maps update=0.0002s pub=0.0000s delay=1.8239s (local map=3, WM=3)
+[2025-10-16 18:13:43.160803][icp_odometry-3][STDERR] [INFO] [1760606023.160398739] [icp_odometry]: Odom: ratio=0.612669, std dev=0.018623m|0.005889rad, update time=0.453821s delay=1.675018s
+[2025-10-16 18:13:43.222979][rtabmap-4][STDERR] [INFO] [1760606023.222000928] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0017s, RTAB-Map=0.0583s, Maps update=0.0002s pub=0.0000s delay=1.7500s (local map=4, WM=4)
+[2025-10-16 18:13:43.805510][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606023.801546733] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 198.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:43.805510][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606023.802376029] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:43.806294][rtabmap-4][STDERR] [INFO] [1760606023.805361966] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:43.995229][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606023.994879156] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:44.330584][icp_odometry-3][STDERR] [INFO] [1760606024.329984808] [icp_odometry]: Odom: ratio=0.643136, std dev=0.015363m|0.004858rad, update time=0.477369s delay=1.625037s
+[2025-10-16 18:13:44.381419][rtabmap-4][STDERR] [INFO] [1760606024.380988329] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0016s, RTAB-Map=0.0479s, Maps update=0.0001s pub=0.0000s delay=1.6750s (local map=1, WM=1)
+[2025-10-16 18:13:45.473374][icp_odometry-3][STDERR] [INFO] [1760606025.472697936] [icp_odometry]: Odom: ratio=0.638362, std dev=0.015605m|0.004935rad, update time=0.452831s delay=1.625039s
+[2025-10-16 18:13:45.528660][rtabmap-4][STDERR] [INFO] [1760606025.528177157] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0021s, RTAB-Map=0.0468s, Maps update=0.0002s pub=0.0000s delay=1.6750s (local map=2, WM=2)
+[2025-10-16 18:13:46.779258][icp_odometry-3][STDERR] [INFO] [1760606026.778622057] [icp_odometry]: Odom: ratio=0.608212, std dev=0.018982m|0.006003rad, update time=0.613384s delay=1.774890s
+[2025-10-16 18:13:46.833312][rtabmap-4][STDERR] [INFO] [1760606026.832766211] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0025s, RTAB-Map=0.0486s, Maps update=0.0002s pub=0.0001s delay=1.8249s (local map=3, WM=3)
+[2025-10-16 18:13:47.821216][icp_odometry-3][STDERR] [INFO] [1760606027.820539904] [icp_odometry]: Odom: ratio=0.637846, std dev=0.016791m|0.005310rad, update time=0.504109s delay=1.725021s
+[2025-10-16 18:13:47.871472][rtabmap-4][STDERR] [INFO] [1760606027.870988514] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0018s, RTAB-Map=0.0456s, Maps update=0.0002s pub=0.0000s delay=1.7750s (local map=4, WM=4)
+[2025-10-16 18:13:49.156998][icp_odometry-3][STDERR] [INFO] [1760606029.156563134] [icp_odometry]: Odom: ratio=0.602503, std dev=0.020409m|0.006454rad, update time=0.688884s delay=1.850027s
+[2025-10-16 18:13:49.207661][rtabmap-4][STDERR] [INFO] [1760606029.207211233] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0019s, RTAB-Map=0.0467s, Maps update=0.0002s pub=0.0000s delay=1.9000s (local map=5, WM=5)
+[2025-10-16 18:13:49.798059][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606029.797661539] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 204.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:49.798719][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606029.798365936] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:49.799438][rtabmap-4][STDERR] [INFO] [1760606029.798882688] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:49.966802][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606029.965694469] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:50.175959][icp_odometry-3][STDERR] [INFO] [1760606030.175322116] [icp_odometry]: Odom: ratio=0.614771, std dev=0.017777m|0.005622rad, update time=0.539860s delay=1.700041s
+[2025-10-16 18:13:50.336522][rtabmap-4][STDERR] [INFO] [1760606030.336078970] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0014s, RTAB-Map=0.0552s, Maps update=0.0002s pub=0.0000s delay=1.8501s (local map=1, WM=1)
+[2025-10-16 18:13:51.545377][icp_odometry-3][STDERR] [INFO] [1760606031.544691449] [icp_odometry]: Odom: ratio=0.616069, std dev=0.018168m|0.005745rad, update time=0.698747s delay=1.900079s
+[2025-10-16 18:13:51.597552][rtabmap-4][STDERR] [INFO] [1760606031.596551260] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0015s, RTAB-Map=0.0480s, Maps update=0.0002s pub=0.0000s delay=1.9501s (local map=2, WM=2)
+[2025-10-16 18:13:52.407312][icp_odometry-3][STDERR] [INFO] [1760606032.406806018] [icp_odometry]: Odom: ratio=0.611832, std dev=0.017443m|0.005516rad, update time=0.434649s delay=1.550024s
+[2025-10-16 18:13:52.457254][rtabmap-4][STDERR] [INFO] [1760606032.456905430] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0017s, RTAB-Map=0.0469s, Maps update=0.0002s pub=0.0000s delay=1.6000s (local map=3, WM=3)
+[2025-10-16 18:13:53.935310][icp_odometry-3][STDERR] [INFO] [1760606033.934816976] [icp_odometry]: Odom: ratio=0.585299, std dev=0.020680m|0.006540rad, update time=0.775060s delay=2.023982s
+[2025-10-16 18:13:53.985878][rtabmap-4][STDERR] [INFO] [1760606033.985456392] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0014s, RTAB-Map=0.0477s, Maps update=0.0001s pub=0.0000s delay=2.0740s (local map=4, WM=4)
+[2025-10-16 18:13:54.798227][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606034.797792836] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 209.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:54.798844][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606034.798390391] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:54.799421][rtabmap-4][STDERR] [INFO] [1760606034.798886584] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:54.948985][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606034.948569979] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:13:55.035348][icp_odometry-3][STDERR] [INFO] [1760606035.034744909] [icp_odometry]: Odom: ratio=0.612162, std dev=0.016568m|0.005239rad, update time=0.743518s delay=1.875003s
+[2025-10-16 18:13:55.084649][rtabmap-4][STDERR] [INFO] [1760606035.084128528] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0010s, RTAB-Map=0.0463s, Maps update=0.0002s pub=0.0000s delay=1.9250s (local map=1, WM=1)
+[2025-10-16 18:13:55.999350][icp_odometry-3][STDERR] [INFO] [1760606035.998851510] [icp_odometry]: Odom: ratio=0.587793, std dev=0.021093m|0.006670rad, update time=0.497057s delay=1.699998s
+[2025-10-16 18:13:56.044640][rtabmap-4][STDERR] [INFO] [1760606036.044259869] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0015s, RTAB-Map=0.0427s, Maps update=0.0002s pub=0.0000s delay=1.7250s (local map=2, WM=2)
+[2025-10-16 18:13:57.368059][icp_odometry-3][STDERR] [INFO] [1760606037.367274492] [icp_odometry]: Odom: ratio=0.559997, std dev=0.021212m|0.006708rad, update time=0.701301s delay=1.850017s
+[2025-10-16 18:13:57.420586][rtabmap-4][STDERR] [INFO] [1760606037.420152561] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0014s, RTAB-Map=0.0496s, Maps update=0.0002s pub=0.0000s delay=1.9000s (local map=3, WM=3)
+[2025-10-16 18:13:58.509007][icp_odometry-3][STDERR] [INFO] [1760606038.508396640] [icp_odometry]: Odom: ratio=0.603755, std dev=0.015376m|0.004862rad, update time=0.715892s delay=1.849552s
+[2025-10-16 18:13:58.560277][rtabmap-4][STDERR] [INFO] [1760606038.559888652] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0023s, RTAB-Map=0.0477s, Maps update=0.0002s pub=0.0000s delay=1.8996s (local map=4, WM=4)
+[2025-10-16 18:13:59.585106][icp_odometry-3][STDERR] [INFO] [1760606039.584445052] [icp_odometry]: Odom: ratio=0.595102, std dev=0.018433m|0.005829rad, update time=0.635032s delay=1.800003s
+[2025-10-16 18:13:59.636472][rtabmap-4][STDERR] [INFO] [1760606039.635990023] [rtabmap]: rtabmap (5): Rate=1.00s, Limit=0.000s, Conversion=0.0017s, RTAB-Map=0.0468s, Maps update=0.0001s pub=0.0000s delay=1.8500s (local map=5, WM=5)
+[2025-10-16 18:13:59.798815][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606039.798346128] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 214.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:13:59.799454][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606039.799123779] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:13:59.800154][rtabmap-4][STDERR] [INFO] [1760606039.799536449] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:13:59.952307][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606039.951704956] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:14:00.653907][icp_odometry-3][STDERR] [INFO] [1760606040.653194009] [icp_odometry]: Odom: ratio=0.597299, std dev=0.017648m|0.005581rad, update time=0.537829s delay=1.772125s
+[2025-10-16 18:14:00.806672][rtabmap-4][STDERR] [INFO] [1760606040.806258770] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0018s, RTAB-Map=0.0480s, Maps update=0.0001s pub=0.0000s delay=1.9221s (local map=1, WM=1)
+[2025-10-16 18:14:01.844347][icp_odometry-3][STDERR] [INFO] [1760606041.843788309] [icp_odometry]: Odom: ratio=0.573838, std dev=0.020617m|0.006520rad, update time=0.542635s delay=1.725006s
+[2025-10-16 18:14:01.907290][rtabmap-4][STDERR] [INFO] [1760606041.906690665] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0023s, RTAB-Map=0.0568s, Maps update=0.0002s pub=0.0000s delay=1.8000s (local map=2, WM=2)
+[2025-10-16 18:14:02.930163][icp_odometry-3][STDERR] [INFO] [1760606042.929342543] [icp_odometry]: Odom: ratio=0.616407, std dev=0.013797m|0.004363rad, update time=0.509773s delay=1.648481s
+[2025-10-16 18:14:02.980243][rtabmap-4][STDERR] [INFO] [1760606042.979733952] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0016s, RTAB-Map=0.0470s, Maps update=0.0001s pub=0.0000s delay=1.6985s (local map=3, WM=3)
+[2025-10-16 18:14:04.281992][icp_odometry-3][STDERR] [INFO] [1760606044.281443893] [icp_odometry]: Odom: ratio=0.608025, std dev=0.018627m|0.005890rad, update time=0.676458s delay=1.850031s
+[2025-10-16 18:14:04.432273][rtabmap-4][STDERR] [INFO] [1760606044.431567380] [rtabmap]: rtabmap (4): Rate=1.00s, Limit=0.000s, Conversion=0.0013s, RTAB-Map=0.0473s, Maps update=0.0002s pub=0.0000s delay=2.0001s (local map=4, WM=4)
+[2025-10-16 18:14:04.800848][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606044.799935906] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 219.3s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:14:04.801669][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606044.800367488] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:14:04.803213][rtabmap-4][STDERR] [INFO] [1760606044.802651355] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:14:04.990620][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606044.990222551] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:14:05.469981][icp_odometry-3][STDERR] [INFO] [1760606045.469476645] [icp_odometry]: Odom: ratio=0.553382, std dev=0.021699m|0.006862rad, update time=0.663223s delay=1.850035s
+[2025-10-16 18:14:05.526709][rtabmap-4][STDERR] [INFO] [1760606045.526146040] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0018s, RTAB-Map=0.0529s, Maps update=0.0001s pub=0.0000s delay=1.9255s (local map=1, WM=1)
+[2025-10-16 18:14:06.173216][rtabmap-4][STDERR] [WARN] [1760606046.172613465] [tf2_buffer]: Detected jump back in time. Clearing TF buffer.
+[2025-10-16 18:14:06.183068][icp_odometry-3][STDERR] [WARN] [1760606046.172801553] [tf2_buffer]: Detected jump back in time. Clearing TF buffer.
+[2025-10-16 18:14:06.183621][time_jump_reset-5][STDERR] [WARN] [1760606046.174765654] [time_jump_reset]: 시뮬레이션 시간이 73.093s 만큼 과거로 이동했습니다. 리셋 시퀀스를 시작합니다.
+[2025-10-16 18:14:06.183947][time_jump_reset-5][STDERR] [INFO] [1760606046.176080879] [time_jump_reset]: 1/3: 노드들을 비활성화합니다.
+[2025-10-16 18:14:06.189658][icp_odometry-3][STDERR] [INFO] [1760606046.186815715] [icp_odometry]: Lifecycle 상태가 'inactive'로 전환되었습니다.
+[2025-10-16 18:14:06.220573][rtabmap-4][STDERR] [INFO] [1760606046.214289051] [rtabmap]: rtabmap: Lifecycle 상태가 'inactive'로 전환되었습니다.
+[2025-10-16 18:14:06.235311][rtabmap-4][STDERR] [INFO] [1760606046.219537346] [rtabmap]: Parameters event received!
+[2025-10-16 18:14:06.235311][rtabmap-4][STDERR] [INFO] [1760606046.219628213] [rtabmap]: rtabmap: Updating parameters
+[2025-10-16 18:14:06.235311][rtabmap-4][STDERR] [INFO] [1760606046.219681631] [rtabmap]: RTAB-Map rate detection = 1.000000 Hz
+[2025-10-16 18:14:06.236117][time_jump_reset-5][STDERR] [INFO] [1760606046.223704411] [time_jump_reset]: 2/3: 노드들의 상태를 리셋합니다.
+[2025-10-16 18:14:06.236758][time_jump_reset-5][STDERR] [INFO] [1760606046.230427606] [time_jump_reset]: /clock 토픽 수신 시작. SLAM 시스템을 활성화합니다.
+[2025-10-16 18:14:06.555187][icp_odometry-3][STDERR] [WARN] [1760606046.554654964] [icp_odometry]: TF odom->base_link is not published because we detected a time jump in the past of 72.517751 sec.
+[2025-10-16 18:14:06.559932][icp_odometry-3][STDERR] [INFO] [1760606046.559254805] [icp_odometry]: Odom: ratio=0.527552, std dev=0.020658m|0.006533rad, update time=0.612183s delay=-71.367721s
+[2025-10-16 18:14:06.559932][icp_odometry-3][STDERR] [WARN] [1760606046.559365744] [icp_odometry]: icp_odometry: Detected time jump in the past of 72.417739 sec, forcing diagnostic update.
+[2025-10-16 18:14:06.562718][rtabmap-4][STDERR] [WARN] [1760606046.562226878] [rtabmap]: rtabmap: Detected time jump in the past of 72.093257 sec, forcing diagnostic update.
+[2025-10-16 18:14:08.127253][rtabmap-4][STDERR] [WARN] [1760606048.126698552] []: Messages of type 0 arrived out of order (will print only once)
+[2025-10-16 18:14:10.197946][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606050.197595373] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 3.6s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:14:10.198535][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606050.198318458] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 224.7s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:14:10.199221][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606050.198975370] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:14:10.199698][rtabmap-4][STDERR] [INFO] [1760606050.199308655] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:14:10.345761][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606050.345325780] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:14:11.232167][time_jump_reset-5][STDERR] [ERROR] [1760606051.231737836] [time_jump_reset]: /icp_odometry/reset_odom 리셋 서비스를 사용할 수 없습니다.
+[2025-10-16 18:14:11.232721][rtabmap-4][STDERR] [INFO] [1760606051.232375810] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:14:11.387508][time_jump_reset-5][STDERR] [INFO] [1760606051.387166519] [time_jump_reset]: 3/3: 노드들을 다시 활성화합니다.
+[2025-10-16 18:14:11.388421][icp_odometry-3][STDERR] [INFO] [1760606051.388095126] [icp_odometry]: Lifecycle 상태가 'active'로 전환되었습니다.
+[2025-10-16 18:14:11.391602][rtabmap-4][STDERR] [INFO] [1760606051.391199383] [rtabmap]: rtabmap: Lifecycle 상태가 'active'로 전환되었습니다.
+[2025-10-16 18:14:11.392174][rtabmap-4][STDERR] [INFO] [1760606051.391666325] [rtabmap]: Parameters event received!
+[2025-10-16 18:14:11.392174][rtabmap-4][STDERR] [INFO] [1760606051.391700989] [rtabmap]: rtabmap: Updating parameters
+[2025-10-16 18:14:11.392548][rtabmap-4][STDERR] [INFO] [1760606051.391869238] [rtabmap]: RTAB-Map rate detection = 1.000000 Hz
+[2025-10-16 18:14:11.393970][time_jump_reset-5][STDERR] [WARN] [1760606051.393636770] [time_jump_reset]: 리셋 시퀀스가 완료되었습니다.
+[2025-10-16 18:14:11.584442][icp_odometry-3][STDERR] [WARN] [1760606051.583995088] [icp_odometry]: Odometry: Detected jump back in time of 67.492802 sec. Odometry is automatically reset to latest computed pose!
+[2025-10-16 18:14:11.585270][icp_odometry-3][STDERR] [WARN] [1760606051.584540796] [icp_odometry]: Odometry: Restarting with frame: 1727155741.576226 (clock previous=1727155810.169076, new=1727155742.676274)
+[2025-10-16 18:14:11.593267][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606051.592907268] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom) 수신이 1.4s 만에 복구되었습니다.
+[2025-10-16 18:14:11.593759][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606051.593538708] [rtabmap_feedback_loop]: ICP Odometry가 1.4s 정지 후 정상화되었습니다.
+[2025-10-16 18:14:11.607527][icp_odometry-3][STDERR] [INFO] [1760606051.606905732] [icp_odometry]: Odom: ratio=0.000000, std dev=99.995000m|99.995000rad, update time=0.022258s delay=1.125021s
+[2025-10-16 18:14:13.273499][icp_odometry-3][STDERR] [INFO] [1760606053.272942993] [icp_odometry]: Odom: ratio=0.638481, std dev=0.025390m|0.008029rad, update time=0.561563s delay=1.775027s
+[2025-10-16 18:14:14.478994][icp_odometry-3][STDERR] [INFO] [1760606054.478445177] [icp_odometry]: Odom: ratio=0.558038, std dev=0.022175m|0.007012rad, update time=0.609307s delay=1.775029s
+[2025-10-16 18:14:15.726074][rtabmap-4][STDERR] [WARN] [1760606055.725179170] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:14:15.726074][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:14:15.726074][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:14:15.726074][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:14:15.726810][icp_odometry-3][STDERR] [INFO] [1760606055.726073812] [icp_odometry]: Odom: ratio=0.508533, std dev=0.022424m|0.007091rad, update time=0.715404s delay=1.850054s
+[2025-10-16 18:14:16.173583][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606056.173012703] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 230.7s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:14:16.174781][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606056.173528014] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:14:16.175675][rtabmap-4][STDERR] [INFO] [1760606056.174744119] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:14:16.398296][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606056.397749242] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:14:16.825929][icp_odometry-3][STDERR] [INFO] [1760606056.825379161] [icp_odometry]: Odom: ratio=0.456511, std dev=0.023141m|0.007318rad, update time=0.642210s delay=1.825025s
+[2025-10-16 18:14:17.763715][icp_odometry-3][STDERR] [WARN] [1760606057.763224478] [icp_odometry]: Odometry lost! Odometry will be reset after next 2 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:17.769898][icp_odometry-3][STDERR] [INFO] [1760606057.769369830] [icp_odometry]: Odom: ratio=0.041136, std dev=0.000000m|0.000000rad, update time=0.439676s delay=1.600026s
+[2025-10-16 18:14:18.504369][icp_odometry-3][STDERR] [WARN] [1760606058.503982819] [icp_odometry]: Odometry lost! Odometry will be reset after next 1 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:18.511237][icp_odometry-3][STDERR] [INFO] [1760606058.510702956] [icp_odometry]: Odom: ratio=0.000000, std dev=0.000000m|0.000000rad, update time=0.006953s delay=1.175025s
+[2025-10-16 18:14:20.200950][icp_odometry-3][STDERR] [WARN] [1760606060.200611057] [icp_odometry]: Odometry automatically reset to latest computed pose!
+[2025-10-16 18:14:20.206687][icp_odometry-3][STDERR] [INFO] [1760606060.206097993] [icp_odometry]: Odom: ratio=0.000000, std dev=0.000000m|0.000000rad, update time=0.521597s delay=1.700043s
+[2025-10-16 18:14:20.829415][icp_odometry-3][STDERR] [INFO] [1760606060.829118596] [icp_odometry]: Odom: ratio=0.000000, std dev=99.995000m|99.995000rad, update time=0.019676s delay=1.149633s
+[2025-10-16 18:14:20.890606][rtabmap-4][STDERR] [INFO] [1760606060.890041497] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0016s, RTAB-Map=0.0551s, Maps update=0.0001s pub=0.0000s delay=1.1996s (local map=1, WM=1)
+[2025-10-16 18:14:21.173457][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606061.173083281] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 235.7s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:14:21.174030][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606061.173747494] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:14:21.174538][rtabmap-4][STDERR] [INFO] [1760606061.174131951] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:14:21.330355][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606061.329905404] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:14:22.537073][icp_odometry-3][STDERR] [WARN] [1760606062.536359228] [icp_odometry]: Odometry lost! Odometry will be reset after next 2 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:22.542996][icp_odometry-3][STDERR] [INFO] [1760606062.542450406] [icp_odometry]: Odom: ratio=0.012032, std dev=0.000000m|0.000000rad, update time=0.571307s delay=1.724806s
+[2025-10-16 18:14:23.247162][icp_odometry-3][STDERR] [WARN] [1760606063.246134656] [icp_odometry]: Odometry lost! Odometry will be reset after next 1 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:23.253529][icp_odometry-3][STDERR] [INFO] [1760606063.253000549] [icp_odometry]: Odom: ratio=0.000000, std dev=0.000000m|0.000000rad, update time=0.138312s delay=1.300029s
+[2025-10-16 18:14:25.314398][icp_odometry-3][STDERR] [WARN] [1760606065.307845910] [icp_odometry]: Odometry automatically reset to latest computed pose!
+[2025-10-16 18:14:25.323981][icp_odometry-3][STDERR] [INFO] [1760606065.323316975] [icp_odometry]: Odom: ratio=0.019013, std dev=0.000000m|0.000000rad, update time=1.070152s delay=2.200984s
+[2025-10-16 18:14:25.404909][icp_odometry-3][STDERR] [INFO] [1760606065.404578342] [icp_odometry]: Odom: ratio=0.000000, std dev=99.995000m|99.995000rad, update time=0.020433s delay=1.175008s
+[2025-10-16 18:14:25.462044][rtabmap-4][STDERR] [INFO] [1760606065.461586117] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0010s, RTAB-Map=0.0518s, Maps update=0.0001s pub=0.0000s delay=1.2250s (local map=1, WM=1)
+[2025-10-16 18:14:26.173744][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606066.173287589] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 240.7s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:14:26.174296][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606066.174043609] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:14:26.174713][rtabmap-4][STDERR] [INFO] [1760606066.174393218] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:14:26.329476][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606066.329146756] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:14:27.433661][icp_odometry-3][STDERR] [INFO] [1760606067.433198712] [icp_odometry]: Odom: ratio=0.156739, std dev=0.031286m|0.009893rad, update time=0.912883s delay=2.050034s
+[2025-10-16 18:14:27.491208][rtabmap-4][STDERR] [INFO] [1760606067.490795213] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0022s, RTAB-Map=0.0537s, Maps update=0.0001s pub=0.0000s delay=2.1000s (local map=1, WM=1)
+[2025-10-16 18:14:28.392006][icp_odometry-3][STDERR] [INFO] [1760606068.391625093] [icp_odometry]: Odom: ratio=0.139423, std dev=0.025099m|0.007937rad, update time=0.776179s delay=1.895244s
+[2025-10-16 18:14:28.448200][rtabmap-4][STDERR] [INFO] [1760606068.447793288] [rtabmap]: rtabmap (2): Rate=1.00s, Limit=0.000s, Conversion=0.0013s, RTAB-Map=0.0535s, Maps update=0.0001s pub=0.0000s delay=1.9702s (local map=2, WM=2)
+[2025-10-16 18:14:29.594060][icp_odometry-3][STDERR] [INFO] [1760606069.593644741] [icp_odometry]: Odom: ratio=0.121916, std dev=0.027540m|0.008709rad, update time=0.818684s delay=1.975045s
+[2025-10-16 18:14:29.654701][rtabmap-4][STDERR] [INFO] [1760606069.654306651] [rtabmap]: rtabmap (3): Rate=1.00s, Limit=0.000s, Conversion=0.0015s, RTAB-Map=0.0548s, Maps update=0.0001s pub=0.0000s delay=2.0501s (local map=3, WM=3)
+[2025-10-16 18:14:30.200249][icp_odometry-3][STDERR] [WARN] [1760606070.199747945] [icp_odometry]: Odometry lost! Odometry will be reset after next 2 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:30.207792][icp_odometry-3][STDERR] [INFO] [1760606070.207305404] [icp_odometry]: Odom: ratio=0.000000, std dev=0.000000m|0.000000rad, update time=0.313909s delay=1.425072s
+[2025-10-16 18:14:30.986495][icp_odometry-3][STDERR] [WARN] [1760606070.985814830] [icp_odometry]: Odometry lost! Odometry will be reset after next 1 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:30.992745][icp_odometry-3][STDERR] [INFO] [1760606070.992218316] [icp_odometry]: Odom: ratio=0.000000, std dev=0.000000m|0.000000rad, update time=0.006651s delay=1.124997s
+[2025-10-16 18:14:32.174151][rtabmap_feedback_loop-6][STDERR] [WARN] [1760606072.173467882] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 246.7s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:14:32.174781][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760606072.174285157] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:14:32.175231][rtabmap-4][STDERR] [INFO] [1760606072.174840534] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:14:32.320567][rtabmap_feedback_loop-6][STDERR] [INFO] [1760606072.320220185] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:14:32.628374][icp_odometry-3][STDERR] [WARN] [1760606072.627911239] [icp_odometry]: Odometry automatically reset to latest computed pose!
+[2025-10-16 18:14:32.635454][icp_odometry-3][STDERR] [INFO] [1760606072.634679608] [icp_odometry]: Odom: ratio=0.000000, std dev=0.000000m|0.000000rad, update time=0.502786s delay=1.650044s
+[2025-10-16 18:14:33.319362][icp_odometry-3][STDERR] [INFO] [1760606073.318899415] [icp_odometry]: Odom: ratio=0.000000, std dev=99.995000m|99.995000rad, update time=0.014943s delay=1.199632s
+[2025-10-16 18:14:33.393387][rtabmap-4][STDERR] [INFO] [1760606073.392929269] [rtabmap]: rtabmap (1): Rate=1.00s, Limit=0.000s, Conversion=0.0016s, RTAB-Map=0.0636s, Maps update=0.0002s pub=0.0000s delay=1.2747s (local map=1, WM=1)
+[2025-10-16 18:14:34.545195][icp_odometry-3][STDERR] [WARN] [1760606074.544651553] [icp_odometry]: Odometry lost! Odometry will be reset after next 2 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:34.557420][icp_odometry-3][STDERR] [INFO] [1760606074.556846306] [icp_odometry]: Odom: ratio=0.000000, std dev=0.000000m|0.000000rad, update time=0.146966s delay=1.300023s
+[2025-10-16 18:14:35.415750][stream_server-2][STDERR] [INFO] [1760606075.415267003] [stream_server]: Downlink connection closed
+[2025-10-16 18:14:35.416369][stream_server-2][STDERR] [ERROR] [1760606075.415737723] [stream_server]: Downlink server error: [Errno 104] Connection reset by peer
+[2025-10-16 18:14:35.460737][stream_server-2][STDERR] [INFO] [1760606075.458912897] [stream_server]: Uplink connection closed by peer
+[2025-10-16 18:14:35.462839][stream_server-2][STDERR] [INFO] [1760606075.461506555] [stream_server]: Uplink session finished
+[2025-10-16 18:14:36.173859][icp_odometry-3][STDERR] [WARN] [1760606076.173420208] [icp_odometry]: Odometry lost! Odometry will be reset after next 1 consecutive unsuccessful odometry updates...
+[2025-10-16 18:14:36.181281][icp_odometry-3][STDERR] [INFO] [1760606076.180521827] [icp_odometry]: Odom: ratio=0.020886, std dev=0.000000m|0.000000rad, update time=0.646976s delay=0.550022s
+[2025-10-16 18:31:15.451849][robot_state_publisher-1][STDERR] [INFO] [1760607075.446569138] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:31:15.453150][rtabmap-4][STDERR] [INFO] [1760607075.446570172] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:31:15.453879][icp_odometry-3][STDERR] [INFO] [1760607075.446636358] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:31:15.454334][rtabmap-4][STDERR] [INFO] [1760607075.453391421] [rtabmap]: Parameters are not saved (No configuration file provided...)
+[2025-10-16 18:31:15.653991][rtabmap_feedback_loop-6][STDERR] Traceback (most recent call last):
+[2025-10-16 18:31:15.653991][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/slam_stream_bridge/rtabmap_feedback_loop", line 33, in <module>
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]     sys.exit(load_entry_point('slam-stream-bridge', 'console_scripts', 'rtabmap_feedback_loop')())
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/build/slam_stream_bridge/slam_stream_bridge/nodes/rtabmap_feedback_loop.py", line 378, in main
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]     rclpy.spin(node)
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]     executor.spin_once()
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 751, in spin_once
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]     self._spin_once_impl(timeout_sec)
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 740, in _spin_once_impl
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]     return next(self._cb_iter)
+[2025-10-16 18:31:15.655186][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 620, in _wait_for_ready_callbacks
+[2025-10-16 18:31:15.655787][rtabmap_feedback_loop-6][STDERR]     wait_set.wait(timeout_nsec)
+[2025-10-16 18:31:15.655787][rtabmap_feedback_loop-6][STDERR] KeyboardInterrupt
+[2025-10-16 18:31:15.657103][time_jump_reset-5][STDERR] Traceback (most recent call last):
+[2025-10-16 18:31:15.657103][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/slam_stream_bridge/time_jump_reset", line 33, in <module>
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]     sys.exit(load_entry_point('slam-stream-bridge', 'console_scripts', 'time_jump_reset')())
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/build/slam_stream_bridge/slam_stream_bridge/nodes/time_jump_reset.py", line 365, in main
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]     executor.spin()
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 294, in spin
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]     self.spin_once()
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 806, in spin_once
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]     self._spin_once_impl(timeout_sec)
+[2025-10-16 18:31:15.658182][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 787, in _spin_once_impl
+[2025-10-16 18:31:15.659782][time_jump_reset-5][STDERR]     handler, entity, node = self.wait_for_ready_callbacks(
+[2025-10-16 18:31:15.659782][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[2025-10-16 18:31:15.659782][time_jump_reset-5][STDERR]     return next(self._cb_iter)
+[2025-10-16 18:31:15.659782][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 620, in _wait_for_ready_callbacks
+[2025-10-16 18:31:15.659782][time_jump_reset-5][STDERR]     wait_set.wait(timeout_nsec)
+[2025-10-16 18:31:15.659782][time_jump_reset-5][STDERR] KeyboardInterrupt
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:17.763) OdometryF2M.cpp:626::computeTransform() Registration failed: "Cannot compute transform (cor=1991 corrRatio=0.041136/0.070000 maxLaserScans=48401)" (guess=xyz=0.087363,-0.004585,0.004003 rpy=0.000215,-0.000013,0.009921)[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [31m[ERROR] (2025-10-16 18:14:18.503) RegistrationIcp.cpp:980::computeTransformationImpl() RegistrationIcp cannot do registration with a null guess.[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:18.503) OdometryF2M.cpp:622::computeTransform() Registration failed: "RegistrationIcp cannot do registration with a null guess."[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [31m[ERROR] (2025-10-16 18:14:19.684) RegistrationIcp.cpp:980::computeTransformationImpl() RegistrationIcp cannot do registration with a null guess.[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:19.684) OdometryF2M.cpp:622::computeTransform() Registration failed: "RegistrationIcp cannot do registration with a null guess."[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:20.200) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155749.601364 but the latest data is at time 1727155746.101310, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.500000)[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:22.536) OdometryF2M.cpp:622::computeTransform() Registration failed: "Cannot compute transform (cor=685 corrRatio=0.012032/0.070000 maxLaserScans=56932)"[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:23.245) OdometryF2M.cpp:622::computeTransform() Registration failed: "libpointmatcher has failed: limit out of bounds: rot: 0.0311585/1 tr: 0.36039/0.35"[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:24.801) OdometryF2M.cpp:622::computeTransform() Registration failed: "Cannot compute transform (cor=1072 corrRatio=0.019013/0.070000 maxLaserScans=56383)"[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:25.307) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155754.201433 but the latest data is at time 1727155750.776755, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.500000)[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:30.199) OdometryF2M.cpp:626::computeTransform() Registration failed: "libpointmatcher has failed: limit out of bounds: rot: 0.0314484/1 tr: 0.35983/0.35" (guess=xyz=0.026657,-0.060676,-0.007020 rpy=0.003255,0.001461,-0.009112)[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [31m[ERROR] (2025-10-16 18:14:30.985) RegistrationIcp.cpp:980::computeTransformationImpl() RegistrationIcp cannot do registration with a null guess.[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:30.985) OdometryF2M.cpp:622::computeTransform() Registration failed: "RegistrationIcp cannot do registration with a null guess."[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [31m[ERROR] (2025-10-16 18:14:32.131) RegistrationIcp.cpp:980::computeTransformationImpl() RegistrationIcp cannot do registration with a null guess.[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:32.131) OdometryF2M.cpp:622::computeTransform() Registration failed: "RegistrationIcp cannot do registration with a null guess."[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:32.627) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155762.076559 but the latest data is at time 1727155758.701513, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.500000)[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:34.544) OdometryF2M.cpp:622::computeTransform() Registration failed: "libpointmatcher has failed: limit out of bounds: rot: 0.0242916/1 tr: 0.359961/0.35"[0m
+[2025-10-16 18:31:15.674987][icp_odometry-3][STDOUT] [33m[ WARN] (2025-10-16 18:14:36.173) OdometryF2M.cpp:622::computeTransform() Registration failed: "Cannot compute transform (cor=1484 corrRatio=0.020886/0.070000 maxLaserScans=71053)"[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:18.603) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155747.251325 but the latest data is at time 1727155746.101310, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:18.827) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155748.426339 but the latest data is at time 1727155746.101310, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:20.399) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155749.601364 but the latest data is at time 1727155746.101310, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:22.727) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155751.901618 but the latest data is at time 1727155750.776755, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:23.456) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155753.051436 but the latest data is at time 1727155750.776755, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:30.424) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155759.876526 but the latest data is at time 1727155758.701513, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:31.178) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155760.951562 but the latest data is at time 1727155758.701513, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:32.828) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155762.076559 but the latest data is at time 1727155758.701513, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:14:34.781) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155764.351596 but the latest data is at time 1727155763.201965, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] [33m[ WARN] (2025-10-16 18:31:15.451) MsgConversion.cpp:2010::getTransform() (getting transform odom -> base_link) Lookup would require extrapolation into the future.  Requested time 1727155765.476622 but the latest data is at time 1727155763.201965, when looking up transform from frame [base_link] to frame [odom] (wait_for_transform=0.200000)[0m
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] rtabmap: Saving database/long-term memory... (located at /home/kkit/newdisk/draco_tcpip/data/maps/rtabmap_20251016_181024_850602.db)
+[2025-10-16 18:31:17.270968][rtabmap-4][STDOUT] rtabmap: Saving database/long-term memory...done! (located at /home/kkit/newdisk/draco_tcpip/data/maps/rtabmap_20251016_181024_850602.db, 0 MB)

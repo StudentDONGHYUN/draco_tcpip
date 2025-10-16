@@ -13,6 +13,7 @@ log/
 data/bags/
 data/bags_keep/
 data/results/
+data/maps/
 
 # Legacy project artifacts
 .draco-ros2-roundtrip/logs/

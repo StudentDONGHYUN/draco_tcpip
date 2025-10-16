@@ -32,9 +32,11 @@ rtabmap:
     Optimizer/GravitySigma: "0"
     SLAM/Strategy: "1"
     Reg/Strategy: "1"
-    Icp/CorrespondenceRatio: "0.1"
+    Icp/CorrespondenceRatio: "0.07"
     Icp/Iterations: "30"
     Icp/Epsilon: "0.001"
+    Icp/MaxTranslation: "0.35"
+    Icp/MaxRotation: "1.0"
     Grid/3D: "true"
     Grid/Sensor: "true"
     Grid/CellSize: "0.2"
@@ -52,23 +54,25 @@ icp_odometry:
     frame_id: base_link
     odom_frame_id: odom
     publish_tf: true
-    wait_for_transform: 0.2
+    wait_for_transform: 0.5
     deskewing: false
     approx_sync: false
     queue_size: 5
     expected_update_rate: 0.0
-    scan_cloud_max_pts: 120000
+    scan_cloud_max_pts: 60000
     scan_cloud_min_pts: 50
     Icp/PointToPlane: "true"
-    Icp/VoxelSize: "0.05"
+    Icp/VoxelSize: "0.12"
     Icp/Epsilon: "0.001"
-    Icp/CorrespondenceRatio: "0.1"
+    Icp/CorrespondenceRatio: "0.07"
     Icp/Iterations: "30"
     Icp/PointToPlaneK: "20"
     Icp/PointToPlaneRadius: "0"
+    Icp/MaxTranslation: "0.35"
+    Icp/MaxRotation: "1.0"
     Odom/ScanKeyFrameThr: "0.4"
-    Odom/GuessMotion: "false"
-    Odom/ResetCountdown: "1"
+    Odom/GuessMotion: "true"
+    Odom/ResetCountdown: "3"
     OdomF2M/ScanSubtractRadius: "0.2"
     OdomF2M/ScanMaxSize: "15000"
     OdomF2M/BundleAdjustment: "false"

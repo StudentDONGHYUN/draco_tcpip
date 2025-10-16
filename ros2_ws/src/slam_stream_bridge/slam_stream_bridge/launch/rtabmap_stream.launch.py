@@ -60,6 +60,12 @@ def generate_launch_description():
         description='MapData topic published by the RTAB-Map node.'
     )
 
+    database_path_arg = DeclareLaunchArgument(
+        'database_path',
+        default_value='',
+        description='File path where RTAB-Map will persist its database (optional).'
+    )
+
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -91,7 +97,11 @@ def generate_launch_description():
         output='screen',
         parameters=[
             LaunchConfiguration('params_file'),
-            {'use_sim_time': LaunchConfiguration('use_sim_time')}
+            {
+                'use_sim_time': LaunchConfiguration('use_sim_time'),
+                'is_rtabmap_paused': True,
+                'database_path': LaunchConfiguration('database_path'),
+            }
         ],
         remappings=[('scan_cloud', LaunchConfiguration('cloud_topic'))],
         arguments=['--delete_db_on_start']
@@ -105,6 +115,8 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'jump_back_threshold_sec': LaunchConfiguration('time_jump_threshold'),
+            'managed_nodes': ['icp_odometry', 'rtabmap'],
+            'reset_services': ['/icp_odometry/reset_odom', '/rtabmap/reset'],
         }]
     )
 
@@ -129,6 +141,7 @@ def generate_launch_description():
         time_jump_threshold_arg,
         odometry_topic_arg,
         map_data_topic_arg,
+        database_path_arg,
         robot_state_publisher_node,
         icp_odometry_node,
         rtabmap_node,

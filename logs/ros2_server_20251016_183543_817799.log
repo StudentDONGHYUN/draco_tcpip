@@ -1,0 +1,398 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true run_slam:=true
+# 생성 시각: 2025-10-16T18:35:43.817799
+[2025-10-16 18:35:43.905867][robot_state_publisher-1][STDERR] [INFO] [1760607343.904503897] [robot_state_publisher]: got segment base_link
+[2025-10-16 18:35:43.907552][robot_state_publisher-1][STDERR] [INFO] [1760607343.904670072] [robot_state_publisher]: got segment lidar_frame
+[2025-10-16 18:35:44.497450][rtabmap-4][STDERR] [WARN] [1760607344.496462871] [rtabmap]: Parameter "queue_size" has been renamed to "sync_queue_size" and will be removed in future versions! The value (10) is copied to "sync_queue_size".
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508128825] [rtabmap]: rtabmap(maps): latch                      = true
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508176757] [rtabmap]: rtabmap(maps): map_filter_radius          = 0.000000
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508209411] [rtabmap]: rtabmap(maps): map_filter_angle           = 30.000000
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508229540] [rtabmap]: rtabmap(maps): map_cleanup                = true
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508246624] [rtabmap]: rtabmap(maps): map_always_update          = false
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508267210] [rtabmap]: rtabmap(maps): map_empty_ray_tracing      = true
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508282925] [rtabmap]: rtabmap(maps): cloud_output_voxelized     = true
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508299496] [rtabmap]: rtabmap(maps): cloud_subtract_filtering   = false
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508316573] [rtabmap]: rtabmap(maps): cloud_subtract_filtering_min_neighbors = 2
+[2025-10-16 18:35:44.515094][rtabmap-4][STDERR] [INFO] [1760607344.508479830] [rtabmap]: rtabmap(maps): octomap_tree_depth         = 16
+[2025-10-16 18:35:44.547357][rtabmap-4][STDERR] [INFO] [1760607344.546843172] [rtabmap]: rtabmap: frame_id      = base_link
+[2025-10-16 18:35:44.547357][rtabmap-4][STDERR] [INFO] [1760607344.546893627] [rtabmap]: rtabmap: odom_frame_id = odom
+[2025-10-16 18:35:44.550885][rtabmap-4][STDERR] [INFO] [1760607344.546912118] [rtabmap]: rtabmap: map_frame_id  = map
+[2025-10-16 18:35:44.550885][rtabmap-4][STDERR] [INFO] [1760607344.546934749] [rtabmap]: rtabmap: log_to_rosout_level  = 4
+[2025-10-16 18:35:44.550885][rtabmap-4][STDERR] [INFO] [1760607344.546949699] [rtabmap]: rtabmap: initial_pose  = 
+[2025-10-16 18:35:44.550885][rtabmap-4][STDERR] [INFO] [1760607344.546964702] [rtabmap]: rtabmap: use_action_for_goal  = false
+[2025-10-16 18:35:44.550885][rtabmap-4][STDERR] [INFO] [1760607344.546978781] [rtabmap]: rtabmap: tf_delay      = 0.050000
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.546998603] [rtabmap]: rtabmap: tf_tolerance  = 0.100000
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547482678] [rtabmap]: rtabmap: odom_sensor_sync   = false
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547504349] [rtabmap]: rtabmap: pub_loc_pose_only_when_localizing = false
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547518512] [rtabmap]: rtabmap: wait_for_transform = 0.200000
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547535772] [rtabmap]: rtabmap: staleness_factor = 0.000000
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547554879] [rtabmap]: rtabmap: gen_scan  = false
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547568452] [rtabmap]: rtabmap: gen_depth  = false
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547583610] [rtabmap]: rtabmap: scan_cloud_max_points = 0
+[2025-10-16 18:35:44.555719][rtabmap-4][STDERR] [INFO] [1760607344.547598771] [rtabmap]: rtabmap: scan_cloud_is_2d = false
+[2025-10-16 18:35:44.572946][icp_odometry-3][STDERR] [INFO] [1760607344.571681599] [icp_odometry]: Odometry: frame_id               = base_link
+[2025-10-16 18:35:44.577643][icp_odometry-3][STDERR] [INFO] [1760607344.572216775] [icp_odometry]: Odometry: odom_frame_id          = odom
+[2025-10-16 18:35:44.577643][icp_odometry-3][STDERR] [INFO] [1760607344.572253794] [icp_odometry]: Odometry: publish_tf             = true
+[2025-10-16 18:35:44.577643][icp_odometry-3][STDERR] [INFO] [1760607344.572276561] [icp_odometry]: Odometry: wait_for_transform     = 0.500000
+[2025-10-16 18:35:44.577643][icp_odometry-3][STDERR] [INFO] [1760607344.572309772] [icp_odometry]: Odometry: log_to_rosout_level    = 4
+[2025-10-16 18:35:44.577643][icp_odometry-3][STDERR] [INFO] [1760607344.572359491] [icp_odometry]: Odometry: initial_pose           = xyz=0.000000,0.000000,0.000000 rpy=0.000000,-0.000000,0.000000
+[2025-10-16 18:35:44.577643][icp_odometry-3][STDERR] [INFO] [1760607344.572383723] [icp_odometry]: Odometry: ground_truth_frame_id  = 
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572404316] [icp_odometry]: Odometry: ground_truth_base_frame_id = base_link
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572417204] [icp_odometry]: Odometry: config_path            = 
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572443620] [icp_odometry]: Odometry: publish_null_when_lost = true
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572464533] [icp_odometry]: Odometry: publish_compressed_sensor_data = false
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572477812] [icp_odometry]: Odometry: guess_frame_id         = 
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572504364] [icp_odometry]: Odometry: guess_min_translation  = 0.000000
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572523522] [icp_odometry]: Odometry: guess_min_rotation     = 0.000000
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572546165] [icp_odometry]: Odometry: guess_min_time         = 0.000000
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572560538] [icp_odometry]: Odometry: guess_linear_variance  = 0.001000
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572575664] [icp_odometry]: Odometry: guess_angular_variance = 0.001000
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572589777] [icp_odometry]: Odometry: expected_update_rate   = 0.000000 Hz
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572604428] [icp_odometry]: Odometry: max_update_rate        = 0.000000 Hz
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572617857] [icp_odometry]: Odometry: min_update_rate        = 0.000000 Hz
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572631321] [icp_odometry]: Odometry: wait_imu_to_init       = false
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572644577] [icp_odometry]: Odometry: always_check_imu_tf    = true
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572657607] [icp_odometry]: Odometry: sensor_data_compression_format = .jpg
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572677000] [icp_odometry]: Odometry: sensor_data_parallel_compression = true
+[2025-10-16 18:35:44.584677][icp_odometry-3][STDERR] [INFO] [1760607344.572719273] [icp_odometry]: Odometry: stereoParams_=0 visParams_=0 icpParams_=1
+[2025-10-16 18:35:44.585555][icp_odometry-3][STDERR] [INFO] [1760607344.574825560] [icp_odometry]: Setting odometry parameter "Icp/CorrespondenceRatio"="0.07"
+[2025-10-16 18:35:44.585555][icp_odometry-3][STDERR] [INFO] [1760607344.575064761] [icp_odometry]: Setting odometry parameter "Icp/Epsilon"="0.001"
+[2025-10-16 18:35:44.585555][icp_odometry-3][STDERR] [INFO] [1760607344.575339742] [icp_odometry]: Setting odometry parameter "Icp/MaxRotation"="1.0"
+[2025-10-16 18:35:44.585555][icp_odometry-3][STDERR] [INFO] [1760607344.575430718] [icp_odometry]: Setting odometry parameter "Icp/MaxTranslation"="0.35"
+[2025-10-16 18:35:44.585555][icp_odometry-3][STDERR] [INFO] [1760607344.575909704] [icp_odometry]: Setting odometry parameter "Icp/PointToPlaneK"="20"
+[2025-10-16 18:35:44.585555][icp_odometry-3][STDERR] [INFO] [1760607344.576149750] [icp_odometry]: Setting odometry parameter "Icp/PointToPlaneRadius"="0"
+[2025-10-16 18:35:44.585555][icp_odometry-3][STDERR] [INFO] [1760607344.576632950] [icp_odometry]: Setting odometry parameter "Icp/VoxelSize"="0.12"
+[2025-10-16 18:35:44.590933][icp_odometry-3][STDERR] [INFO] [1760607344.577948150] [icp_odometry]: Setting odometry parameter "Odom/ResetCountdown"="3"
+[2025-10-16 18:35:44.590933][icp_odometry-3][STDERR] [INFO] [1760607344.578051393] [icp_odometry]: Setting odometry parameter "Odom/ScanKeyFrameThr"="0.4"
+[2025-10-16 18:35:44.590933][icp_odometry-3][STDERR] [INFO] [1760607344.578237199] [icp_odometry]: Setting odometry parameter "OdomF2M/BundleAdjustment"="false"
+[2025-10-16 18:35:44.590933][icp_odometry-3][STDERR] [INFO] [1760607344.578811611] [icp_odometry]: Setting odometry parameter "OdomF2M/ScanMaxSize"="15000"
+[2025-10-16 18:35:44.590933][icp_odometry-3][STDERR] [INFO] [1760607344.579006658] [icp_odometry]: Setting odometry parameter "OdomF2M/ScanSubtractRadius"="0.2"
+[2025-10-16 18:35:44.591677][rtabmap-4][STDERR] [WARN] [1760607344.583407653] [rtabmap]: rtabmap: 노드가 비활성(inactive) 상태로 시작합니다. lifecycle 'change_state -> ACTIVATE' 또는 /rtabmap/resume 서비스를 호출해 활성화하세요.
+[2025-10-16 18:35:44.592192][rtabmap-4][STDERR] [INFO] [1760607344.585545416] [rtabmap]: Setting RTAB-Map parameter "Grid/3D"="true" (rosparam)
+[2025-10-16 18:35:44.592192][rtabmap-4][STDERR] [INFO] [1760607344.585659808] [rtabmap]: Setting RTAB-Map parameter "Grid/CellSize"="0.2" (rosparam)
+[2025-10-16 18:35:44.594015][rtabmap-4][STDERR] [INFO] [1760607344.585800317] [rtabmap]: Setting RTAB-Map parameter "Grid/ClusterRadius"="0.5" (rosparam)
+[2025-10-16 18:35:44.594015][rtabmap-4][STDERR] [INFO] [1760607344.590884265] [rtabmap]: Setting RTAB-Map parameter "Grid/Sensor"="true" (rosparam)
+[2025-10-16 18:35:44.595356][time_jump_reset-5][STDERR] [WARN] [1760607344.587012252] [time_jump_reset]: icp_odometry 노드의 change_state 서비스가 아직 발견되지 않았습니다. 추후 재시도합니다.
+[2025-10-16 18:35:44.595356][time_jump_reset-5][STDERR] [WARN] [1760607344.589589277] [time_jump_reset]: rtabmap 노드의 change_state 서비스가 아직 발견되지 않았습니다. 추후 재시도합니다.
+[2025-10-16 18:35:44.598332][icp_odometry-3][STDERR] [WARN] [1760607344.590364563] [icp_odometry]: IcpOdometry: Transferring value 0.12 of "Icp/VoxelSize" to ros parameter "scan_voxel_size" for convenience. "Icp/VoxelSize" is set to 0.
+[2025-10-16 18:35:44.598332][icp_odometry-3][STDERR] [WARN] [1760607344.590416192] [icp_odometry]: IcpOdometry: Transferring value 20 of "Icp/PointToPlaneK" to ros parameter "scan_normal_k" for convenience.
+[2025-10-16 18:35:44.599511][rtabmap-4][STDERR] [INFO] [1760607344.597300905] [rtabmap]: Setting RTAB-Map parameter "Icp/CorrespondenceRatio"="0.07" (rosparam)
+[2025-10-16 18:35:44.599511][rtabmap-4][STDERR] [INFO] [1760607344.597521600] [rtabmap]: Setting RTAB-Map parameter "Icp/Epsilon"="0.001" (rosparam)
+[2025-10-16 18:35:44.599511][rtabmap-4][STDERR] [INFO] [1760607344.597720837] [rtabmap]: Setting RTAB-Map parameter "Icp/Iterations"="30" (rosparam)
+[2025-10-16 18:35:44.599511][rtabmap-4][STDERR] [INFO] [1760607344.597857886] [rtabmap]: Setting RTAB-Map parameter "Icp/MaxRotation"="1.0" (rosparam)
+[2025-10-16 18:35:44.599511][rtabmap-4][STDERR] [INFO] [1760607344.597957882] [rtabmap]: Setting RTAB-Map parameter "Icp/MaxTranslation"="0.35" (rosparam)
+[2025-10-16 18:35:44.604214][icp_odometry-3][STDERR] [INFO] [1760607344.603324071] [icp_odometry]: IcpOdometry: qos                    = 0
+[2025-10-16 18:35:44.604214][icp_odometry-3][STDERR] [INFO] [1760607344.603376483] [icp_odometry]: IcpOdometry: scan_cloud_max_points  = -1
+[2025-10-16 18:35:44.604214][icp_odometry-3][STDERR] [INFO] [1760607344.603389755] [icp_odometry]: IcpOdometry: scan_cloud_is_2d       = false
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603433588] [icp_odometry]: IcpOdometry: scan_downsampling_step = 1
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603448587] [icp_odometry]: IcpOdometry: scan_range_min         = 0.000000 m
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603466747] [icp_odometry]: IcpOdometry: scan_range_max         = 0.000000 m
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603479132] [icp_odometry]: IcpOdometry: scan_voxel_size        = 0.120000 m
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603500120] [icp_odometry]: IcpOdometry: scan_normal_k          = 20
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603511786] [icp_odometry]: IcpOdometry: scan_normal_radius     = 0.000000 m
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603524255] [icp_odometry]: IcpOdometry: scan_normal_ground_up  = 0.000000
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603537517] [icp_odometry]: IcpOdometry: deskewing              = false
+[2025-10-16 18:35:44.606767][icp_odometry-3][STDERR] [INFO] [1760607344.603548678] [icp_odometry]: IcpOdometry: deskewing_slerp        = false
+[2025-10-16 18:35:44.607419][icp_odometry-3][STDERR] [INFO] [1760607344.603559359] [icp_odometry]: IcpOdometry: topic_queue_size       = 1
+[2025-10-16 18:35:44.608912][rtabmap-4][STDERR] [INFO] [1760607344.606069562] [rtabmap]: Setting RTAB-Map parameter "Mem/NotLinkedNodesKept"="true" (rosparam)
+[2025-10-16 18:35:44.608912][rtabmap-4][STDERR] [INFO] [1760607344.606512215] [rtabmap]: Setting RTAB-Map parameter "Mem/STMSize"="30" (rosparam)
+[2025-10-16 18:35:44.609566][rtabmap-4][STDERR] [INFO] [1760607344.607198367] [rtabmap]: Setting RTAB-Map parameter "Optimizer/GravitySigma"="0" (rosparam)
+[2025-10-16 18:35:44.610200][icp_odometry-3][STDERR] [INFO] [1760607344.608696316] [icp_odometry]: 
+[2025-10-16 18:35:44.610200][icp_odometry-3][STDERR] icp_odometry subscribed to /scan and /stream_pair/decoded (make sure only one of this topic is published, otherwise remap one to a dummy topic name).
+[2025-10-16 18:35:44.612074][rtabmap-4][STDERR] [INFO] [1760607344.611586987] [rtabmap]: Setting RTAB-Map parameter "RGBD/AngularUpdate"="0" (rosparam)
+[2025-10-16 18:35:44.612758][rtabmap-4][STDERR] [INFO] [1760607344.612217615] [rtabmap]: Setting RTAB-Map parameter "RGBD/LinearUpdate"="0" (rosparam)
+[2025-10-16 18:35:44.615465][rtabmap-4][STDERR] [INFO] [1760607344.614280925] [rtabmap]: Setting RTAB-Map parameter "RGBD/ProximityPathMaxNeighbors"="1" (rosparam)
+[2025-10-16 18:35:44.615465][rtabmap-4][STDERR] [INFO] [1760607344.614698855] [rtabmap]: Setting RTAB-Map parameter "Reg/Strategy"="1" (rosparam)
+[2025-10-16 18:35:44.646371][rtabmap-4][STDERR] [INFO] [1760607344.643161129] [rtabmap]: Setting RTAB-Map parameter "Rtabmap/SaveWMState"="false" (rosparam)
+[2025-10-16 18:35:44.664750][rtabmap-4][STDERR] [INFO] [1760607344.661582364] [rtabmap]: Setting "Icp/PointToPlaneRadius" parameter to 0 (default 0.000000) as "subscribe_scan_cloud" is true.
+[2025-10-16 18:35:44.666800][rtabmap-4][STDERR] [INFO] [1760607344.666099361] [rtabmap]: RTAB-Map detection rate = 1.000000 Hz
+[2025-10-16 18:35:44.666800][rtabmap-4][STDERR] [INFO] [1760607344.666202631] [rtabmap]: rtabmap: Using database from "/home/kkit/newdisk/draco_tcpip/data/maps/rtabmap_20251016_183543_817799.db" (0 MB).
+[2025-10-16 18:35:44.686868][time_jump_reset-5][STDERR] Traceback (most recent call last):
+[2025-10-16 18:35:44.686868][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/slam_stream_bridge/time_jump_reset", line 33, in <module>
+[2025-10-16 18:35:44.693292][time_jump_reset-5][STDERR]     sys.exit(load_entry_point('slam-stream-bridge', 'console_scripts', 'time_jump_reset')())
+[2025-10-16 18:35:44.693292][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/build/slam_stream_bridge/slam_stream_bridge/nodes/time_jump_reset.py", line 384, in main
+[2025-10-16 18:35:44.693292][time_jump_reset-5][STDERR]     node = TimeJumpResetNode()
+[2025-10-16 18:35:44.693292][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/build/slam_stream_bridge/slam_stream_bridge/nodes/time_jump_reset.py", line 99, in __init__
+[2025-10-16 18:35:44.693292][time_jump_reset-5][STDERR]     reliability=ReliabilityPolicy.RELIABLE,
+[2025-10-16 18:35:44.693292][time_jump_reset-5][STDERR] NameError: name 'ReliabilityPolicy' is not defined. Did you mean: 'QoSReliabilityPolicy'?
+[2025-10-16 18:35:44.857723][rtabmap-4][STDERR] [INFO] [1760607344.857272567] [rtabmap]: rtabmap: Database version = "0.22.1".
+[2025-10-16 18:35:44.857723][rtabmap-4][STDERR] [INFO] [1760607344.857321159] [rtabmap]: rtabmap: SLAM mode (Mem/IncrementalMemory=true)
+[2025-10-16 18:35:44.887184][rtabmap-4][STDERR] [INFO] [1760607344.886564146] [rtabmap]: Setup callbacks
+[2025-10-16 18:35:44.888228][rtabmap-4][STDERR] [INFO] [1760607344.886727490] [rtabmap]: rtabmap: subscribe_depth = false
+[2025-10-16 18:35:44.888228][rtabmap-4][STDERR] [INFO] [1760607344.886747510] [rtabmap]: rtabmap: subscribe_rgb = false
+[2025-10-16 18:35:44.888228][rtabmap-4][STDERR] [INFO] [1760607344.886760120] [rtabmap]: rtabmap: subscribe_stereo = false
+[2025-10-16 18:35:44.888228][rtabmap-4][STDERR] [INFO] [1760607344.886771725] [rtabmap]: rtabmap: subscribe_rgbd = false (rgbd_cameras=1)
+[2025-10-16 18:35:44.888228][rtabmap-4][STDERR] [INFO] [1760607344.886784113] [rtabmap]: rtabmap: subscribe_sensor_data = false
+[2025-10-16 18:35:44.888228][rtabmap-4][STDERR] [INFO] [1760607344.886795752] [rtabmap]: rtabmap: subscribe_odom_info = true
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886807364] [rtabmap]: rtabmap: subscribe_user_data = false
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886818964] [rtabmap]: rtabmap: subscribe_scan = false
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886830393] [rtabmap]: rtabmap: subscribe_scan_cloud = true
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886841910] [rtabmap]: rtabmap: subscribe_scan_descriptor = false
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886853468] [rtabmap]: rtabmap: topic_queue_size = 10
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886865216] [rtabmap]: rtabmap: sync_queue_size  = 10
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886877292] [rtabmap]: rtabmap: qos_image       = 0
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886888947] [rtabmap]: rtabmap: qos_camera_info = 0
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886912856] [rtabmap]: rtabmap: qos_scan        = 0
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886933598] [rtabmap]: rtabmap: qos_odom        = 0
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886958049] [rtabmap]: rtabmap: qos_user_data   = 0
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886969405] [rtabmap]: rtabmap: approx_sync     = true
+[2025-10-16 18:35:44.890264][rtabmap-4][STDERR] [INFO] [1760607344.886991291] [rtabmap]: Setup scan callback
+[2025-10-16 18:35:44.891239][rtabmap-4][STDERR] [INFO] [1760607344.889466799] [rtabmap]: 
+[2025-10-16 18:35:44.891239][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:35:44.891239][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:35:44.891239][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:35:44.892298][rtabmap-4][STDERR] [WARN] [1760607344.891938730] [rtabmap]: There is no image subscription, bag-of-words loop closure detection will be disabled...
+[2025-10-16 18:35:44.892845][rtabmap-4][STDERR] [WARN] [1760607344.891992865] [rtabmap]: Setting Kp/MaxFeatures=-1 (bag-of-words disabled)
+[2025-10-16 18:35:44.951556][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607344.951180312] [rtabmap_feedback_loop]: RTAB-Map 피드백 루프 노드를 시작했습니다. 토픽과 서비스 상태를 모니터링합니다.
+[2025-10-16 18:35:46.679903][stream_server-2][STDERR] [INFO] [1760607346.679603251] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-16 18:35:46.680331][stream_server-2][STDERR] [INFO] [1760607346.679723483] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-16 18:35:53.038652][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607353.038204297] [rtabmap_feedback_loop]: 포인트클라우드 입력 토픽(/stream_pair/decoded)이 8.2s 동안 수신되지 않았습니다.
+[2025-10-16 18:35:53.039184][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607353.038840991] [rtabmap_feedback_loop]: 스트리밍 노드 상태를 확인해 주세요. cloud_restart_service 파라미터가 비어 있어 자동 복구를 수행하지 않습니다.
+[2025-10-16 18:35:53.040034][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607353.039723733] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 8.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:35:53.042834][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607353.042395770] [rtabmap_feedback_loop]: ICP Odometry 리셋 서비스(/icp_odometry/reset)를 아직 사용할 수 없습니다.
+[2025-10-16 18:35:53.286375][stream_server-2][STDERR] [INFO] [1760607353.286016616] [stream_server]: Uplink client connected from ('127.0.0.1', 52106)
+[2025-10-16 18:35:53.286809][stream_server-2][STDERR] [INFO] [1760607353.286337854] [stream_server]: Downlink client connected from ('127.0.0.1', 49346)
+[2025-10-16 18:35:54.613234][icp_odometry-3][STDERR] [WARN] [1760607354.612791649] [icp_odometry]: icp_odometry: Did not receive data since 5 seconds! Make sure the input topics are published ("$ rostopic hz my_topic") and the timestamps in their header are set. 
+[2025-10-16 18:35:54.613234][icp_odometry-3][STDERR] icp_odometry subscribed to /scan and /stream_pair/decoded (make sure only one of this topic is published, otherwise remap one to a dummy topic name).
+[2025-10-16 18:35:54.893127][rtabmap-4][STDERR] [WARN] [1760607354.892393759] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:35:54.893127][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:35:54.893127][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:35:54.893127][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:35:55.450350][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607355.447479809] [rtabmap_feedback_loop]: 포인트클라우드 입력 토픽(/stream_pair/decoded) 수신을 시작했습니다.
+[2025-10-16 18:35:55.450350][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607355.448185037] [rtabmap_feedback_loop]: 포인트클라우드 입력 토픽(/stream_pair/decoded) 수신이 2.4s 만에 복구되었습니다.
+[2025-10-16 18:35:57.039285][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607357.038337638] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 12.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:35:57.040146][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607357.039826060] [rtabmap_feedback_loop]: RTAB-Map 캐시 정리 서비스(/rtabmap/cleanup)를 아직 사용할 수 없습니다.
+[2025-10-16 18:35:59.038483][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607359.038054603] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 14.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:35:59.893108][rtabmap-4][STDERR] [WARN] [1760607359.892439265] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:35:59.893108][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:35:59.893108][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:35:59.893108][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:02.038660][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607362.038266072] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 17.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:04.038811][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607364.038414312] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 19.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:04.039438][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607364.039102743] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:04.040927][rtabmap-4][STDERR] [INFO] [1760607364.040592250] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:04.191512][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607364.191092939] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:04.893460][rtabmap-4][STDERR] [WARN] [1760607364.892588207] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:04.893460][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:04.893460][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:04.893460][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:07.038966][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607367.038593979] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 22.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:07.039552][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607367.039306093] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:07.040057][rtabmap-4][STDERR] [INFO] [1760607367.039694098] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:07.186891][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607367.186584752] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:09.038852][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607369.038438570] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 24.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:09.039381][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607369.038957433] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:09.039796][rtabmap-4][STDERR] [INFO] [1760607369.039307912] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:09.195442][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607369.195038257] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:09.893473][rtabmap-4][STDERR] [WARN] [1760607369.892674582] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:09.893473][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:09.893473][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:09.893473][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:12.039066][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607372.038610122] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 27.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:12.039574][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607372.039183179] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:12.040224][rtabmap-4][STDERR] [INFO] [1760607372.039611142] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:12.181022][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607372.180667628] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:14.038946][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607374.038530091] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 29.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:14.039442][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607374.039174131] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:14.041394][rtabmap-4][STDERR] [INFO] [1760607374.040327072] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:14.185762][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607374.185390121] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:14.893748][rtabmap-4][STDERR] [WARN] [1760607374.892789172] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:14.893748][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:14.893748][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:14.893748][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:18.040835][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607378.039186880] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 33.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:18.040835][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607378.040102646] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:18.041608][rtabmap-4][STDERR] [INFO] [1760607378.041057418] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:18.197334][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607378.196828060] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:19.039347][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607379.038713094] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 34.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:19.040203][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607379.039591434] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:19.041240][rtabmap-4][STDERR] [INFO] [1760607379.040667679] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:19.202571][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607379.202232616] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:19.893628][rtabmap-4][STDERR] [WARN] [1760607379.892896753] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:19.893628][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:19.893628][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:19.893628][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:24.039063][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607384.038706173] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 39.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:24.039603][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607384.039317980] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:24.040072][rtabmap-4][STDERR] [INFO] [1760607384.039716303] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:24.040784][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607384.040383098] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 39.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:24.041784][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607384.041142374] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:24.203141][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607384.202797435] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:24.893676][rtabmap-4][STDERR] [WARN] [1760607384.893012409] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:24.893676][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:24.893676][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:24.893676][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:29.039681][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607389.039156374] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 44.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:29.040262][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607389.039905318] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:29.040831][rtabmap-4][STDERR] [INFO] [1760607389.040329040] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:29.041433][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607389.041080155] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 44.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:29.042217][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607389.041879296] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:29.181255][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607389.180797642] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:29.893768][rtabmap-4][STDERR] [WARN] [1760607389.893056543] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:29.893768][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:29.893768][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:29.893768][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:34.040025][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607394.039473754] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 49.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:34.040781][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607394.040314663] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:34.044053][rtabmap-4][STDERR] [INFO] [1760607394.041303744] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:34.044662][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607394.041947862] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 49.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:34.044662][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607394.042880097] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:34.204498][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607394.203956694] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:34.893950][rtabmap-4][STDERR] [WARN] [1760607394.893197614] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:34.893950][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:34.893950][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:34.893950][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:39.893925][rtabmap-4][STDERR] [WARN] [1760607399.893185341] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:39.893925][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:39.893925][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:39.893925][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:40.040197][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607400.039693887] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 55.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:40.040753][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607400.040402652] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:40.041376][rtabmap-4][STDERR] [INFO] [1760607400.040886007] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:40.041993][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607400.041586736] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 55.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:40.042690][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607400.042338576] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:40.192986][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607400.192305684] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:44.894395][rtabmap-4][STDERR] [WARN] [1760607404.893341033] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:44.894395][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:44.894395][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:44.894395][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:46.040324][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607406.039813757] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 61.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:46.040907][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607406.040369580] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:46.041784][rtabmap-4][STDERR] [INFO] [1760607406.041354932] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:46.042590][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607406.041749153] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 61.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:46.043087][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607406.042795650] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:46.188487][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607406.187772510] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:49.894006][rtabmap-4][STDERR] [WARN] [1760607409.893414304] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:49.894006][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:49.894006][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:49.894006][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:52.039866][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607412.039352023] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 67.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:52.040431][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607412.040169900] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:52.040867][rtabmap-4][STDERR] [INFO] [1760607412.040519290] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:52.041491][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607412.041191609] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 67.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:52.042103][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607412.041830657] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:52.194487][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607412.194021446] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:54.894391][rtabmap-4][STDERR] [WARN] [1760607414.893598091] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:54.894391][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:54.894391][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:54.894391][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:36:57.040427][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607417.039993676] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 72.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:36:57.041067][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607417.040511584] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:36:57.042139][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607417.041700402] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 72.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:36:57.042690][rtabmap-4][STDERR] [INFO] [1760607417.042182844] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:36:57.044180][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607417.043811916] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:36:57.203914][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607417.203471672] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:36:59.894528][rtabmap-4][STDERR] [WARN] [1760607419.893648412] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:36:59.894528][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:36:59.894528][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:36:59.894528][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:03.039874][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607423.039489065] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 78.2s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:37:03.040339][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607423.039984326] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:37:03.040829][rtabmap-4][STDERR] [INFO] [1760607423.040359582] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:37:03.041473][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607423.041043940] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 78.2s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:37:03.042362][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607423.041823347] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:37:03.188466][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607423.188029495] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:37:04.414156][icp_odometry-3][STDERR] [WARN] [1760607424.413540429] [tf2_buffer]: Detected jump back in time. Clearing TF buffer.
+[2025-10-16 18:37:04.414677][rtabmap-4][STDERR] [WARN] [1760607424.413735401] [tf2_buffer]: Detected jump back in time. Clearing TF buffer.
+[2025-10-16 18:37:04.894757][rtabmap-4][STDERR] [WARN] [1760607424.893744403] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:37:04.894757][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:37:04.894757][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:37:04.894757][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:04.965779][icp_odometry-3][STDERR] [WARN] [1760607424.965354591] [icp_odometry]: icp_odometry: Detected time jump in the past of 71.960705 sec, forcing diagnostic update.
+[2025-10-16 18:37:06.161355][rtabmap-4][STDERR] [WARN] [1760607426.160277933] []: Messages of type 0 arrived out of order (will print only once)
+[2025-10-16 18:37:08.415453][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607428.415048841] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 83.6s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:37:08.416223][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607428.415959648] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:37:08.416623][rtabmap-4][STDERR] [INFO] [1760607428.416349204] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:37:08.417381][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607428.417068636] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 83.6s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:37:08.418138][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607428.417761757] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:37:08.569559][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607428.569128557] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:37:09.895158][rtabmap-4][STDERR] [WARN] [1760607429.893899047] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:37:09.895158][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:37:09.895158][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:37:09.895158][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:13.415683][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607433.415196448] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 88.6s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:37:13.416199][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607433.415955721] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:37:13.417453][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607433.417093448] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 88.6s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:37:13.417934][rtabmap-4][STDERR] [INFO] [1760607433.417123571] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:37:13.418391][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607433.417742083] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:37:13.561615][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607433.561227394] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:37:14.894617][rtabmap-4][STDERR] [WARN] [1760607434.893853381] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:37:14.894617][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:37:14.894617][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:37:14.894617][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:18.415214][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607438.414717589] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 93.6s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:37:18.415716][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607438.415270023] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:37:18.416111][rtabmap-4][STDERR] [INFO] [1760607438.415636365] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:37:18.416478][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607438.416189153] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 93.6s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:37:18.417118][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607438.416864238] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:37:18.611202][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607438.609758900] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:37:19.894705][rtabmap-4][STDERR] [WARN] [1760607439.894081737] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:37:19.894705][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:37:19.894705][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:37:19.894705][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:23.415962][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607443.415593625] [rtabmap_feedback_loop]: ICP Odometry 토픽(/odom)이 98.6s 동안 갱신되지 않았습니다. 추정이 멈춘 것으로 판단합니다.
+[2025-10-16 18:37:23.416616][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607443.416342209] [rtabmap_feedback_loop]: ICP Odometry가 연속으로 실패해 RTAB-Map 전체 리셋을 시도합니다.
+[2025-10-16 18:37:23.417316][rtabmap-4][STDERR] [INFO] [1760607443.416678555] [rtabmap]: rtabmap: Reset
+[2025-10-16 18:37:23.417990][rtabmap_feedback_loop-6][STDERR] [WARN] [1760607443.417425124] [rtabmap_feedback_loop]: RTAB-Map 누적 맵 토픽(/rtabmap/map_data)이 98.6s 동안 업데이트되지 않았습니다. 그래프 최적화가 멈춘 것 같습니다.
+[2025-10-16 18:37:23.418491][rtabmap_feedback_loop-6][STDERR] [ERROR] [1760607443.418267276] [rtabmap_feedback_loop]: 맵 정체가 지속되어 RTAB-Map 리셋을 요청합니다.
+[2025-10-16 18:37:23.593053][rtabmap_feedback_loop-6][STDERR] [INFO] [1760607443.592414767] [rtabmap_feedback_loop]: RTAB-Map 리셋 서비스를 성공적으로 호출했습니다.
+[2025-10-16 18:37:24.895194][rtabmap-4][STDERR] [WARN] [1760607444.894368661] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:37:24.895194][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:37:24.895194][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:37:24.895194][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:26.573043][stream_server-2][STDERR] [INFO] [1760607446.572552455] [stream_server]: Downlink connection closed
+[2025-10-16 18:37:26.573663][stream_server-2][STDERR] [ERROR] [1760607446.573086085] [stream_server]: Downlink server error: [Errno 104] Connection reset by peer
+[2025-10-16 18:37:26.612669][stream_server-2][STDERR] [INFO] [1760607446.612275822] [stream_server]: Uplink connection closed by peer
+[2025-10-16 18:37:26.613274][stream_server-2][STDERR] [INFO] [1760607446.612867675] [stream_server]: Uplink session finished
+[2025-10-16 18:37:29.894934][rtabmap-4][STDERR] [WARN] [1760607449.894357780] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:37:29.894934][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:37:29.894934][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:37:29.894934][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:34.895295][rtabmap-4][STDERR] [WARN] [1760607454.894622127] [rtabmap]: rtabmap: Did not receive data since 5 seconds! Make sure the input topics are published ("$ ros2 topic hz my_topic") and the timestamps in their header are set. If topics are coming from different computers, make sure the clocks of the computers are synchronized ("ntpdate"). Ajusting topic_queue_size (10) and sync_queue_size (10) can also help for better synchronization if framerates and/or delays are different. If topics are not published at the same rate, you could increase "sync_queue_size" and/or "topic_queue_size" parameters (current=10 and 10 respectively).
+[2025-10-16 18:37:34.895295][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 18:37:34.895295][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 18:37:34.895295][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 18:37:39.389168][rtabmap-4][STDERR] [INFO] [1760607459.384332684] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:39.389963][icp_odometry-3][STDERR] [INFO] [1760607459.384326414] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:39.391579][robot_state_publisher-1][STDERR] [INFO] [1760607459.384386945] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:39.392192][rtabmap-4][STDERR] [INFO] [1760607459.389208402] [rtabmap]: Parameters are not saved (No configuration file provided...)
+[2025-10-16 18:37:39.584776][robot_state_publisher-1][STDERR] [INFO] [1760607459.584101021] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:39.784487][robot_state_publisher-1][STDERR] [INFO] [1760607459.783933751] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:39.961380][robot_state_publisher-1][STDERR] [INFO] [1760607459.960551609] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:40.120722][robot_state_publisher-1][STDERR] [INFO] [1760607460.119926815] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:40.281296][robot_state_publisher-1][STDERR] [INFO] [1760607460.280694738] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR] Traceback (most recent call last):
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/lib/draco_roundtrip/stream_server", line 7, in <module>
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]     main()
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py", line 431, in main
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]     node.destroy_node()
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py", line 390, in destroy_node
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]     super().destroy_node()
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 1697, in destroy_node
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR]     self.__node.destroy_when_not_in_use()
+[2025-10-16 18:37:40.415501][stream_server-2][STDERR] KeyboardInterrupt
+[2025-10-16 18:37:40.418261][rtabmap_feedback_loop-6][STDERR] Traceback (most recent call last):
+[2025-10-16 18:37:40.418261][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/build/slam_stream_bridge/slam_stream_bridge/nodes/rtabmap_feedback_loop.py", line 378, in main
+[2025-10-16 18:37:40.418905][rtabmap_feedback_loop-6][STDERR]     rclpy.spin(node)
+[2025-10-16 18:37:40.418905][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+[2025-10-16 18:37:40.418905][rtabmap_feedback_loop-6][STDERR]     executor.spin_once()
+[2025-10-16 18:37:40.418905][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 751, in spin_once
+[2025-10-16 18:37:40.419634][rtabmap_feedback_loop-6][STDERR]     self._spin_once_impl(timeout_sec)
+[2025-10-16 18:37:40.419634][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 740, in _spin_once_impl
+[2025-10-16 18:37:40.419634][rtabmap_feedback_loop-6][STDERR]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[2025-10-16 18:37:40.419634][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[2025-10-16 18:37:40.419634][rtabmap_feedback_loop-6][STDERR]     return next(self._cb_iter)
+[2025-10-16 18:37:40.419634][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 620, in _wait_for_ready_callbacks
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR]     wait_set.wait(timeout_nsec)
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR] KeyboardInterrupt
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR] 
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR] During handling of the above exception, another exception occurred:
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR] 
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR] Traceback (most recent call last):
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/slam_stream_bridge/rtabmap_feedback_loop", line 33, in <module>
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR]     sys.exit(load_entry_point('slam-stream-bridge', 'console_scripts', 'rtabmap_feedback_loop')())
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/build/slam_stream_bridge/slam_stream_bridge/nodes/rtabmap_feedback_loop.py", line 380, in main
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR]     node.destroy_node()
+[2025-10-16 18:37:40.420613][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 1697, in destroy_node
+[2025-10-16 18:37:40.421329][rtabmap_feedback_loop-6][STDERR]     self.__node.destroy_when_not_in_use()
+[2025-10-16 18:37:40.421329][rtabmap_feedback_loop-6][STDERR] KeyboardInterrupt

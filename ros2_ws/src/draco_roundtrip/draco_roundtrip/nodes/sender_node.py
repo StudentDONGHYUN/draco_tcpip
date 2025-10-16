@@ -208,6 +208,11 @@ class SenderNode(Node):
         self._downlink_thread: Optional[threading.Thread] = None
         self._sender_thread: Optional[threading.Thread] = None
 
+        self._queue_keep_latest = 5
+
+        self._dropped_frames = 0
+        self._last_drop_log = 0.0
+
         self._sender_thread = threading.Thread(target=self._run_sender_loop, daemon=True)
         self._sender_thread.start()
 
@@ -215,25 +220,15 @@ class SenderNode(Node):
         try:
             self._msg_queue.put_nowait(msg)
         except queue.Full:
-            try:
-                dropped = self._msg_queue.get_nowait()
-                dropped_name = getattr(dropped, "frame_name", "unknown")
-                self._msg_queue.task_done()
+            self._dropped_frames += 1
+            now = time.monotonic()
+            if now - self._last_drop_log > 1.0:
                 self.get_logger().warning(
-                    f"Compressed message queue full; dropped oldest frame {dropped_name}."
+                    "Compressed message queue full; dropping newest frame. "
+                    f"total_dropped={self._dropped_frames}"
                 )
-            except queue.Empty:
-                self.get_logger().warning(
-                    "Compressed message queue reported full but was empty; dropping newest frame."
-                )
-                return
-
-            try:
-                self._msg_queue.put_nowait(msg)
-            except queue.Full:
-                self.get_logger().warning(
-                    f"Compressed message queue saturated; dropping newest frame {msg.frame_name}."
-                )
+                self._last_drop_log = now
+            return
 
     def _telemetry_tick(self) -> None:
         with self._metrics_lock:
@@ -250,67 +245,122 @@ class SenderNode(Node):
     def _run_sender_loop(self) -> None:
         self._start_time = time.monotonic()
 
-        self._downlink_thread = threading.Thread(
-            target=self._downlink_loop,
-            args=(self.downlink_host, self.downlink_port, self.downlink_protocol),
-            daemon=True,
-        )
-        self._downlink_thread.start()
+        backoff = 1.0
+        while not self._stop_event.is_set():
+            self._downlink_stop.clear()
+            self._downlink_thread = threading.Thread(
+                target=self._downlink_loop,
+                args=(self.downlink_host, self.downlink_port, self.downlink_protocol),
+                daemon=True,
+            )
+            self._downlink_thread.start()
 
-        try:
-            with socket.create_connection(
-                (self.server_host, self.server_port), timeout=self.socket_timeout
-            ) as sock:
-                sock.settimeout(self.socket_timeout)
-                self.get_logger().info(f"Connected to {self.server_host}:{self.server_port}")
-                while not self._stop_event.is_set():
-                    try:
-                        ros_msg = self._msg_queue.get(timeout=self.heartbeat_interval)
-                    except queue.Empty:
-                        send_message(sock, Message(kind=MSG_HEARTBEAT, name="hb", payload=b""))
-                        ack = recv_message(sock)
-                        if ack is None:
-                            raise ConnectionClosed("server closed uplink during heartbeat")
-                        continue
+            try:
+                with socket.create_connection(
+                    (self.server_host, self.server_port), timeout=self.socket_timeout
+                ) as sock:
+                    sock.settimeout(self.socket_timeout)
+                    self.get_logger().info(
+                        f"Connected to {self.server_host}:{self.server_port}"
+                    )
+                    backoff = 1.0
 
-                    try:
-                        drc_bytes = bytes(ros_msg.data)
-                        message = Message(
-                            kind=MSG_DATA, name=ros_msg.frame_name, payload=drc_bytes, frame_id=ros_msg.header.frame_id
-                        )
-                        send_message(sock, message)
+                    self._trim_queue_keep_latest(self._queue_keep_latest)
 
-                        with self._metrics_lock:
-                            self._bytes_sent += len(drc_bytes)
-                            self._frames_sent += 1
-
-                        self.get_logger().info(f"Sent {message.name} ({len(drc_bytes)} bytes)")
-
-                        reply = recv_message(sock)
-                        if reply is None:
-                            raise ConnectionClosed("server closed uplink")
-                        if reply.kind == MSG_ERROR:
-                            detail = reply.payload.decode(errors="ignore")
-                            self.get_logger().error(
-                                f"SERVER ERROR for {message.name}: {reply.name} -> {detail}"
-                            )
+                    while not self._stop_event.is_set():
+                        try:
+                            ros_msg = self._msg_queue.get(timeout=self.heartbeat_interval)
+                        except queue.Empty:
+                            send_message(sock, Message(kind=MSG_HEARTBEAT, name="hb", payload=b""))
+                            ack = recv_message(sock)
+                            if ack is None:
+                                raise ConnectionClosed("server closed uplink during heartbeat")
                             continue
 
-                        if reply.kind == MSG_DATA:
-                            with self._metrics_lock:
-                                self._bytes_received += len(reply.payload)
-                            # Further processing (e.g., publishing decoded cloud) can be added here
-                    finally:
-                        self._msg_queue.task_done()
+                        try:
+                            drc_bytes = bytes(ros_msg.data)
+                            message = Message(
+                                kind=MSG_DATA,
+                                name=ros_msg.frame_name,
+                                payload=drc_bytes,
+                                frame_id=ros_msg.header.frame_id,
+                            )
+                            send_message(sock, message)
 
-        except ConnectionClosed:
-            self.get_logger().warning("Connection closed, stopping loop")
-        except Exception as e:
-            self.get_logger().error(f"Sender loop failed: {e}")
-        finally:
-            self._downlink_stop.set()
-            if self._downlink_thread and self._downlink_thread.is_alive():
-                self._downlink_thread.join(timeout=2.0)
+                            with self._metrics_lock:
+                                self._bytes_sent += len(drc_bytes)
+                                self._frames_sent += 1
+
+                            self.get_logger().info(
+                                f"Sent {message.name} ({len(drc_bytes)} bytes)"
+                            )
+
+                            reply = recv_message(sock)
+                            if reply is None:
+                                raise ConnectionClosed("server closed uplink")
+                            if reply.kind == MSG_ERROR:
+                                detail = reply.payload.decode(errors="ignore")
+                                self.get_logger().error(
+                                    f"SERVER ERROR for {message.name}: {reply.name} -> {detail}"
+                                )
+                                continue
+
+                            if reply.kind == MSG_DATA:
+                                with self._metrics_lock:
+                                    self._bytes_received += len(reply.payload)
+                        finally:
+                            self._msg_queue.task_done()
+
+            except ConnectionClosed:
+                if self._stop_event.is_set():
+                    break
+                self.get_logger().warning("Connection closed, will retry uplink")
+            except Exception as e:
+                if self._stop_event.is_set():
+                    break
+                self.get_logger().error(f"Sender loop error: {e}")
+            finally:
+                self._downlink_stop.set()
+                if self._downlink_thread and self._downlink_thread.is_alive():
+                    self._downlink_thread.join(timeout=2.0)
+
+            if self._stop_event.is_set():
+                break
+
+            wait_time = backoff
+            self.get_logger().info(
+                f"Retrying uplink connection to {self.server_host}:{self.server_port} in {wait_time:.1f}s"
+            )
+            self._stop_event.wait(wait_time)
+            backoff = min(backoff * 2.0, 5.0)
+
+    def _trim_queue_keep_latest(self, keep: int) -> None:
+        if keep <= 0:
+            keep = 1
+        kept: list[CompressedPointCloud] = []
+        while True:
+            try:
+                item = self._msg_queue.get_nowait()
+            except queue.Empty:
+                break
+            self._msg_queue.task_done()
+            kept.append(item)
+        if not kept:
+            return
+        to_keep = kept[-keep:]
+        dropped = len(kept) - len(to_keep)
+        for item in to_keep:
+            try:
+                self._msg_queue.put_nowait(item)
+            except queue.Full:
+                self._dropped_frames += 1
+                break
+        if dropped > 0:
+            self._dropped_frames += dropped
+            self.get_logger().info(
+                f"Trimmed {dropped} queued frames after uplink connection "
+                f"(keep_latest={keep}, total_dropped={self._dropped_frames})"
+            )
 
     def _downlink_loop(self, host: str, port: int, protocol: str) -> None:
         backoff = 1.0

@@ -44,6 +44,10 @@ def generate_launch_description() -> LaunchDescription:
     ]
     log_file_path.write_text('\n'.join(header_lines), encoding='utf-8')
 
+    map_dir = project_root / 'data' / 'maps'
+    map_dir.mkdir(parents=True, exist_ok=True)
+    map_db_path = map_dir / f'rtabmap_{log_timestamp.strftime("%Y%m%d_%H%M%S_%f")}.db'
+
     def _append_launch_output(event: ProcessIO) -> None:
         message = event.text.decode(encoding='utf-8', errors='replace')
         if not message:
@@ -78,6 +82,7 @@ def generate_launch_description() -> LaunchDescription:
     return LaunchDescription([
         log_event_handler,
         LogInfo(msg=f'런치 출력 로그 파일: {log_file_path}'),
+        LogInfo(msg=f'RTAB-Map DB 저장 위치: {map_db_path}'),
         DeclareLaunchArgument(
             'port',
             default_value='5000',
@@ -149,6 +154,7 @@ def generate_launch_description() -> LaunchDescription:
             launch_arguments={
                 'use_sim_time': use_sim_time,
                 'launch_robot_state_publisher': 'false', # Already launched above
+                'database_path': str(map_db_path),
             }.items(),
         ),
     ])

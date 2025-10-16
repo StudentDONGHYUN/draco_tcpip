@@ -1,22 +1,51 @@
 from __future__ import annotations
 
+import threading
 import time
-from typing import Callable, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Tuple
 
 import rclpy
 from rclpy.client import Client
 from rclpy.node import Node
-from rclpy.task import Future
+from rclpy.qos import (
+    DurabilityPolicy,
+    HistoryPolicy,
+    QoSDurabilityPolicy,
+    QoSProfile,
+    QoSReliabilityPolicy,
+)
 from rosgraph_msgs.msg import Clock
+from sensor_msgs.msg import PointCloud2
 from std_srvs.srv import Empty
+
+from lifecycle_msgs.msg import Transition
+from lifecycle_msgs.srv import ChangeState
 
 
 class TimeJumpResetNode(Node):
-    """감시 중인 시뮬레이션 시간이 과거로 되돌아갈 때 odom 관련 노드를 리셋한다."""
+    """
+    SLAM 관련 노드들의 라이프사이클을 관리하고, 시뮬레이션 시간이 점프했을 때 리셋을 수행한다.
+    - 시작 시: 관리 대상 노드를 'inactive' 상태로 전환하여 대기시킨다.
+    - 데이터 토픽 수신 시작 시: 노드를 'active' 상태로 전환한다.
+    - 시간 점프 감지 시: 비활성화 -> 리셋 -> 재활성화 시퀀스를 수행한다.
+    """
 
     def __init__(self) -> None:
-        super().__init__("time_jump_reset")
+        super().__init__("lifecycle_manager_node")
 
+        # 파라미터 선언
+        self.managed_nodes: List[str] = (
+            self.declare_parameter("managed_nodes", ["icp_odometry", "rtabmap"])
+            .get_parameter_value()
+            .string_array_value
+        )
+        self.reset_services: List[str] = (
+            self.declare_parameter(
+                "reset_services", ["/icp_odometry/reset", "/rtabmap/reset"]
+            )
+            .get_parameter_value()
+            .string_array_value
+        )
         self.jump_back_threshold_sec: float = (
             self.declare_parameter("jump_back_threshold_sec", 0.5)
             .get_parameter_value()
@@ -27,211 +56,340 @@ class TimeJumpResetNode(Node):
             .get_parameter_value()
             .double_value
         )
-        self.pause_services: List[str] = (
-            self.declare_parameter(
-                "pause_services",
-                ["/icp_odometry/pause", "/rtabmap/pause"],
-            )
+        self.cloud_topic: str = (
+            self.declare_parameter("cloud_topic", "/stream_pair/decoded")
             .get_parameter_value()
-            .string_array_value
-        )
-        self.resume_services: List[str] = (
-            self.declare_parameter(
-                "resume_services",
-                ["/icp_odometry/resume", "/rtabmap/resume"],
-            )
-            .get_parameter_value()
-            .string_array_value
-        )
-        self.reset_services: List[str] = (
-            self.declare_parameter(
-                "reset_services",
-                ["/icp_odometry/reset", "/rtabmap/reset_odom"],
-            )
-            .get_parameter_value()
-            .string_array_value
+            .string_value
         )
 
-        self._clock_subscription = self.create_subscription(
-            Clock, "/clock", self._on_clock, 10
-        )
-
-        all_service_names = set(
-            self.pause_services + self.resume_services + self.reset_services
-        )
-        self._service_clients: Dict[str, Client] = {
-            name: self.create_client(Empty, name) for name in all_service_names
-        }
-        self._pending_calls: Set[Future] = set()
-        self._missing_service_logs: Set[str] = set()
+        # 내부 상태 변수
         self._last_clock_sec: Optional[float] = None
         self._last_reset_monotonic: Optional[float] = None
-        self._resumed_once = False
+        self._is_system_active = False
 
-        # 초기 일시정지를 위한 상태 변수
-        self._paused_services: Set[str] = set()
-        self._initial_pause_done = False
-        self._pause_timer: Optional[rclpy.timer.Timer] = None
+        self._sequence_lock = threading.Lock()
+        self._state_lock = threading.Lock()
 
-        self.get_logger().info("노드 초기화 완료. 주기적으로 노드들을 일시정지하려고 시도합니다...")
-        self._pause_timer = self.create_timer(0.2, self._initial_pause_tick)
+        # 서비스 클라이언트 생성
+        self._change_state_clients: Dict[str, Tuple[str, Client]] = {}
+        self._change_state_candidates: Dict[str, List[str]] = {}
+        for node_name in self.managed_nodes:
+            candidates = self._candidate_change_state_service_names(node_name)
+            self._change_state_candidates[node_name] = candidates
+            service_name = self._select_available_change_state_service(candidates)
+            if service_name is None:
+                self.get_logger().warn(
+                    f"{node_name} 노드의 change_state 서비스가 아직 발견되지 않았습니다. 추후 재시도합니다."
+                )
+                continue
+            self._change_state_clients[node_name] = (
+                service_name,
+                self.create_client(ChangeState, service_name),
+            )
 
-    def _initial_pause_tick(self) -> None:
-        """초기 일시정지를 위해 주기적으로 서비스 호출을 시도한다."""
-        if self._initial_pause_done:
-            if self._pause_timer:
-                self._pause_timer.cancel()
-                self._pause_timer = None
-            return
+        self._reset_clients: Dict[str, Client] = {
+            name: self.create_client(Empty, name) for name in self.reset_services
+        }
 
-        services_to_try = [
-            s for s in self.pause_services if s not in self._paused_services
-        ]
-
-        if not services_to_try:
-            if not self._initial_pause_done:
-                self.get_logger().info("초기 일시정지 완료: 모든 노드가 성공적으로 정지되었습니다.")
-                self._initial_pause_done = True
-                if self._pause_timer:
-                    self._pause_timer.cancel()
-                    self._pause_timer = None
-            return
-
-        self.get_logger().debug(f"초기 일시정지 시도: {services_to_try}")
-        self._call_services(
-            services_to_try, on_success_callback=self._on_initial_pause_success
+        # 데이터 및 Clock 구독자
+        # 데이터가 처음 들어올 때 활성화를 트리거하기 위한 구독
+        data_qos = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+        self._data_subscription = self.create_subscription(
+            PointCloud2, self.cloud_topic, self._on_data_received, data_qos
         )
 
-    def _on_initial_pause_success(self, service_name: str) -> None:
-        """초기 일시정지 서비스 호출 성공 시 호출되는 콜백."""
-        if service_name not in self._paused_services:
-            self.get_logger().info(f"초기 일시정지 성공: {service_name}")
-            self._paused_services.add(service_name)
+        clock_qos = QoSProfile(
+            depth=10,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            durability=QoSDurabilityPolicy.VOLATILE,
+        )
+        self._clock_subscription = self.create_subscription(
+            Clock, "/clock", self._on_clock, clock_qos
+        )
 
-    def _call_services(
-        self,
-        service_names: List[str],
-        silent: bool = False,
-        on_success_callback: Optional[Callable[[str], None]] = None,
-    ) -> List[Future]:
-        """주어진 이름의 서비스들을 비동기적으로 호출한다."""
-        futures = []
-        for name in service_names:
-            client = self._service_clients.get(name)
-            if not client:
-                if not silent:
-                    self.get_logger().error(f"{name}에 대한 서비스 클라이언트가 없습니다.")
+        # 초기 configure 시퀀스 예약
+        self.get_logger().info(f"라이프사이클 매니저 시작. 관리 대상: {self.managed_nodes}")
+        self.get_logger().info(f"데이터 수신 대기 중... 토픽: {self.cloud_topic}")
+        self._initial_configuration_timer = self.create_timer(
+            1.0, self._initial_configuration_sequence
+        )
+
+    def _initial_configuration_sequence(self) -> None:
+        """노드 시작 시, 관리 대상 노드들을 'inactive' 상태로 만든다."""
+        if self._initial_configuration_timer is None:
+            return
+        self._initial_configuration_timer.cancel()
+        self._initial_configuration_timer = None
+
+        threading.Thread(target=self._run_initial_configuration, daemon=True).start()
+
+    def _run_initial_configuration(self) -> None:
+        with self._sequence_lock:
+            self.get_logger().info("초기 설정 시퀀스 시작: 모든 노드를 'inactive' 상태로 전환합니다.")
+            success = self._call_transition_for_all(Transition.TRANSITION_CONFIGURE)
+            if success:
+                self.get_logger().info("초기 설정 완료. 모든 노드가 데이터 수신을 대기 중입니다.")
+            else:
+                self.get_logger().warn("일부 노드에서 configure 전환에 실패했습니다.")
+
+    def _on_data_received(self, msg: PointCloud2) -> None:
+        """데이터가 처음 수신되면 시스템을 활성화하고, 이 구독은 파괴한다."""
+        with self._state_lock:
+            if self._is_system_active:
+                return
+
+        self.get_logger().info(f"'{self.cloud_topic}' 토픽에서 첫 데이터 수신. SLAM 시스템을 활성화합니다.")
+        
+        # 활성화는 한 번만 수행
+        if self._data_subscription:
+            self.destroy_subscription(self._data_subscription)
+            self._data_subscription = None
+
+        threading.Thread(target=self._activate_system, daemon=True).start()
+
+    def _activate_system(self) -> None:
+        with self._sequence_lock:
+            with self._state_lock:
+                if self._is_system_active:
+                    return
+            self.get_logger().info("시스템 활성화: 모든 노드를 'active' 상태로 전환합니다.")
+            success = self._call_transition_for_all(Transition.TRANSITION_ACTIVATE)
+            with self._state_lock:
+                self._is_system_active = success
+            if success:
+                self.get_logger().info("시스템 활성화 완료.")
+            else:
+                self.get_logger().error("시스템 활성화 실패.")
+
+    def _deactivate_system(self) -> None:
+        with self._sequence_lock:
+            with self._state_lock:
+                if not self._is_system_active:
+                    return
+            self.get_logger().info("시스템 비활성화: 모든 노드를 'inactive' 상태로 전환합니다.")
+            success = self._call_transition_for_all(Transition.TRANSITION_DEACTIVATE)
+            if success:
+                with self._state_lock:
+                    self._is_system_active = False
+                self.get_logger().info("시스템 비활성화 완료.")
+            else:
+                self.get_logger().error("시스템 비활성화 실패.")
+
+    def _trigger_reset_sequence(self) -> None:
+        if not self._sequence_lock.acquire(blocking=False):
+            self.get_logger().warn("다른 상태 전환이 진행 중이므로 리셋을 건너뜁니다.")
+            return
+        try:
+            self.get_logger().info("1/3: 노드들을 비활성화합니다.")
+            deactivate_success = self._call_transition_for_all(
+                Transition.TRANSITION_DEACTIVATE
+            )
+            if deactivate_success:
+                with self._state_lock:
+                    self._is_system_active = False
+
+            self.get_logger().info("2/3: 노드들의 상태를 리셋합니다.")
+            self._call_reset_services()
+
+            self.get_logger().info("3/3: 노드들을 다시 활성화합니다.")
+            activate_success = self._call_transition_for_all(
+                Transition.TRANSITION_ACTIVATE
+            )
+            with self._state_lock:
+                self._is_system_active = activate_success
+
+            if activate_success:
+                self.get_logger().warn("리셋 시퀀스가 완료되었습니다.")
+            else:
+                self.get_logger().error("리셋 시퀀스 실패: 활성화 단계에서 오류가 발생했습니다.")
+        finally:
+            self._sequence_lock.release()
+
+    def _call_reset_services(self) -> None:
+        for service_name, client in self._reset_clients.items():
+            if not self._wait_for_service(client, service_name):
+                self.get_logger().error(f"{service_name} 리셋 서비스를 사용할 수 없습니다.")
+                continue
+            try:
+                client.call(Empty.Request())
+            except Exception as exc:  # pylint: disable=broad-except
+                self.get_logger().error(f"{service_name} 리셋 호출 실패: {exc}")
+
+    def _call_transition_for_all(self, transition_id: int) -> bool:
+        overall_success = True
+        for node_name in self.managed_nodes:
+            client_entry = self._ensure_change_state_client(node_name)
+            if client_entry is None:
+                self.get_logger().error(
+                    f"{node_name} 전환 실패(id={transition_id}): change_state 서비스를 사용할 수 없습니다."
+                )
+                overall_success = False
                 continue
 
-            if not client.wait_for_service(timeout_sec=0.2):
-                if not silent and name not in self._missing_service_logs:
-                    self.get_logger().warning(
-                        f"서비스 {name} 를 사용할 수 없습니다. 이후 다시 시도합니다."
-                    )
-                    self._missing_service_logs.add(name)
+            service_name, client = client_entry
+            if not self._wait_for_service(client, service_name):
+                self.get_logger().error(f"{service_name} 서비스를 사용할 수 없습니다.")
+                overall_success = False
                 continue
 
-            if name in self._missing_service_logs:
-                self.get_logger().info(f"서비스 {name} 가 사용 가능해졌습니다.")
-                self._missing_service_logs.remove(name)
+            request = ChangeState.Request()
+            request.transition.id = transition_id
+            try:
+                response = client.call(request)
+            except Exception as exc:  # pylint: disable=broad-except
+                self.get_logger().error(
+                    f"{node_name} 전환 실패(id={transition_id}): {exc}"
+                )
+                overall_success = False
+                continue
 
-            request = Empty.Request()
-            future = client.call_async(request)
-            self._pending_calls.add(future)
-            futures.append(future)
+            if not response.success:
+                self.get_logger().error(
+                    f"{node_name} 전환 실패(id={transition_id}). 성공=False"
+                )
+                overall_success = False
+        return overall_success
 
-            def on_call_done(fut: Future, service_name: str = name) -> None:
-                try:
-                    fut.result()
-                    if not silent:
-                        self.get_logger().info(f"서비스 {service_name} 호출을 완료했습니다.")
-                    if on_success_callback:
-                        on_success_callback(service_name)
-                except Exception as exc:
-                    if not silent:
-                        self.get_logger().error(
-                            f"서비스 {service_name} 호출에 실패했습니다: {exc}"
-                        )
-                finally:
-                    if fut in self._pending_calls:
-                        self._pending_calls.remove(fut)
+    @staticmethod
+    def _wait_for_service(client: Client, _name: str, retries: int = 5) -> bool:
+        for _ in range(retries):
+            if client.wait_for_service(timeout_sec=1.0):
+                return True
+        return False
 
-            future.add_done_callback(on_call_done)
-        return futures
+    def _candidate_change_state_service_names(self, node_name: str) -> List[str]:
+        expected_type = "lifecycle_msgs/srv/ChangeState"
+        namespace, base_name = self._split_namespace(node_name)
+
+        names: List[str] = []
+        try:
+            service_entries = self.get_service_names_and_types_by_node(
+                base_name, namespace
+            )
+        except Exception as exc:  # pylint: disable=broad-except
+            self.get_logger().debug(
+                f"{node_name} 서비스 목록을 아직 조회할 수 없습니다: {exc}"
+            )
+            service_entries = []
+
+        for service_name, service_types in service_entries:
+            if (
+                service_name.endswith("/change_state")
+                and expected_type in service_types
+            ):
+                names.append(service_name)
+
+        normalized = node_name if node_name.startswith("/") else f"/{node_name}"
+        fallback = [f"{normalized}/change_state"]
+        for candidate in fallback:
+            if candidate not in names:
+                names.append(candidate)
+
+        seen: Dict[str, None] = {}
+        for name in names:
+            if name not in seen:
+                seen[name] = None
+        return list(seen.keys())
+
+    def _select_available_change_state_service(
+        self, candidates: List[str]
+    ) -> Optional[str]:
+        expected_type = "lifecycle_msgs/srv/ChangeState"
+        for candidate in candidates:
+            if self._service_exists(candidate, expected_type):
+                return candidate
+        return None
+
+    def _ensure_change_state_client(
+        self, node_name: str
+    ) -> Optional[Tuple[str, Client]]:
+        candidates = self._change_state_candidates.get(node_name)
+        refreshed = self._candidate_change_state_service_names(node_name)
+        if refreshed:
+            candidates = refreshed
+            self._change_state_candidates[node_name] = refreshed
+        elif candidates is None:
+            candidates = []
+
+        service_name = self._select_available_change_state_service(candidates or [])
+        if service_name is None:
+            existing = self._change_state_clients.get(node_name)
+            if existing is not None:
+                return existing
+            return None
+
+        existing = self._change_state_clients.get(node_name)
+        if existing and existing[0] == service_name:
+            return existing
+
+        client = self.create_client(ChangeState, service_name)
+        self._change_state_clients[node_name] = (service_name, client)
+        self.get_logger().info(
+            f"{node_name} change_state 서비스 경로를 {service_name} 로 설정했습니다."
+        )
+        return self._change_state_clients[node_name]
+
+    def _service_exists(self, service_name: str, expected_type: str) -> bool:
+        for name, service_types in self.get_service_names_and_types():
+            if name == service_name and expected_type in service_types:
+                return True
+        return False
+
+    @staticmethod
+    def _split_namespace(node_name: str) -> Tuple[str, str]:
+        if not node_name:
+            return "/", ""
+        full_name = node_name if node_name.startswith("/") else f"/{node_name}"
+        namespace, _, base_name = full_name.rpartition("/")
+        if namespace == "":
+            namespace = "/"
+        return namespace, base_name
 
     def _on_clock(self, msg: Clock) -> None:
+        """Clock 메시지를 수신하면 시간 점프를 감지한다."""
+        with self._state_lock:
+            if not self._is_system_active:
+                return  # 시스템이 활성화되기 전에는 시간 점프를 감지하지 않음
+
         current_sec = float(msg.clock.sec) + float(msg.clock.nanosec) * 1e-9
 
-        if not self._resumed_once:
-            self.get_logger().info("/clock 토픽 수신 시작. SLAM 시스템을 재개합니다.")
-            if self._pause_timer:
-                self.get_logger().info("초기 일시정지 타이머를 중지합니다.")
-                self._pause_timer.cancel()
-                self._pause_timer = None
-            self._initial_pause_done = True  # 클락 수신 시작 시 초기 일시정지 시도 중단
-
-            self._call_services(self.resume_services)
-            self._resumed_once = True
-            self._last_clock_sec = current_sec
-            return
-
-        if self._last_clock_sec is None:
-            self._last_clock_sec = current_sec
-            return
-
-        if current_sec < self._last_clock_sec - 1e-9:  # 시간 점프 감지
-            jump = self._last_clock_sec - current_sec
-            if jump >= self.jump_back_threshold_sec:
-                now_monotonic = time.monotonic()
-                if (
-                    self._last_reset_monotonic is None
-                    or now_monotonic - self._last_reset_monotonic
-                    >= self.reset_cooldown_sec
-                ):
-                    self._last_reset_monotonic = now_monotonic
-                    self._trigger_reset_sequence(jump)
-            else:
-                self.get_logger().debug(
-                    f"감지된 시간 점프({jump:.3f}s)가 임계값보다 작아 무시되었습니다."
-                )
+        if self._last_clock_sec is not None:
+            if current_sec < self._last_clock_sec - 1e-9:
+                jump = self._last_clock_sec - current_sec
+                if jump >= self.jump_back_threshold_sec:
+                    now_monotonic = time.monotonic()
+                    if (
+                        self._last_reset_monotonic is None
+                        or now_monotonic - self._last_reset_monotonic
+                        >= self.reset_cooldown_sec
+                    ):
+                        self._last_reset_monotonic = now_monotonic
+                        self.get_logger().warn(
+                            f"시뮬레이션 시간이 {jump:.3f}s 만큼 과거로 이동했습니다. 리셋 시퀀스를 시작합니다."
+                        )
+                        threading.Thread(
+                            target=self._trigger_reset_sequence, daemon=True
+                        ).start()
 
         self._last_clock_sec = current_sec
-
-    def _trigger_reset_sequence(self, jump: float) -> None:
-        self.get_logger().warn(
-            f"시뮬레이션 시간이 {jump:.3f}s 만큼 과거로 이동했습니다. 리셋 시퀀스를 시작합니다."
-        )
-
-        # 1. Pause
-        self.get_logger().info("1/3: 노드들을 일시정지합니다.")
-        pause_futures = self._call_services(self.pause_services)
-
-        def on_pause_done(all_pause_futures: Future) -> None:
-            # 2. Reset
-            self.get_logger().info("2/3: 노드들의 상태를 리셋합니다.")
-            reset_futures = self._call_services(self.reset_services)
-
-            def on_reset_done(all_reset_futures: Future) -> None:
-                # 3. Resume
-                self.get_logger().info("3/3: 노드들을 재개합니다.")
-                self._call_services(self.resume_services)
-                self.get_logger().warn("리셋 시퀀스가 완료되었습니다.")
-
-            # 모든 리셋 호출이 완료되면 on_reset_done 실행
-            rclpy.task.when_all(reset_futures).add_done_callback(on_reset_done)
-
-        # 모든 일시정지 호출이 완료되면 on_pause_done 실행
-        rclpy.task.when_all(pause_futures).add_done_callback(on_pause_done)
 
 
 def main() -> None:
     rclpy.init()
     node = TimeJumpResetNode()
+    executor = rclpy.executors.MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":
