@@ -15,7 +15,7 @@ def generate_launch_description() -> LaunchDescription:
 
     # Find and read the URDF file
     urdf_path = os.path.join(
-        get_package_share_directory('slam_stream_bridge'),
+        get_package_share_directory('draco_roundtrip'),
         'urdf',
         'robot.urdf'
     )

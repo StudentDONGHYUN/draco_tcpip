@@ -12,7 +12,7 @@ def generate_launch_description():
     )
 
     urdf_path = os.path.join(
-        get_package_share_directory('slam_stream_bridge'), 'urdf', 'robot.urdf'
+        get_package_share_directory('draco_roundtrip'), 'urdf', 'robot.urdf'
     )
     with open(urdf_path, 'r') as f:
         robot_description = f.read()
