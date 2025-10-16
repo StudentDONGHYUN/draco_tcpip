@@ -255,15 +255,16 @@ class StreamServerNode(Node):
                 self.get_logger().debug(f"Received {stem} ({len(msg.payload)} bytes)")
 
                 try:
-                    metadata_size = struct.calcsize('!IQQQ')
-                    metadata = struct.unpack('!IQQQ', msg.payload[:metadata_size])
-                    seq, original_size, compression_time_ns, send_time_ns = metadata
+                    metadata_size = struct.calcsize('!IIQQQ')
+                    metadata = struct.unpack('!IIQQQ', msg.payload[:metadata_size])
+                    seq, original_num_points, original_size, compression_time_ns, send_time_ns = metadata
                     drc_bytes = msg.payload[metadata_size:]
 
                     decompress_start_ns = time.monotonic_ns()
                     points = decode_drc_to_points(drc_bytes)
                     decompress_end_ns = time.monotonic_ns()
                     decompression_time_ns = decompress_end_ns - decompress_start_ns
+                    decoded_num_points = points.shape[0]
 
                 except Exception as exc:
                     error_msg = Message(kind=MSG_ERROR, name=stem, payload=str(exc).encode())
@@ -277,6 +278,8 @@ class StreamServerNode(Node):
                 session_metrics.append({
                     'seq': seq,
                     'original_size': original_size,
+                    'original_num_points': original_num_points,
+                    'decoded_num_points': decoded_num_points,
                     'compressed_size': len(drc_bytes),
                     'compression_time_ns': compression_time_ns,
                     'decompression_time_ns': decompression_time_ns,
@@ -467,28 +470,32 @@ class StreamServerNode(Node):
         avg_compression_time_ms = sum(m['compression_time_ns'] for m in metrics) / num_received / 1e6
         avg_decompression_time_ms = sum(m['decompression_time_ns'] for m in metrics) / num_received / 1e6
 
+        total_original_points = sum(m['original_num_points'] for m in metrics)
+        total_decoded_points = sum(m['decoded_num_points'] for m in metrics)
+        avg_point_retention_rate = (total_decoded_points / total_original_points) * 100 if total_original_points > 0 else 0
+
         # --- Plotting ---
         frame_indices = [m['seq'] for m in metrics]
         latency_plot_b64 = self._create_plot_base64(
-            frame_indices, latencies_ms, 'End-to-End Latency per Frame', 'Frame Sequence', 'Latency (ms)', 'r'
+            frame_indices, latencies_ms, '프레임별 종단 간 지연 시간', '프레임 순서', '지연 시간 (ms)', 'r'
         )
         throughput_kb = [m['compressed_size'] / 1024 for m in metrics]
         throughput_plot_b64 = self._create_plot_base64(
-            frame_indices, throughput_kb, 'Per-Frame Throughput', 'Frame Sequence', 'Compressed Size (KB)', 'g'
+            frame_indices, throughput_kb, '프레임별 처리량', '프레임 순서', '압축된 크기 (KB)', 'g'
         )
         ratios = [m['original_size'] / m['compressed_size'] if m['compressed_size'] > 0 else 0 for m in metrics]
         ratio_plot_b64 = self._create_plot_base64(
-            frame_indices, ratios, 'Per-Frame Compression Ratio', 'Frame Sequence', 'Ratio', 'b'
+            frame_indices, ratios, '프레임별 압축률', '프레임 순서', '비율', 'b'
         )
 
         # --- HTML Generation ---
         html_content = f"""
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Session Performance Report</title>
+    <title>서버 세션 성능 보고서</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 2rem; background-color: #f4f7f9; color: #333; }}
         .container {{ max-width: 1200px; margin: auto; background: white; padding: 2rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; }}
@@ -506,34 +513,42 @@ class StreamServerNode(Node):
 </head>
 <body>
     <div class="container">
-        <h1>Server Session Performance Report</h1>
-        <p><strong>Report Generated:</strong> {datetime.now().isoformat()}</p>
+        <h1>서버 세션 성능 보고서</h1>
+        <p><strong>보고서 생성:</strong> {datetime.now().isoformat()}</p>
         
-        <h2>Summary</h2>
+        <h2>요약</h2>
         <div class="summary-grid">
-            <div class="metric-card"><div class="value">{num_received}</div><div class="label">Frames Received</div></div>
-            <div class="metric-card"><div class="value">{lost_frames}</div><div class="label">Frames Lost ({loss_rate:.2f}%)</div></div>
-            <div class="metric-card"><div class="value">{fps:.2f}</div><div class="label">Average FPS</div></div>
-            <div class="metric-card"><div class="value">{bandwidth_mbps:.3f}</div><div class="label">Avg Throughput (Mbps)</div></div>
+            <div class="metric-card"><div class="value">{num_received}</div><div class="label">수신된 프레임</div></div>
+            <div class="metric-card"><div class="value">{lost_frames}</div><div class="label">손실된 프레임 ({loss_rate:.2f}%)</div></div>
+            <div class="metric-card"><div class="value">{fps:.2f}</div><div class="label">평균 FPS</div></div>
+            <div class="metric-card"><div class="value">{bandwidth_mbps:.3f}</div><div class="label">평균 처리량 (Mbps)</div></div>
         </div>
 
-        <h2>Latency & Processing</h2>
+        <h2>지연 시간 & 처리</h2>
         <table>
-            <tr><th>Metric</th><th>Value</th></tr>
-            <tr><td>Avg. End-to-End Latency</td><td>{avg_latency_ms:.3f} ms</td></tr>
-            <tr><td>Avg. Compression Time (client)</td><td>{avg_compression_time_ms:.3f} ms</td></tr>
-            <tr><td>Avg. Decompression Time (server)</td><td>{avg_decompression_time_ms:.3f} ms</td></tr>
+            <tr><th>항목</th><th>값</th></tr>
+            <tr><td>평균 종단 간 지연 시간</td><td>{avg_latency_ms:.3f} ms</td></tr>
+            <tr><td>평균 압축 시간 (클라이언트)</td><td>{avg_compression_time_ms:.3f} ms</td></tr>
+            <tr><td>평균 압축 해제 시간 (서버)</td><td>{avg_decompression_time_ms:.3f} ms</td></tr>
         </table>
 
-        <h2>Compression</h2>
+        <h2>압축</h2>
         <table>
-            <tr><th>Metric</th><th>Value</th></tr>
-            <tr><td>Avg. Compression Ratio</td><td>{compression_ratio:.2f} : 1</td></tr>
-            <tr><td>Total Original Size</td><td>{total_original_size / 1e6:.2f} MB</td></tr>
-            <tr><td>Total Compressed Size</td><td>{total_compressed_size / 1e6:.2f} MB</td></tr>
+            <tr><th>항목</th><th>값</th></tr>
+            <tr><td>평균 압축률</td><td>{compression_ratio:.2f} : 1</td></tr>
+            <tr><td>총 원본 크기</td><td>{total_original_size / 1e6:.2f} MB</td></tr>
+            <tr><td>총 압축된 크기</td><td>{total_compressed_size / 1e6:.2f} MB</td></tr>
         </table>
 
-        <h2>Per-Frame Analysis</h2>
+        <h2>포인트 수</h2>
+        <table>
+            <tr><th>항목</th><th>값</th></tr>
+            <tr><td>평균 포인트 유지율</td><td>{avg_point_retention_rate:.2f} %</td></tr>
+            <tr><td>총 원본 포인트 수</td><td>{total_original_points:,}</td></tr>
+            <tr><td>총 복원된 포인트 수</td><td>{total_decoded_points:,}</td></tr>
+        </table>
+
+        <h2>프레임별 분석</h2>
         <div class="plot">
             <h2>End-to-End Latency</h2>
             <img src="data:image/png;base64,{latency_plot_b64}" alt="Latency Plot">

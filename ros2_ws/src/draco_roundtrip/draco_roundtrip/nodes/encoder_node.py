@@ -59,6 +59,7 @@ class EncodingJob:
     header: object  # std_msgs.msg.Header
     future: Future[EncodeResult]
     original_size: int
+    original_num_points: int
 
 
 class EncoderNode(Node):
@@ -151,12 +152,14 @@ class EncoderNode(Node):
                     self.get_logger().info(f"Skipping empty point cloud frame {frame_name}.")
                     continue
                 original_size = pts_src.nbytes
+                original_num_points = pts_src.shape[0]
                 future = self._executor.submit(encode_points, pts_src, self.encoder_options)
                 job = EncodingJob(
                     frame_name=frame_name,
                     header=msg.header,
                     future=future,
                     original_size=original_size,
+                    original_num_points=original_num_points,
                 )
                 self._future_queue.put(job)
                 frame_idx += 1
@@ -187,6 +190,7 @@ class EncoderNode(Node):
                 msg.frame_name = job.frame_name
                 msg.data = list(drc_bytes)
                 msg.original_size = job.original_size
+                msg.original_num_points = job.original_num_points
                 msg.compression_time_ns = compression_time_ns
                 self.pub_compressed.publish(msg)
 
@@ -196,6 +200,7 @@ class EncoderNode(Node):
                 self._metrics.append({
                     'frame_name': job.frame_name,
                     'original_size': job.original_size,
+                    'original_num_points': job.original_num_points,
                     'compressed_size': len(drc_bytes),
                     'compression_time_ns': compression_time_ns,
                 })

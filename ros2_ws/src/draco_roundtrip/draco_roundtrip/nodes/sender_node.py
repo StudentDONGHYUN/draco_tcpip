@@ -309,11 +309,17 @@ class SenderNode(Node):
                                 seq = self._frames_sent
 
                             send_time_ns = time.monotonic_ns()
-                            drc_bytes = bytes(ros_msg.data)
-
-                            metadata = struct.pack('!IQQQ', seq, ros_msg.original_size, ros_msg.compression_time_ns, send_time_ns)
-                            payload = metadata + drc_bytes
-
+                                                    drc_bytes = bytes(ros_msg.data)
+                            
+                                                    metadata = struct.pack(
+                                                        '!IIQQQ', 
+                                                        seq, 
+                                                        ros_msg.original_num_points,
+                                                        ros_msg.original_size, 
+                                                        ros_msg.compression_time_ns, 
+                                                        send_time_ns
+                                                    )
+                                                    payload = metadata + drc_bytes
                             message = Message(
                                 kind=MSG_DATA,
                                 name=ros_msg.frame_name,
