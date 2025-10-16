@@ -99,9 +99,7 @@ class TimeJumpResetNode(Node):
 
         self.get_logger().debug(f"초기 일시정지 시도: {services_to_try}")
         self._call_services(
-            services_to_try,
-            silent=True,
-            on_success_callback=self._on_initial_pause_success,
+            services_to_try, on_success_callback=self._on_initial_pause_success
         )
 
     def _on_initial_pause_success(self, service_name: str) -> None:
