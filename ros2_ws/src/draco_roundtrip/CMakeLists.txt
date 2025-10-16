@@ -35,6 +35,11 @@ install(
 )
 
 install(
+  DIRECTORY urdf
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
   FILES draco_roundtrip/configs/qos_override.yaml
   DESTINATION share/${PROJECT_NAME}/config
 )
