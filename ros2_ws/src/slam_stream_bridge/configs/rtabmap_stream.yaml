@@ -42,6 +42,7 @@ rtabmap:
     Voxel/Size: "0.2"
     Rtabmap/SaveWMState: "false"
     Rtabmap/SavePointCloud: "true"
+    Rtabmap/StartInPausedMode: true
 
 icp_odometry:
   ros__parameters:
