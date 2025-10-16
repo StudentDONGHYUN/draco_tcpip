@@ -283,53 +283,54 @@ class SenderNode(Node):
                             continue
 
                         try:
-                            seq = int(ros_msg.frame_name.split('_')[-1])
-                        except (ValueError, IndexError):
-                            seq = self._frames_sent
+                            try:
+                                seq = int(ros_msg.frame_name.split('_')[-1])
+                            except (ValueError, IndexError):
+                                seq = self._frames_sent
 
-                        send_time_ns = time.monotonic_ns()
-                        drc_bytes = bytes(ros_msg.data)
+                            send_time_ns = time.monotonic_ns()
+                            drc_bytes = bytes(ros_msg.data)
 
-                        metadata = struct.pack('!IQQQ', seq, ros_msg.original_size, ros_msg.compression_time_ns, send_time_ns)
-                        payload = metadata + drc_bytes
+                            metadata = struct.pack('!IQQQ', seq, ros_msg.original_size, ros_msg.compression_time_ns, send_time_ns)
+                            payload = metadata + drc_bytes
 
-                        message = Message(
-                            kind=MSG_DATA,
-                            name=ros_msg.frame_name,
-                            payload=payload,
-                            frame_id=ros_msg.header.frame_id,
-                        )
-                        send_message(sock, message)
-
-                        with self._metrics_lock:
-                            self._bytes_sent += len(payload)
-                            self._frames_sent += 1
-                            self._metrics.append({
-                                'seq': seq,
-                                'original_size': ros_msg.original_size,
-                                'compressed_size': len(drc_bytes),
-                                'payload_size': len(payload),
-                                'compression_time_ns': ros_msg.compression_time_ns,
-                                'send_time_ns': send_time_ns,
-                            })
-
-                        self.get_logger().info(
-                            f"Sent {message.name} ({len(payload)} bytes)"
-                        )
-
-                        reply = recv_message(sock)
-                        if reply is None:
-                            raise ConnectionClosed("server closed uplink")
-                        if reply.kind == MSG_ERROR:
-                            detail = reply.payload.decode(errors="ignore")
-                            self.get_logger().error(
-                                f"SERVER ERROR for {message.name}: {reply.name} -> {detail}"
+                            message = Message(
+                                kind=MSG_DATA,
+                                name=ros_msg.frame_name,
+                                payload=payload,
+                                frame_id=ros_msg.header.frame_id,
                             )
-                            continue
+                            send_message(sock, message)
 
-                        if reply.kind == MSG_DATA:
                             with self._metrics_lock:
-                                self._bytes_received += len(reply.payload)
+                                self._bytes_sent += len(payload)
+                                self._frames_sent += 1
+                                self._metrics.append({
+                                    'seq': seq,
+                                    'original_size': ros_msg.original_size,
+                                    'compressed_size': len(drc_bytes),
+                                    'payload_size': len(payload),
+                                    'compression_time_ns': ros_msg.compression_time_ns,
+                                    'send_time_ns': send_time_ns,
+                                })
+
+                            self.get_logger().info(
+                                f"Sent {message.name} ({len(payload)} bytes)"
+                            )
+
+                            reply = recv_message(sock)
+                            if reply is None:
+                                raise ConnectionClosed("server closed uplink")
+                            if reply.kind == MSG_ERROR:
+                                detail = reply.payload.decode(errors="ignore")
+                                self.get_logger().error(
+                                    f"SERVER ERROR for {message.name}: {reply.name} -> {detail}"
+                                )
+                                continue
+
+                            if reply.kind == MSG_DATA:
+                                with self._metrics_lock:
+                                    self._bytes_received += len(reply.payload)
                         finally:
                             self._msg_queue.task_done()
 
