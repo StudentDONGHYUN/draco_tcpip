@@ -49,12 +49,13 @@
 
 2. `/home/kkit/newdisk/draco_tcpip/configs/rtabmap_stream.yaml`
    - **정보**: RTAB-Map 스트리밍 설정
-   - **분석**: 
+   - **분석**:
      - SLAM 노드 설정:
-       - 프레임 설정
-       - 메모리 관리
-       - 루프 클로저 파라미터
-       - 그리드 맵 설정
+      - 프레임 설정
+        - `frame_id`는 `base_link`, `odom_frame_id`는 `odom`으로 유지해 로봇 상태 퍼블리셔가 제공하는 `base_link -> lidar_frame` 정적 변환과 충돌하지 않도록 함. LiDAR 데이터는 여전히 `lidar_frame`에서 수신되지만, 오도메트리 출력은 `odom -> base_link` 체인을 유지해 TF 트리에서 부모가 이중으로 정의되는 문제를 방지함.
+     - 메모리 관리
+     - 루프 클로저 파라미터
+     - 그리드 맵 설정
      - ICP 오도메트리 노드 설정:
        - 포인트 투 플레인 ICP
        - 복셀 크기 0.2m
