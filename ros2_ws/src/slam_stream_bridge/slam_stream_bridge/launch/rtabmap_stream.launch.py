@@ -17,6 +17,12 @@ def generate_launch_description():
     with open(urdf_path, 'r') as f:
         robot_description = f.read()
 
+    launch_robot_state_publisher_arg = DeclareLaunchArgument(
+        'launch_robot_state_publisher',
+        default_value='false',
+        description='Whether to launch the robot_state_publisher node.'
+    )
+
     params_arg = DeclareLaunchArgument(
         'params_file',
         default_value=default_params,
@@ -61,7 +67,8 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'robot_description': robot_description,
-        }]
+        }],
+        condition=IfCondition(LaunchConfiguration('launch_robot_state_publisher'))
     )
 
     static_transform_publisher_node = Node(
@@ -121,6 +128,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        launch_robot_state_publisher_arg,
         params_arg,
         cloud_topic_arg,
         use_sim_time_arg,

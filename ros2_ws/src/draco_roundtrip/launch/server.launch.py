@@ -1,3 +1,5 @@
+import os
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
@@ -10,6 +12,15 @@ def generate_launch_description() -> LaunchDescription:
     downlink_port = LaunchConfiguration('downlink_port')
     use_sim_time = LaunchConfiguration('use_sim_time')
     publish_tf_fallback = LaunchConfiguration('publish_tf_fallback')
+
+    # Find and read the URDF file
+    urdf_path = os.path.join(
+        get_package_share_directory('slam_stream_bridge'),
+        'urdf',
+        'robot.urdf'
+    )
+    with open(urdf_path, 'r') as f:
+        robot_description = f.read()
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -30,6 +41,19 @@ def generate_launch_description() -> LaunchDescription:
             'publish_tf_fallback',
             default_value='true',
             description='Publish identity TFs when map/odom frames are missing.'),
+        
+        # Add robot_state_publisher
+        Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            name='robot_state_publisher',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'robot_description': robot_description,
+            }]
+        ),
+
         Node(
             package='draco_roundtrip',
             executable='stream_server',
@@ -53,7 +77,7 @@ def generate_launch_description() -> LaunchDescription:
                 'use_sim_time': use_sim_time,
                 'world_frame_id': 'map',
                 'odom_frame_id': 'odom',
-                'base_frame_id': '',
+                'base_frame_id': 'base_link',
                 'sensor_frame_id': 'lidar_frame',
             }],
         ),
