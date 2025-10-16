@@ -1,0 +1,1052 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true run_slam:=true
+# 생성 시각: 2025-10-16T13:46:09.708852
+[2025-10-16 13:46:09.804927][robot_state_publisher-1][STDERR] [INFO] [1760589969.804241714] [robot_state_publisher]: got segment base_link
+[2025-10-16 13:46:09.806882][robot_state_publisher-1][STDERR] [INFO] [1760589969.805305607] [robot_state_publisher]: got segment lidar_frame
+[2025-10-16 13:46:10.160193][time_jump_reset-5][STDERR] [INFO] [1760589970.159633159] [time_jump_reset]: 노드 초기화 완료. 클라이언트 연결 및 /clock 수신 대기 중...
+[2025-10-16 13:46:10.274473][rtabmap-4][STDERR] [WARN] [1760589970.274053907] [rtabmap]: Parameter "queue_size" has been renamed to "sync_queue_size" and will be removed in future versions! The value (10) is copied to "sync_queue_size".
+[2025-10-16 13:46:10.288421][rtabmap-4][STDERR] [INFO] [1760589970.287922858] [rtabmap]: rtabmap(maps): latch                      = true
+[2025-10-16 13:46:10.288421][rtabmap-4][STDERR] [INFO] [1760589970.287963060] [rtabmap]: rtabmap(maps): map_filter_radius          = 0.000000
+[2025-10-16 13:46:10.292226][rtabmap-4][STDERR] [INFO] [1760589970.287984761] [rtabmap]: rtabmap(maps): map_filter_angle           = 30.000000
+[2025-10-16 13:46:10.292226][rtabmap-4][STDERR] [INFO] [1760589970.287996342] [rtabmap]: rtabmap(maps): map_cleanup                = true
+[2025-10-16 13:46:10.292226][rtabmap-4][STDERR] [INFO] [1760589970.288005640] [rtabmap]: rtabmap(maps): map_always_update          = false
+[2025-10-16 13:46:10.292226][rtabmap-4][STDERR] [INFO] [1760589970.288014488] [rtabmap]: rtabmap(maps): map_empty_ray_tracing      = true
+[2025-10-16 13:46:10.292226][rtabmap-4][STDERR] [INFO] [1760589970.288023228] [rtabmap]: rtabmap(maps): cloud_output_voxelized     = true
+[2025-10-16 13:46:10.292226][rtabmap-4][STDERR] [INFO] [1760589970.288034900] [rtabmap]: rtabmap(maps): cloud_subtract_filtering   = false
+[2025-10-16 13:46:10.292226][rtabmap-4][STDERR] [INFO] [1760589970.288043737] [rtabmap]: rtabmap(maps): cloud_subtract_filtering_min_neighbors = 2
+[2025-10-16 13:46:10.292618][rtabmap-4][STDERR] [INFO] [1760589970.288104527] [rtabmap]: rtabmap(maps): octomap_tree_depth         = 16
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295445556] [icp_odometry]: Odometry: frame_id               = base_link
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295612514] [icp_odometry]: Odometry: odom_frame_id          = odom
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295628489] [icp_odometry]: Odometry: publish_tf             = true
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295638198] [icp_odometry]: Odometry: wait_for_transform     = 0.200000
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295657183] [icp_odometry]: Odometry: log_to_rosout_level    = 4
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295680632] [icp_odometry]: Odometry: initial_pose           = xyz=0.000000,0.000000,0.000000 rpy=0.000000,-0.000000,0.000000
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295690729] [icp_odometry]: Odometry: ground_truth_frame_id  = 
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295701011] [icp_odometry]: Odometry: ground_truth_base_frame_id = base_link
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295710814] [icp_odometry]: Odometry: config_path            = 
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295719617] [icp_odometry]: Odometry: publish_null_when_lost = true
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295728327] [icp_odometry]: Odometry: publish_compressed_sensor_data = false
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295737386] [icp_odometry]: Odometry: guess_frame_id         = 
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295745758] [icp_odometry]: Odometry: guess_min_translation  = 0.000000
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295755004] [icp_odometry]: Odometry: guess_min_rotation     = 0.000000
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295764068] [icp_odometry]: Odometry: guess_min_time         = 0.000000
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295773324] [icp_odometry]: Odometry: expected_update_rate   = 0.000000 Hz
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295782972] [icp_odometry]: Odometry: max_update_rate        = 0.000000 Hz
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295792138] [icp_odometry]: Odometry: min_update_rate        = 0.000000 Hz
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295801352] [icp_odometry]: Odometry: wait_imu_to_init       = false
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295810071] [icp_odometry]: Odometry: always_check_imu_tf    = true
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295818794] [icp_odometry]: Odometry: sensor_data_compression_format = .jpg
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295827456] [icp_odometry]: Odometry: sensor_data_parallel_compression = true
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.295847447] [icp_odometry]: Odometry: stereoParams_=0 visParams_=0 icpParams_=1
+[2025-10-16 13:46:10.301447][icp_odometry-3][STDERR] [INFO] [1760589970.298398605] [icp_odometry]: Setting odometry parameter "Icp/Epsilon"="0.001"
+[2025-10-16 13:46:10.305219][icp_odometry-3][STDERR] [INFO] [1760589970.302491568] [icp_odometry]: Setting odometry parameter "Icp/PointToPlaneK"="20"
+[2025-10-16 13:46:10.308755][icp_odometry-3][STDERR] [INFO] [1760589970.306332119] [icp_odometry]: Setting odometry parameter "Icp/PointToPlaneRadius"="0"
+[2025-10-16 13:46:10.311581][icp_odometry-3][STDERR] [INFO] [1760589970.311080412] [icp_odometry]: Setting odometry parameter "Odom/GuessMotion"="false"
+[2025-10-16 13:46:10.315724][icp_odometry-3][STDERR] [INFO] [1760589970.315229675] [icp_odometry]: Setting odometry parameter "Odom/ResetCountdown"="1"
+[2025-10-16 13:46:10.318747][icp_odometry-3][STDERR] [INFO] [1760589970.315534582] [icp_odometry]: Setting odometry parameter "Odom/ScanKeyFrameThr"="0.4"
+[2025-10-16 13:46:10.318747][icp_odometry-3][STDERR] [INFO] [1760589970.316470867] [icp_odometry]: Setting odometry parameter "OdomF2M/BundleAdjustment"="false"
+[2025-10-16 13:46:10.321834][icp_odometry-3][STDERR] [INFO] [1760589970.321190267] [icp_odometry]: Setting odometry parameter "OdomF2M/ScanMaxSize"="15000"
+[2025-10-16 13:46:10.324939][icp_odometry-3][STDERR] [INFO] [1760589970.322906955] [icp_odometry]: Setting odometry parameter "OdomF2M/ScanSubtractRadius"="0.2"
+[2025-10-16 13:46:10.354890][icp_odometry-3][STDERR] [WARN] [1760589970.352659608] [icp_odometry]: IcpOdometry: Transferring value 0.05 of "Icp/VoxelSize" to ros parameter "scan_voxel_size" for convenience. "Icp/VoxelSize" is set to 0.
+[2025-10-16 13:46:10.354890][icp_odometry-3][STDERR] [WARN] [1760589970.352724897] [icp_odometry]: IcpOdometry: Transferring value 20 of "Icp/PointToPlaneK" to ros parameter "scan_normal_k" for convenience.
+[2025-10-16 13:46:10.365849][rtabmap-4][STDERR] [INFO] [1760589970.363630696] [rtabmap]: rtabmap: frame_id      = base_link
+[2025-10-16 13:46:10.365849][rtabmap-4][STDERR] [INFO] [1760589970.363676524] [rtabmap]: rtabmap: odom_frame_id = odom
+[2025-10-16 13:46:10.365849][rtabmap-4][STDERR] [INFO] [1760589970.363692467] [rtabmap]: rtabmap: map_frame_id  = map
+[2025-10-16 13:46:10.365849][rtabmap-4][STDERR] [INFO] [1760589970.363706014] [rtabmap]: rtabmap: log_to_rosout_level  = 4
+[2025-10-16 13:46:10.365849][rtabmap-4][STDERR] [INFO] [1760589970.363720503] [rtabmap]: rtabmap: initial_pose  = 
+[2025-10-16 13:46:10.365849][rtabmap-4][STDERR] [INFO] [1760589970.363731736] [rtabmap]: rtabmap: use_action_for_goal  = false
+[2025-10-16 13:46:10.366582][rtabmap-4][STDERR] [INFO] [1760589970.364032417] [rtabmap]: rtabmap: tf_delay      = 0.050000
+[2025-10-16 13:46:10.366582][rtabmap-4][STDERR] [INFO] [1760589970.364057590] [rtabmap]: rtabmap: tf_tolerance  = 0.100000
+[2025-10-16 13:46:10.366582][rtabmap-4][STDERR] [INFO] [1760589970.364074929] [rtabmap]: rtabmap: odom_sensor_sync   = false
+[2025-10-16 13:46:10.366582][rtabmap-4][STDERR] [INFO] [1760589970.364091007] [rtabmap]: rtabmap: pub_loc_pose_only_when_localizing = false
+[2025-10-16 13:46:10.367244][rtabmap-4][STDERR] [INFO] [1760589970.364106945] [rtabmap]: rtabmap: wait_for_transform = 0.200000
+[2025-10-16 13:46:10.367244][rtabmap-4][STDERR] [INFO] [1760589970.364123841] [rtabmap]: rtabmap: gen_scan  = false
+[2025-10-16 13:46:10.367244][rtabmap-4][STDERR] [INFO] [1760589970.364147220] [rtabmap]: rtabmap: gen_depth  = false
+[2025-10-16 13:46:10.367244][rtabmap-4][STDERR] [INFO] [1760589970.364163437] [rtabmap]: rtabmap: scan_cloud_max_points = 0
+[2025-10-16 13:46:10.367244][rtabmap-4][STDERR] [INFO] [1760589970.364179250] [rtabmap]: rtabmap: scan_cloud_is_2d = false
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370597802] [icp_odometry]: IcpOdometry: qos                    = 0
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370650944] [icp_odometry]: IcpOdometry: scan_cloud_max_points  = -1
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370670999] [icp_odometry]: IcpOdometry: scan_cloud_is_2d       = false
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370683106] [icp_odometry]: IcpOdometry: scan_downsampling_step = 1
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370694667] [icp_odometry]: IcpOdometry: scan_range_min         = 0.000000 m
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370710545] [icp_odometry]: IcpOdometry: scan_range_max         = 0.000000 m
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370722861] [icp_odometry]: IcpOdometry: scan_voxel_size        = 0.050000 m
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370735951] [icp_odometry]: IcpOdometry: scan_normal_k          = 20
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370747253] [icp_odometry]: IcpOdometry: scan_normal_radius     = 0.000000 m
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370796709] [icp_odometry]: IcpOdometry: scan_normal_ground_up  = 0.000000
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370815225] [icp_odometry]: IcpOdometry: deskewing              = false
+[2025-10-16 13:46:10.376399][icp_odometry-3][STDERR] [INFO] [1760589970.370833210] [icp_odometry]: IcpOdometry: deskewing_slerp        = false
+[2025-10-16 13:46:10.378453][icp_odometry-3][STDERR] [INFO] [1760589970.374641756] [icp_odometry]: 
+[2025-10-16 13:46:10.378453][icp_odometry-3][STDERR] icp_odometry subscribed to /scan and /stream_pair/decoded (make sure only one of this topic is published, otherwise remap one to a dummy topic name).
+[2025-10-16 13:46:10.401933][rtabmap-4][STDERR] [INFO] [1760589970.399791794] [rtabmap]: Setting RTAB-Map parameter "Grid/3D"="true" (rosparam)
+[2025-10-16 13:46:10.401933][rtabmap-4][STDERR] [INFO] [1760589970.399898042] [rtabmap]: Setting RTAB-Map parameter "Grid/CellSize"="0.2" (rosparam)
+[2025-10-16 13:46:10.403350][rtabmap-4][STDERR] [INFO] [1760589970.399980669] [rtabmap]: Setting RTAB-Map parameter "Grid/ClusterRadius"="0.5" (rosparam)
+[2025-10-16 13:46:10.406965][rtabmap-4][STDERR] [INFO] [1760589970.405020995] [rtabmap]: Setting RTAB-Map parameter "Grid/Sensor"="true" (rosparam)
+[2025-10-16 13:46:10.410823][rtabmap-4][STDERR] [INFO] [1760589970.410238966] [rtabmap]: Setting RTAB-Map parameter "Icp/CorrespondenceRatio"="0.1" (rosparam)
+[2025-10-16 13:46:10.412272][rtabmap-4][STDERR] [INFO] [1760589970.410478240] [rtabmap]: Setting RTAB-Map parameter "Icp/Epsilon"="0.001" (rosparam)
+[2025-10-16 13:46:10.412272][rtabmap-4][STDERR] [INFO] [1760589970.410705802] [rtabmap]: Setting RTAB-Map parameter "Icp/Iterations"="30" (rosparam)
+[2025-10-16 13:46:10.430283][rtabmap-4][STDERR] [INFO] [1760589970.421951518] [rtabmap]: Setting RTAB-Map parameter "Mem/NotLinkedNodesKept"="true" (rosparam)
+[2025-10-16 13:46:10.431157][rtabmap-4][STDERR] [INFO] [1760589970.422362883] [rtabmap]: Setting RTAB-Map parameter "Mem/STMSize"="30" (rosparam)
+[2025-10-16 13:46:10.432090][rtabmap-4][STDERR] [INFO] [1760589970.423019146] [rtabmap]: Setting RTAB-Map parameter "Optimizer/GravitySigma"="0" (rosparam)
+[2025-10-16 13:46:10.432090][rtabmap-4][STDERR] [INFO] [1760589970.423903809] [rtabmap]: Setting RTAB-Map parameter "RGBD/AngularUpdate"="0" (rosparam)
+[2025-10-16 13:46:10.432090][rtabmap-4][STDERR] [INFO] [1760589970.425488449] [rtabmap]: Setting RTAB-Map parameter "RGBD/LinearUpdate"="0" (rosparam)
+[2025-10-16 13:46:10.432090][rtabmap-4][STDERR] [INFO] [1760589970.427494103] [rtabmap]: Setting RTAB-Map parameter "RGBD/ProximityPathMaxNeighbors"="1" (rosparam)
+[2025-10-16 13:46:10.432090][rtabmap-4][STDERR] [INFO] [1760589970.428338149] [rtabmap]: Setting RTAB-Map parameter "Reg/Strategy"="1" (rosparam)
+[2025-10-16 13:46:10.432090][rtabmap-4][STDERR] [INFO] [1760589970.429212621] [rtabmap]: Setting RTAB-Map parameter "Rtabmap/SaveWMState"="false" (rosparam)
+[2025-10-16 13:46:10.442797][rtabmap-4][STDERR] [INFO] [1760589970.442370689] [rtabmap]: Setting "Icp/PointToPlaneRadius" parameter to 0 (default 0.000000) as "subscribe_scan_cloud" is true.
+[2025-10-16 13:46:10.443451][rtabmap-4][STDERR] [INFO] [1760589970.442632101] [rtabmap]: RTAB-Map detection rate = 1.000000 Hz
+[2025-10-16 13:46:10.443451][rtabmap-4][STDERR] [INFO] [1760589970.442834064] [rtabmap]: rtabmap: Deleted database "/home/kkit/.ros/rtabmap.db" (--delete_db_on_start or -d are set).
+[2025-10-16 13:46:10.443451][rtabmap-4][STDERR] [INFO] [1760589970.442890329] [rtabmap]: rtabmap: Using database from "/home/kkit/.ros/rtabmap.db" (0 MB).
+[2025-10-16 13:46:10.593022][rtabmap-4][STDERR] [INFO] [1760589970.592573236] [rtabmap]: rtabmap: Database version = "0.22.1".
+[2025-10-16 13:46:10.593022][rtabmap-4][STDERR] [INFO] [1760589970.592648073] [rtabmap]: rtabmap: SLAM mode (Mem/IncrementalMemory=true)
+[2025-10-16 13:46:10.599744][rtabmap_feedback_loop-6][STDERR] [INFO] [1760589970.599232582] [rtabmap_feedback_loop]: RTAB-Map 피드백 루프 노드를 시작했습니다. 토픽과 서비스 상태를 모니터링합니다.
+[2025-10-16 13:46:10.615420][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.615420][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.615420][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.615420][rtabmap-4][STDERR] [INFO] [1760589970.614396995] [rtabmap]: Setup callbacks
+[2025-10-16 13:46:10.616062][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.616062][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.616062][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614586756] [rtabmap]: rtabmap: subscribe_depth = false
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614609601] [rtabmap]: rtabmap: subscribe_rgb = false
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614622226] [rtabmap]: rtabmap: subscribe_stereo = false
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614634391] [rtabmap]: rtabmap: subscribe_rgbd = false (rgbd_cameras=1)
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614647062] [rtabmap]: rtabmap: subscribe_sensor_data = false
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614658906] [rtabmap]: rtabmap: subscribe_odom_info = true
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614670162] [rtabmap]: rtabmap: subscribe_user_data = false
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614681246] [rtabmap]: rtabmap: subscribe_scan = false
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614692552] [rtabmap]: rtabmap: subscribe_scan_cloud = true
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614703581] [rtabmap]: rtabmap: subscribe_scan_descriptor = false
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614715754] [rtabmap]: rtabmap: topic_queue_size = 10
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614727456] [rtabmap]: rtabmap: sync_queue_size  = 10
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614738660] [rtabmap]: rtabmap: qos_image       = 0
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614749843] [rtabmap]: rtabmap: qos_camera_info = 0
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614761053] [rtabmap]: rtabmap: qos_scan        = 0
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614772554] [rtabmap]: rtabmap: qos_odom        = 0
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614784019] [rtabmap]: rtabmap: qos_user_data   = 0
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614804476] [rtabmap]: rtabmap: approx_sync     = true
+[2025-10-16 13:46:10.619120][rtabmap-4][STDERR] [INFO] [1760589970.614825418] [rtabmap]: Setup scan callback
+[2025-10-16 13:46:10.620040][rtabmap-4][STDERR] [INFO] [1760589970.616446095] [rtabmap]: 
+[2025-10-16 13:46:10.620040][rtabmap-4][STDERR] rtabmap subscribed to (approx sync):
+[2025-10-16 13:46:10.620040][rtabmap-4][STDERR]    /stream_pair/decoded \
+[2025-10-16 13:46:10.620040][rtabmap-4][STDERR]    /odom_info
+[2025-10-16 13:46:10.620644][rtabmap-4][STDERR] [WARN] [1760589970.618880022] [rtabmap]: There is no image subscription, bag-of-words loop closure detection will be disabled...
+[2025-10-16 13:46:10.620644][rtabmap-4][STDERR] [WARN] [1760589970.618923802] [rtabmap]: Setting Kp/MaxFeatures=-1 (bag-of-words disabled)
+[2025-10-16 13:46:10.665938][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.665938][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.665938][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.666720][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.666720][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.666720][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.714788][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.714788][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.714788][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.715315][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.715315][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.715315][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.764841][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.764841][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.764841][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.765356][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.765356][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.765356][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.814793][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.814793][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.814793][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.815284][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.815284][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.815284][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.864768][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.864768][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.864768][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.865276][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.865276][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.865276][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.914914][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.914914][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.914914][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.915430][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.915430][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.915430][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.964721][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.964721][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.964721][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:10.965218][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:10.965218][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:10.965218][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.014826][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.014826][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.014826][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.015289][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.015289][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.015289][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.064814][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.064814][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.064814][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.065293][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.065293][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.065293][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.114769][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.114769][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.114769][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.115303][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.115303][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.115303][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.164835][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.164835][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.164835][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.165339][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.165339][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.165339][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.214735][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.214735][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.214735][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.215208][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.215208][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.215208][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.264841][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.264841][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.264841][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.265357][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.265357][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.265357][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.314865][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.314865][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.314865][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.315406][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.315406][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.315406][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.364869][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.364869][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.364869][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.365427][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.365427][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.365427][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.414939][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.414939][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.414939][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.415498][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.415498][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.415498][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.464898][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.464898][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.464898][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.465432][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.465432][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.465432][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.514718][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.514718][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.514718][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.515213][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.515213][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.515213][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.564870][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.564870][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.564870][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.565379][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.565379][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.565379][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.614805][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.614805][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.614805][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.615300][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.615300][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.615300][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.664789][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.664789][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.664789][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.665380][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.665380][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.665380][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.714841][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.714841][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.714841][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.715349][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.715349][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.715349][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.764835][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.764835][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.764835][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.765356][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.765356][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.765356][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.814691][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.814691][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.814691][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.815100][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.815100][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.815100][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.864736][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.864736][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.864736][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.865222][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.865222][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.865222][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.914829][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.914829][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.914829][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.915369][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.915369][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.915369][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.964763][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.964763][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.964763][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:11.965263][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:11.965263][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:11.965263][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.014728][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.014728][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.014728][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.015219][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.015219][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.015219][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.064697][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.064697][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.064697][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.065214][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.065214][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.065214][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.114798][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.114798][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.114798][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.115383][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.115383][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.115383][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.164816][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.164816][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.164816][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.165384][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.165384][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.165384][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.214739][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.214739][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.214739][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.215265][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.215265][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.215265][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.264741][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.264741][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.264741][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.265116][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.265116][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.265116][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.314730][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.314730][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.314730][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.315246][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.315246][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.315246][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.364785][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.364785][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.364785][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.365227][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.365227][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.365227][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.414718][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.414718][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.414718][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.415113][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.415113][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.415113][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.464982][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.464982][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.464982][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.465549][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.465549][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.465549][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.514767][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.514767][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.514767][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.515312][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.515312][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.515312][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.564911][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.564911][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.564911][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.565580][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.565580][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.565580][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.614641][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.614641][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.614641][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.615114][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.615114][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.615114][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.664771][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.664771][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.664771][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.665216][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.665216][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.665216][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.714662][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.714662][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.714662][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.715155][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.715155][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.715155][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.764899][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.764899][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.764899][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.765575][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.765575][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.765575][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.775355][stream_server-2][STDERR] [INFO] [1760589972.774890189] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-16 13:46:12.775836][stream_server-2][STDERR] [INFO] [1760589972.775170616] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-16 13:46:12.814820][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.814820][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.814820][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.815435][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.815435][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.815435][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.864798][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.864798][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.864798][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.865357][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.865357][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.865357][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.914879][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.914879][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.914879][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.915373][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.915373][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.915373][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.964796][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.964796][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.964796][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:12.965293][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:12.965293][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:12.965293][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.015084][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.015084][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.015084][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.015633][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.015633][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.015633][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.065236][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.065236][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.065236][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.065810][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.065810][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.065810][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.114849][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.114849][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.114849][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.115416][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.115416][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.115416][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.165214][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.165214][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.165214][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.165823][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.165823][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.165823][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.214809][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.214809][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.214809][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.215368][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.215368][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.215368][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.264858][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.264858][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.264858][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.265403][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.265403][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.265403][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.314792][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.314792][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.314792][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.315159][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.315159][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.315159][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.364972][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.364972][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.364972][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.365493][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.365493][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.365493][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.415064][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.415064][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.415064][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.415705][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.415705][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.415705][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.465287][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.465287][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.465287][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.465970][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.465970][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.465970][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.514958][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.514958][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.514958][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.515581][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.515581][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.515581][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.565185][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.565185][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.565185][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.565981][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.565981][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.565981][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.614960][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.614960][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.614960][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.615579][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.615579][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.615579][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.664927][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.664927][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.664927][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.665534][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.665534][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.665534][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.714935][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.714935][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.714935][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.715546][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.715546][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.715546][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.765300][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.765300][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.765300][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.765934][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.765934][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.765934][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.815223][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.815223][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.815223][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.815876][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.815876][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.815876][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.864876][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.864876][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.864876][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.865546][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.865546][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.865546][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.914858][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.914858][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.914858][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.915401][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.915401][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.915401][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.964901][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.964901][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.964901][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:13.965504][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:13.965504][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:13.965504][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.015153][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.015153][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.015153][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.015895][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.015895][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.015895][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.064852][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.064852][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.064852][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.065369][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.065369][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.065369][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.114968][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.114968][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.114968][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.115545][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.115545][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.115545][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.165213][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.165213][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.165213][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.165800][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.165800][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.165800][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.215252][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.215252][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.215252][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.215799][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.215799][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.215799][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.265404][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.265404][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.265404][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.266114][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.266114][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.266114][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.315293][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.315293][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.315293][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.315864][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.315864][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.315864][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.365159][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.365159][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.365159][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.365776][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.365776][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.365776][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.415104][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.415104][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.415104][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.415797][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.415797][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.415797][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.465505][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.465505][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.465505][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.466222][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.466222][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.466222][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.514861][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.514861][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.514861][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.515457][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.515457][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.515457][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.565101][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.565101][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.565101][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.565720][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.565720][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.565720][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.614857][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.614857][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.614857][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.615550][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.615550][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.615550][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.665031][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.665031][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.665031][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.665757][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.665757][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.665757][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.715323][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.715323][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.715323][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.715982][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.715982][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.715982][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.765128][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.765128][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.765128][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.765821][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.765821][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.765821][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.814870][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.814870][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.814870][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.815499][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.815499][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.815499][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.864833][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.864833][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.864833][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.865370][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.865370][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.865370][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.915238][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.915238][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.915238][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.915868][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.915868][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.915868][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.964948][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.964948][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.964948][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:14.965466][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:14.965466][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:14.965466][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.015213][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.015213][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.015213][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.015864][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.015864][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.015864][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.064734][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.064734][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.064734][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.065245][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.065245][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.065245][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.114911][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.114911][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.114911][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.115600][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.115600][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.115600][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.164774][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.164774][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.164774][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.165336][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.165336][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.165336][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.214962][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.214962][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.214962][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.215540][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.215540][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.215540][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.265207][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.265207][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.265207][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.265727][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.265727][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.265727][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.315154][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.315154][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.315154][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.315748][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.315748][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.315748][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.364902][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.364902][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.364902][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.365532][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.365532][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.365532][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.415055][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.415055][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.415055][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.415762][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.415762][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.415762][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.465132][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.465132][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.465132][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.465730][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.465730][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.465730][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.514710][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.514710][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.514710][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.515063][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.515063][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.515063][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.564873][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.564873][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.564873][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.565449][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.565449][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.565449][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.615027][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.615027][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.615027][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.615571][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.615571][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.615571][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.665145][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.665145][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.665145][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.665754][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.665754][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.665754][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.715319][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.715319][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.715319][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.715900][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.715900][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.715900][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.765102][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.765102][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.765102][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.765752][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.765752][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.765752][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.815340][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.815340][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.815340][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.815970][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.815970][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.815970][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.865282][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.865282][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.865282][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.865947][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.865947][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.865947][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.915271][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.915271][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.915271][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.915874][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.915874][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.915874][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.965306][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.965306][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.965306][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:15.965843][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:15.965843][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:15.965843][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.015364][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.015364][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.015364][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.016112][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.016112][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.016112][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.064771][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.064771][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.064771][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.065243][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.065243][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.065243][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.115048][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.115048][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.115048][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.115572][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.115572][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.115572][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.165341][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.165341][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.165341][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.166025][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.166025][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.166025][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.214930][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.214930][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.214930][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.215545][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.215545][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.215545][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.264755][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.264755][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.264755][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.265178][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.265178][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.265178][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.314967][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.314967][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.314967][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.315637][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.315637][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.315637][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.365036][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.365036][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.365036][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.365712][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.365712][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.365712][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.414838][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.414838][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.414838][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.415267][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.415267][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.415267][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.464744][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.464744][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.464744][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.465179][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.465179][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.465179][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.514743][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.514743][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.514743][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.515208][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.515208][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.515208][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.565289][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.565289][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.565289][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.565882][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.565882][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.565882][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.614896][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.614896][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.614896][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.615520][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.615520][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.615520][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.665033][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.665033][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.665033][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.665652][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.665652][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.665652][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.714894][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.714894][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.714894][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.715419][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.715419][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.715419][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.764913][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.764913][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.764913][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.765521][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.765521][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.765521][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.815312][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.815312][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.815312][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.815965][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.815965][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.815965][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.864800][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.864800][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.864800][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.865155][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.865155][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.865155][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.914745][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.914745][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.914745][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.915214][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.915214][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.915214][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.964837][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.964837][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.964837][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:16.965213][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:16.965213][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:16.965213][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.014765][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.014765][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.014765][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.015214][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.015214][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.015214][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.064860][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.064860][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.064860][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.065295][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.065295][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.065295][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.114768][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.114768][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.114768][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.115226][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.115226][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.115226][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.164745][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.164745][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.164745][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.165227][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.165227][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.165227][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.214958][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.214958][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.214958][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.215518][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.215518][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.215518][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.264749][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.264749][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.264749][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.265183][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.265183][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.265183][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.314944][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.314944][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.314944][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.315464][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.315464][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.315464][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.364905][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.364905][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.364905][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.365483][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.365483][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.365483][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.414829][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.414829][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.414829][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.415337][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.415337][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.415337][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.465005][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.465005][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.465005][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.465782][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.465782][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.465782][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.514894][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.514894][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.514894][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.515466][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.515466][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.515466][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.564966][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.564966][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.564966][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.565518][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.565518][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.565518][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.615124][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.615124][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.615124][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.615843][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.615843][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.615843][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.664877][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.664877][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.664877][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.665460][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.665460][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.665460][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.714987][icp_odometry-3][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.714987][icp_odometry-3][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.714987][icp_odometry-3][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.715701][rtabmap-4][STDERR] Warning: TF_OLD_DATA ignoring data from the past for frame odom at time 0.100000 according to authority Authority undetectable
+[2025-10-16 13:46:17.715701][rtabmap-4][STDERR] Possible reasons are listed at http://wiki.ros.org/tf/Errors%20explained
+[2025-10-16 13:46:17.715701][rtabmap-4][STDERR]          at line 294 in ./src/buffer_core.cpp
+[2025-10-16 13:46:17.727377][rtabmap-4][STDERR] [INFO] [1760589977.722211005] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 13:46:17.728019][robot_state_publisher-1][STDERR] [INFO] [1760589977.722251422] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 13:46:17.728444][icp_odometry-3][STDERR] [INFO] [1760589977.722430337] [rclcpp]: signal_handler(signum=2)
+[2025-10-16 13:46:17.775447][rtabmap-4][STDERR] [INFO] [1760589977.774828997] [rtabmap]: Parameters are not saved (No configuration file provided...)
+[2025-10-16 13:46:17.968666][time_jump_reset-5][STDERR] Traceback (most recent call last):
+[2025-10-16 13:46:17.968666][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/python3.10/site-packages/slam_stream_bridge/nodes/time_jump_reset.py", line 184, in main
+[2025-10-16 13:46:17.969414][time_jump_reset-5][STDERR]     rclpy.spin(node)
+[2025-10-16 13:46:17.969414][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+[2025-10-16 13:46:17.969414][time_jump_reset-5][STDERR]     executor.spin_once()
+[2025-10-16 13:46:17.969414][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 751, in spin_once
+[2025-10-16 13:46:17.969414][time_jump_reset-5][STDERR]     self._spin_once_impl(timeout_sec)
+[2025-10-16 13:46:17.969414][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 740, in _spin_once_impl
+[2025-10-16 13:46:17.969845][time_jump_reset-5][STDERR]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[2025-10-16 13:46:17.969845][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]     return next(self._cb_iter)
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 620, in _wait_for_ready_callbacks
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]     wait_set.wait(timeout_nsec)
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR] KeyboardInterrupt
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR] 
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR] During handling of the above exception, another exception occurred:
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR] 
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR] Traceback (most recent call last):
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/slam_stream_bridge/time_jump_reset", line 33, in <module>
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]     sys.exit(load_entry_point('slam-stream-bridge==0.1.0', 'console_scripts', 'time_jump_reset')())
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/python3.10/site-packages/slam_stream_bridge/nodes/time_jump_reset.py", line 187, in main
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]     rclpy.shutdown()
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 130, in shutdown
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]     _shutdown(context=context)
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/utilities.py", line 58, in shutdown
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]     return context.shutdown()
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/context.py", line 102, in shutdown
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR]     self.__context.shutdown()
+[2025-10-16 13:46:17.971141][time_jump_reset-5][STDERR] rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:241
+[2025-10-16 13:46:17.972061][rtabmap_feedback_loop-6][STDERR] Traceback (most recent call last):
+[2025-10-16 13:46:17.972061][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/python3.10/site-packages/slam_stream_bridge/nodes/rtabmap_feedback_loop.py", line 378, in main
+[2025-10-16 13:46:17.972061][rtabmap_feedback_loop-6][STDERR]     rclpy.spin(node)
+[2025-10-16 13:46:17.972061][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+[2025-10-16 13:46:17.972061][rtabmap_feedback_loop-6][STDERR]     executor.spin_once()
+[2025-10-16 13:46:17.972061][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 751, in spin_once
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]     self._spin_once_impl(timeout_sec)
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 740, in _spin_once_impl
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]     return next(self._cb_iter)
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 620, in _wait_for_ready_callbacks
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]     wait_set.wait(timeout_nsec)
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR] KeyboardInterrupt
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR] 
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR] During handling of the above exception, another exception occurred:
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR] 
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR] Traceback (most recent call last):
+[2025-10-16 13:46:17.973308][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/slam_stream_bridge/rtabmap_feedback_loop", line 33, in <module>
+[2025-10-16 13:46:17.973982][rtabmap_feedback_loop-6][STDERR]     sys.exit(load_entry_point('slam-stream-bridge==0.1.0', 'console_scripts', 'rtabmap_feedback_loop')())
+[2025-10-16 13:46:17.973982][rtabmap_feedback_loop-6][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/slam_stream_bridge/lib/python3.10/site-packages/slam_stream_bridge/nodes/rtabmap_feedback_loop.py", line 381, in main
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR]     rclpy.shutdown()
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 130, in shutdown
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR]     _shutdown(context=context)
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/utilities.py", line 58, in shutdown
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR]     return context.shutdown()
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/context.py", line 102, in shutdown
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR]     self.__context.shutdown()
+[2025-10-16 13:46:17.975367][rtabmap_feedback_loop-6][STDERR] rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:241
+[2025-10-16 13:46:18.040991][rtabmap-4][STDOUT] rtabmap: Saving database/long-term memory... (located at /home/kkit/.ros/rtabmap.db)
+[2025-10-16 13:46:18.040991][rtabmap-4][STDOUT] rtabmap: Saving database/long-term memory...done! (located at /home/kkit/.ros/rtabmap.db, 0 MB)
