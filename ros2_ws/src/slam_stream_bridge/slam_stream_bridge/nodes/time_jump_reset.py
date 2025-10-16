@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Dict, List, Optional, Set
+from typing import Callable, Dict, List, Optional, Set
 
 import rclpy
 from rclpy.client import Client
@@ -68,12 +68,53 @@ class TimeJumpResetNode(Node):
         self._last_reset_monotonic: Optional[float] = None
         self._resumed_once = False
 
-        self.get_logger().info("노드 초기화 완료. 클라이언트 연결 및 /clock 수신 대기 중...")
-        # rtabmap은 파라미터로 정지, icp_odometry는 서비스로 정지
-        self._call_services(self.pause_services)
+        # 초기 일시정지를 위한 상태 변수
+        self._paused_services: Set[str] = set()
+        self._initial_pause_done = False
+        self._pause_timer: Optional[rclpy.timer.Timer] = None
+
+        self.get_logger().info("노드 초기화 완료. 주기적으로 노드들을 일시정지하려고 시도합니다...")
+        self._pause_timer = self.create_timer(0.2, self._initial_pause_tick)
+
+    def _initial_pause_tick(self) -> None:
+        """초기 일시정지를 위해 주기적으로 서비스 호출을 시도한다."""
+        if self._initial_pause_done:
+            if self._pause_timer:
+                self._pause_timer.cancel()
+                self._pause_timer = None
+            return
+
+        services_to_try = [
+            s for s in self.pause_services if s not in self._paused_services
+        ]
+
+        if not services_to_try:
+            if not self._initial_pause_done:
+                self.get_logger().info("초기 일시정지 완료: 모든 노드가 성공적으로 정지되었습니다.")
+                self._initial_pause_done = True
+                if self._pause_timer:
+                    self._pause_timer.cancel()
+                    self._pause_timer = None
+            return
+
+        self.get_logger().debug(f"초기 일시정지 시도: {services_to_try}")
+        self._call_services(
+            services_to_try,
+            silent=True,
+            on_success_callback=self._on_initial_pause_success,
+        )
+
+    def _on_initial_pause_success(self, service_name: str) -> None:
+        """초기 일시정지 서비스 호출 성공 시 호출되는 콜백."""
+        if service_name not in self._paused_services:
+            self.get_logger().info(f"초기 일시정지 성공: {service_name}")
+            self._paused_services.add(service_name)
 
     def _call_services(
-        self, service_names: List[str], silent: bool = False
+        self,
+        service_names: List[str],
+        silent: bool = False,
+        on_success_callback: Optional[Callable[[str], None]] = None,
     ) -> List[Future]:
         """주어진 이름의 서비스들을 비동기적으로 호출한다."""
         futures = []
@@ -106,6 +147,8 @@ class TimeJumpResetNode(Node):
                     fut.result()
                     if not silent:
                         self.get_logger().info(f"서비스 {service_name} 호출을 완료했습니다.")
+                    if on_success_callback:
+                        on_success_callback(service_name)
                 except Exception as exc:
                     if not silent:
                         self.get_logger().error(
@@ -123,6 +166,12 @@ class TimeJumpResetNode(Node):
 
         if not self._resumed_once:
             self.get_logger().info("/clock 토픽 수신 시작. SLAM 시스템을 재개합니다.")
+            if self._pause_timer:
+                self.get_logger().info("초기 일시정지 타이머를 중지합니다.")
+                self._pause_timer.cancel()
+                self._pause_timer = None
+            self._initial_pause_done = True  # 클락 수신 시작 시 초기 일시정지 시도 중단
+
             self._call_services(self.resume_services)
             self._resumed_once = True
             self._last_clock_sec = current_sec
