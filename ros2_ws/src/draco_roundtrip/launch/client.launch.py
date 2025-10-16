@@ -67,6 +67,11 @@ def generate_launch_description() -> LaunchDescription:
         default_value='false',
         description='If true, loop the rosbag playback.',
     )
+    declare_idle_shutdown_timeout = DeclareLaunchArgument(
+        'idle_shutdown_timeout',
+        default_value='5.0',
+        description='Seconds of inactivity before client shuts down (0 to disable). Only active if loop is false.'
+    )
 
     # Arguments for ply_saver, only used if save_ply_files is true
     declare_idle_timeout = DeclareLaunchArgument(
@@ -89,6 +94,7 @@ def generate_launch_description() -> LaunchDescription:
     idle_timeout = LaunchConfiguration('idle_timeout')
     max_frames = LaunchConfiguration('max_frames')
     play_rate = LaunchConfiguration('play_rate')
+    loop = LaunchConfiguration('loop')
 
     # Node for saving PointCloud2 to PLY files (conditional)
     ply_saver_node = Node(
@@ -159,6 +165,8 @@ def generate_launch_description() -> LaunchDescription:
                 'server_port': server_port,
                 'downlink_host': server_host,
                 'telemetry_rate': LaunchConfiguration('telemetry_rate', default='10.0'),
+                'loop': loop,
+                'idle_shutdown_timeout': LaunchConfiguration('idle_shutdown_timeout'),
             }
         ],
     )
@@ -175,6 +183,7 @@ def generate_launch_description() -> LaunchDescription:
         declare_qos_best_effort,
         declare_play_rate,
         declare_loop,
+        declare_idle_shutdown_timeout,
         DeclareLaunchArgument('telemetry_rate', default_value='10.0'),
         declare_idle_timeout,
         declare_max_frames,

@@ -168,10 +168,6 @@ class StreamServerNode(Node):
         self._downlink_thread = threading.Thread(target=self._run_downlink, daemon=True)
         self._running = True
 
-        self._metrics = []
-        self._start_time = time.monotonic()
-        self._report_generated = False
-
         self._downlink_timer = self.create_timer(1.0 / self.downlink_rate, self._downlink_tick)
         self._uplink_thread.start()
         self._downlink_thread.start()
@@ -229,72 +225,74 @@ class StreamServerNode(Node):
     def _serve_client(self, conn: socket.socket) -> None:
         bytes_in = 0
         bytes_out = 0
-        self._start_time = time.monotonic()
-        self._metrics = []
+        session_start_time = time.monotonic()
+        session_metrics = []
 
-        while self._running and rclpy.ok():
-            msg = recv_message(conn)
-            if msg is None:
-                raise ConnectionClosed("uplink closed")
-            
-            receive_time_ns = time.monotonic_ns()
+        try:
+            while self._running and rclpy.ok():
+                msg = recv_message(conn)
+                if msg is None:
+                    raise ConnectionClosed("uplink closed")
+                
+                receive_time_ns = time.monotonic_ns()
 
-            if msg.kind == MSG_HEARTBEAT:
+                if msg.kind == MSG_HEARTBEAT:
+                    self._last_heartbeat = time.monotonic()
+                    ack = Message(kind=MSG_ACK, name=msg.name or "hb", payload=b"")
+                    send_message(conn, ack)
+                    continue
+                if msg.kind != MSG_DATA:
+                    self.get_logger().warning(f"Ignoring unexpected message kind: {msg.kind}")
+                    continue
                 self._last_heartbeat = time.monotonic()
-                ack = Message(kind=MSG_ACK, name=msg.name or "hb", payload=b"")
-                send_message(conn, ack)
-                continue
-            if msg.kind != MSG_DATA:
-                self.get_logger().warning(f"Ignoring unexpected message kind: {msg.kind}")
-                continue
-            self._last_heartbeat = time.monotonic()
-            stem = msg.name or "frame"
-            bytes_in += len(msg.payload)
-            self.get_logger().debug(f"Received {stem} ({len(msg.payload)} bytes)")
+                stem = msg.name or "frame"
+                bytes_in += len(msg.payload)
+                self.get_logger().debug(f"Received {stem} ({len(msg.payload)} bytes)")
 
-            try:
-                metadata_size = struct.calcsize('!IQQQ')
-                metadata = struct.unpack('!IQQQ', msg.payload[:metadata_size])
-                seq, original_size, compression_time_ns, send_time_ns = metadata
-                drc_bytes = msg.payload[metadata_size:]
+                try:
+                    metadata_size = struct.calcsize('!IQQQ')
+                    metadata = struct.unpack('!IQQQ', msg.payload[:metadata_size])
+                    seq, original_size, compression_time_ns, send_time_ns = metadata
+                    drc_bytes = msg.payload[metadata_size:]
 
-                decompress_start_ns = time.monotonic_ns()
-                points = decode_drc_to_points(drc_bytes)
-                decompress_end_ns = time.monotonic_ns()
-                decompression_time_ns = decompress_end_ns - decompress_start_ns
+                    decompress_start_ns = time.monotonic_ns()
+                    points = decode_drc_to_points(drc_bytes)
+                    decompress_end_ns = time.monotonic_ns()
+                    decompression_time_ns = decompress_end_ns - decompress_start_ns
 
-            except Exception as exc:
-                error_msg = Message(kind=MSG_ERROR, name=stem, payload=str(exc).encode())
-                send_message(conn, error_msg)
-                self.get_logger().error(f"Failed to decode {stem}: {exc}")
-                continue
+                except Exception as exc:
+                    error_msg = Message(kind=MSG_ERROR, name=stem, payload=str(exc).encode())
+                    send_message(conn, error_msg)
+                    self.get_logger().error(f"Failed to decode {stem}: {exc}")
+                    continue
 
-            self._publish_point_cloud(points, frame_id=msg.frame_id)
-            self._update_autonomy_outputs()
+                self._publish_point_cloud(points, frame_id=msg.frame_id)
+                self._update_autonomy_outputs()
 
-            self._metrics.append({
-                'seq': seq,
-                'original_size': original_size,
-                'compressed_size': len(drc_bytes),
-                'compression_time_ns': compression_time_ns,
-                'decompression_time_ns': decompression_time_ns,
-                'send_time_ns': send_time_ns,
-                'receive_time_ns': receive_time_ns,
-                'decompress_end_ns': decompress_end_ns,
-            })
+                session_metrics.append({
+                    'seq': seq,
+                    'original_size': original_size,
+                    'compressed_size': len(drc_bytes),
+                    'compression_time_ns': compression_time_ns,
+                    'decompression_time_ns': decompression_time_ns,
+                    'send_time_ns': send_time_ns,
+                    'receive_time_ns': receive_time_ns,
+                    'decompress_end_ns': decompress_end_ns,
+                })
 
-            if self.legacy_downlink:
-                ply_bytes = points_to_ply_bytes(points)
-                reply = Message(kind=MSG_DATA, name=f"{stem}.decoded", payload=ply_bytes)
-                send_message(conn, reply)
-                bytes_out += len(reply.payload)
-            else:
-                ack = Message(kind=MSG_ACK, name=stem, payload=b"")
-                send_message(conn, ack)
-
-        self.get_logger().info(
-            f"Uplink session summary: in={bytes_in} bytes, out={bytes_out} bytes"
-        )
+                if self.legacy_downlink:
+                    ply_bytes = points_to_ply_bytes(points)
+                    reply = Message(kind=MSG_DATA, name=f"{stem}.decoded", payload=ply_bytes)
+                    send_message(conn, reply)
+                    bytes_out += len(reply.payload)
+                else:
+                    ack = Message(kind=MSG_ACK, name=stem, payload=b"")
+                    send_message(conn, ack)
+        finally:
+            self.get_logger().info(
+                f"Uplink session summary: in={bytes_in} bytes, out={bytes_out} bytes"
+            )
+            self._generate_session_report(session_metrics, session_start_time)
 
     # ------------------------------------------------------------------
     # ROS publishing helpers
@@ -417,41 +415,37 @@ class StreamServerNode(Node):
         self._downlink_bytes_total += bytes_written
         self._last_downlink_bytes = bytes_written
 
-    def _generate_report(self):
-        if self._report_generated or not self._metrics:
+    def _generate_session_report(self, metrics: list, start_time: float):
+        if not metrics:
+            self.get_logger().info("No metrics recorded for session, skipping report.")
             return
-        self._report_generated = True
 
-        total_time = time.monotonic() - self._start_time
-        num_received = len(self._metrics)
+        total_time = time.monotonic() - start_time
+        num_received = len(metrics)
         
-        if not self._metrics:
-            self.get_logger().info("No metrics recorded, skipping report.")
-            return
-
         # Loss calculation
-        seq_numbers = sorted([m['seq'] for m in self._metrics])
-        expected_frames = seq_numbers[-1] - seq_numbers[0] + 1
+        seq_numbers = sorted([m['seq'] for m in metrics])
+        expected_frames = seq_numbers[-1] - seq_numbers[0] + 1 if seq_numbers else 0
         lost_frames = expected_frames - num_received
         loss_rate = (lost_frames / expected_frames) * 100 if expected_frames > 0 else 0
 
         # Other metrics
-        total_original_size = sum(m['original_size'] for m in self._metrics)
-        total_compressed_size = sum(m['compressed_size'] for m in self._metrics)
+        total_original_size = sum(m['original_size'] for m in metrics)
+        total_compressed_size = sum(m['compressed_size'] for m in metrics)
         compression_ratio = total_original_size / total_compressed_size if total_compressed_size > 0 else 0
         bandwidth_mbps = (total_compressed_size * 8) / (total_time * 1e6) if total_time > 0 else 0
         fps = num_received / total_time if total_time > 0 else 0
 
         # Latency (assumes monotonic clocks are somewhat synchronized)
-        latencies = [m['decompress_end_ns'] - m['send_time_ns'] for m in self._metrics]
+        latencies = [m['decompress_end_ns'] - m['send_time_ns'] for m in metrics]
         avg_latency_ms = (sum(latencies) / len(latencies)) / 1e6 if latencies else 0
 
-        avg_compression_time_ms = sum(m['compression_time_ns'] for m in self._metrics) / num_received / 1e6
-        avg_decompression_time_ms = sum(m['decompression_time_ns'] for m in self._metrics) / num_received / 1e6
+        avg_compression_time_ms = sum(m['compression_time_ns'] for m in metrics) / num_received / 1e6
+        avg_decompression_time_ms = sum(m['decompression_time_ns'] for m in metrics) / num_received / 1e6
 
         report_str = f"""
-Server Performance Report
-=========================
+Server Session Performance Report
+=================================
 Timestamp: {datetime.now().isoformat()}
 Duration: {total_time:.2f} seconds
 
@@ -471,11 +465,10 @@ Latencies (ms):
         log_dir.mkdir(exist_ok=True)
         report_file = log_dir / f"server_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
         report_file.write_text(report_str)
-        self.get_logger().info(f"Server report saved to {report_file}")
+        self.get_logger().info(f"Server session report saved to {report_file}")
 
     # ------------------------------------------------------------------
     def destroy_node(self) -> None:  # pragma: no cover - shutdown path
-        self._generate_report()
         self._running = False
         super().destroy_node()
         for sock in (self._uplink_socket, self._downlink_socket, self._downlink_conn):

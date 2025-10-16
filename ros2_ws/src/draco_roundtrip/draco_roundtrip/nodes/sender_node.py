@@ -158,6 +158,8 @@ class SenderNode(Node):
         self.declare_parameter("telemetry_rate", 10.0)
         self.declare_parameter("socket_timeout", 3.0)
         self.declare_parameter("max_queue_size", 64)
+        self.declare_parameter("loop", False)
+        self.declare_parameter("idle_shutdown_timeout", 5.0)
 
         # Get parameters
         self.server_host = str(self.get_parameter("server_host").value)
@@ -172,6 +174,8 @@ class SenderNode(Node):
         self.downlink_port = downlink_port_param if downlink_port_param else self.server_port + 1
         self.downlink_protocol = str(self.get_parameter("downlink_protocol").value)
         max_queue_size = int(self.get_parameter("max_queue_size").value)
+        self.loop = self.get_parameter("loop").value
+        self.idle_shutdown_timeout = self.get_parameter("idle_shutdown_timeout").value
 
         # ROS Publishers for downlink messages
         qos = QoSProfile(
@@ -272,10 +276,21 @@ class SenderNode(Node):
 
                     self._trim_queue_keep_latest(self._queue_keep_latest)
 
+                    last_message_time = time.monotonic()
                     while not self._stop_event.is_set():
                         try:
                             ros_msg = self._msg_queue.get(timeout=self.heartbeat_interval)
+                            last_message_time = time.monotonic()
                         except queue.Empty:
+                            if not self.loop and self.idle_shutdown_timeout > 0:
+                                if time.monotonic() - last_message_time > self.idle_shutdown_timeout:
+                                    self.get_logger().info(
+                                        f"No message received for {self.idle_shutdown_timeout}s. "
+                                        "Assuming rosbag playback finished. Shutting down."
+                                    )
+                                    threading.Thread(target=rclpy.shutdown, daemon=True).start()
+                                    break
+
                             send_message(sock, Message(kind=MSG_HEARTBEAT, name="hb", payload=b""))
                             ack = recv_message(sock)
                             if ack is None:
