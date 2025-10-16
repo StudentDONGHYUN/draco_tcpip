@@ -11,11 +11,16 @@ import struct
 import sys
 import threading
 import time
+import base64
 from dataclasses import dataclass
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
 import rclpy
 from draco_roundtrip.analysis.metrics import compute_basic_metrics
@@ -429,6 +434,27 @@ class SenderNode(Node):
                 self._downlink_stop.wait(backoff)
                 backoff = min(backoff * 2.0, 5.0)
 
+    def _create_plot_base64(
+        self, x_data, y_data, title, xlabel, ylabel, color='b'
+    ) -> str:
+        """Create a matplotlib plot and return it as a base64 encoded string."""
+        try:
+            fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
+            ax.plot(x_data, y_data, marker='.', linestyle='-', color=color)
+            ax.set_title(title, fontsize=16)
+            ax.set_xlabel(xlabel, fontsize=12)
+            ax.set_ylabel(ylabel, fontsize=12)
+            ax.grid(True)
+            fig.tight_layout()
+
+            buf = BytesIO()
+            fig.savefig(buf, format="png")
+            plt.close(fig)
+            return base64.b64encode(buf.getvalue()).decode('ascii')
+        except Exception as e:
+            self.get_logger().error(f"Failed to create plot '{title}': {e}")
+            return ""
+
     def _generate_report(self):
         if self._report_generated or not self._metrics:
             return
@@ -441,21 +467,60 @@ class SenderNode(Node):
         total_payload_size = sum(m['payload_size'] for m in self._metrics)
         bandwidth_mbps = (total_payload_size * 8) / (total_time * 1e6) if total_time > 0 else 0
 
-        report_str = f"""
-Sender Performance Report
-=========================
-Timestamp: {datetime.now().isoformat()}
-Duration: {total_time:.2f} seconds
-Total Frames Sent: {num_frames}
+        # --- Plotting ---
+        frame_indices = [m['seq'] for m in self._metrics]
+        payload_sizes_kb = [m['payload_size'] / 1024 for m in self._metrics]
+        payload_plot_b64 = self._create_plot_base64(
+            frame_indices, payload_sizes_kb, 'Sent Payload Size per Frame', 'Frame Sequence', 'Payload Size (KB)', 'm'
+        )
 
-Average FPS: {fps:.2f}
-Total Payload Sent: {total_payload_size} bytes
-Average Uplink Bandwidth: {bandwidth_mbps:.3f} Mbps
+        # --- HTML Generation ---
+        html_content = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sender Performance Report</title>
+    <style>
+        body {{ font-family: sans-serif; margin: 2rem; background-color: #f4f7f9; color: #333; }}
+        .container {{ max-width: 1000px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }}
+        h1, h2 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-bottom: 2rem; }}
+        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
+        th {{ background-color: #ecf0f1; }}
+        .plot {{ margin-top: 2rem; text-align: center; }}
+        img {{ max-width: 100%; border-radius: 8px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sender Performance Report</h1>
+        <p><strong>Report Generated:</strong> {datetime.now().isoformat()}</p>
+        
+        <h2>Summary</h2>
+        <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Total Frames Sent</td><td>{num_frames}</td></tr>
+            <tr><td>Total Duration</td><td>{total_time:.2f} s</td></tr>
+            <tr><td>Average FPS</td><td>{fps:.2f}</td></tr>
+            <tr><td>Total Payload Sent</td><td>{total_payload_size / 1e6:.2f} MB</td></tr>
+            <tr><td>Average Uplink Bandwidth</td><td>{bandwidth_mbps:.3f} Mbps</td></tr>
+        </table>
+
+        <h2>Per-Frame Analysis</h2>
+        <div class="plot">
+            <h2>Sent Payload Size</h2>
+            <img src="data:image/png;base64,{payload_plot_b64}" alt="Payload Plot">
+        </div>
+    </div>
+</body>
+</html>
 """
+
         log_dir = Path('logs')
         log_dir.mkdir(exist_ok=True)
-        report_file = log_dir / f"sender_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-        report_file.write_text(report_str)
+        report_file = log_dir / f"sender_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        report_file.write_text(html_content)
         self.get_logger().info(f"Sender report saved to {report_file}")
 
     def destroy_node(self) -> None:

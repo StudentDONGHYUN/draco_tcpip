@@ -9,11 +9,16 @@ import struct
 import sys
 import threading
 import time
+import base64
 from dataclasses import dataclass
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path as FSPath
 from typing import Optional
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import rclpy
 from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import Path as NavPath
@@ -415,6 +420,27 @@ class StreamServerNode(Node):
         self._downlink_bytes_total += bytes_written
         self._last_downlink_bytes = bytes_written
 
+    def _create_plot_base64(
+        self, x_data, y_data, title, xlabel, ylabel, color='b'
+    ) -> str:
+        """Create a matplotlib plot and return it as a base64 encoded string."""
+        try:
+            fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
+            ax.plot(x_data, y_data, marker='.', linestyle='-', color=color)
+            ax.set_title(title, fontsize=16)
+            ax.set_xlabel(xlabel, fontsize=12)
+            ax.set_ylabel(ylabel, fontsize=12)
+            ax.grid(True)
+            fig.tight_layout()
+
+            buf = BytesIO()
+            fig.savefig(buf, format="png")
+            plt.close(fig)
+            return base64.b64encode(buf.getvalue()).decode('ascii')
+        except Exception as e:
+            self.get_logger().error(f"Failed to create plot '{title}': {e}")
+            return ""
+
     def _generate_session_report(self, metrics: list, start_time: float):
         if not metrics:
             self.get_logger().info("No metrics recorded for session, skipping report.")
@@ -423,48 +449,112 @@ class StreamServerNode(Node):
         total_time = time.monotonic() - start_time
         num_received = len(metrics)
         
-        # Loss calculation
+        # --- Data Calculation ---
         seq_numbers = sorted([m['seq'] for m in metrics])
         expected_frames = seq_numbers[-1] - seq_numbers[0] + 1 if seq_numbers else 0
         lost_frames = expected_frames - num_received
         loss_rate = (lost_frames / expected_frames) * 100 if expected_frames > 0 else 0
 
-        # Other metrics
         total_original_size = sum(m['original_size'] for m in metrics)
         total_compressed_size = sum(m['compressed_size'] for m in metrics)
         compression_ratio = total_original_size / total_compressed_size if total_compressed_size > 0 else 0
         bandwidth_mbps = (total_compressed_size * 8) / (total_time * 1e6) if total_time > 0 else 0
         fps = num_received / total_time if total_time > 0 else 0
 
-        # Latency (assumes monotonic clocks are somewhat synchronized)
-        latencies = [m['decompress_end_ns'] - m['send_time_ns'] for m in metrics]
-        avg_latency_ms = (sum(latencies) / len(latencies)) / 1e6 if latencies else 0
+        latencies_ms = [(m['decompress_end_ns'] - m['send_time_ns']) / 1e6 for m in metrics]
+        avg_latency_ms = (sum(latencies_ms) / len(latencies_ms)) if latencies_ms else 0
 
         avg_compression_time_ms = sum(m['compression_time_ns'] for m in metrics) / num_received / 1e6
         avg_decompression_time_ms = sum(m['decompression_time_ns'] for m in metrics) / num_received / 1e6
 
-        report_str = f"""
-Server Session Performance Report
-=================================
-Timestamp: {datetime.now().isoformat()}
-Duration: {total_time:.2f} seconds
+        # --- Plotting ---
+        frame_indices = [m['seq'] for m in metrics]
+        latency_plot_b64 = self._create_plot_base64(
+            frame_indices, latencies_ms, 'End-to-End Latency per Frame', 'Frame Sequence', 'Latency (ms)', 'r'
+        )
+        throughput_kb = [m['compressed_size'] / 1024 for m in metrics]
+        throughput_plot_b64 = self._create_plot_base64(
+            frame_indices, throughput_kb, 'Per-Frame Throughput', 'Frame Sequence', 'Compressed Size (KB)', 'g'
+        )
+        ratios = [m['original_size'] / m['compressed_size'] if m['compressed_size'] > 0 else 0 for m in metrics]
+        ratio_plot_b64 = self._create_plot_base64(
+            frame_indices, ratios, 'Per-Frame Compression Ratio', 'Frame Sequence', 'Ratio', 'b'
+        )
 
-Frames Received: {num_received}
-Frames Lost: {lost_frames} ({loss_rate:.2f}%)
+        # --- HTML Generation ---
+        html_content = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Session Performance Report</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 2rem; background-color: #f4f7f9; color: #333; }}
+        .container {{ max-width: 1200px; margin: auto; background: white; padding: 2rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; }}
+        h1, h2 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-bottom: 2rem; }}
+        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
+        th {{ background-color: #ecf0f1; }}
+        .summary-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }}
+        .metric-card {{ background: #ecf0f1; padding: 1.5rem; border-radius: 8px; text-align: center; }}
+        .metric-card .value {{ font-size: 2.5rem; font-weight: bold; color: #3498db; }}
+        .metric-card .label {{ font-size: 1rem; color: #7f8c8d; }}
+        .plot {{ margin-top: 2rem; text-align: center; }}
+        img {{ max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Server Session Performance Report</h1>
+        <p><strong>Report Generated:</strong> {datetime.now().isoformat()}</p>
+        
+        <h2>Summary</h2>
+        <div class="summary-grid">
+            <div class="metric-card"><div class="value">{num_received}</div><div class="label">Frames Received</div></div>
+            <div class="metric-card"><div class="value">{lost_frames}</div><div class="label">Frames Lost ({loss_rate:.2f}%)</div></div>
+            <div class="metric-card"><div class="value">{fps:.2f}</div><div class="label">Average FPS</div></div>
+            <div class="metric-card"><div class="value">{bandwidth_mbps:.3f}</div><div class="label">Avg Throughput (Mbps)</div></div>
+        </div>
 
-Average FPS: {fps:.2f}
-Average Compression Ratio: {compression_ratio:.2f}
-Average Throughput: {bandwidth_mbps:.3f} Mbps
+        <h2>Latency & Processing</h2>
+        <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Avg. End-to-End Latency</td><td>{avg_latency_ms:.3f} ms</td></tr>
+            <tr><td>Avg. Compression Time (client)</td><td>{avg_compression_time_ms:.3f} ms</td></tr>
+            <tr><td>Avg. Decompression Time (server)</td><td>{avg_decompression_time_ms:.3f} ms</td></tr>
+        </table>
 
-Latencies (ms):
-  - Average End-to-End: {avg_latency_ms:.3f} (client send to server decompress end)
-  - Average Compression: {avg_compression_time_ms:.3f}
-  - Average Decompression: {avg_decompression_time_ms:.3f}
+        <h2>Compression</h2>
+        <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Avg. Compression Ratio</td><td>{compression_ratio:.2f} : 1</td></tr>
+            <tr><td>Total Original Size</td><td>{total_original_size / 1e6:.2f} MB</td></tr>
+            <tr><td>Total Compressed Size</td><td>{total_compressed_size / 1e6:.2f} MB</td></tr>
+        </table>
+
+        <h2>Per-Frame Analysis</h2>
+        <div class="plot">
+            <h2>End-to-End Latency</h2>
+            <img src="data:image/png;base64,{latency_plot_b64}" alt="Latency Plot">
+        </div>
+        <div class="plot">
+            <h2>Throughput</h2>
+            <img src="data:image/png;base64,{throughput_plot_b64}" alt="Throughput Plot">
+        </div>
+        <div class="plot">
+            <h2>Compression Ratio</h2>
+            <img src="data:image/png;base64,{ratio_plot_b64}" alt="Compression Ratio Plot">
+        </div>
+    </div>
+</body>
+</html>
 """
+
         log_dir = FSPath('logs')
         log_dir.mkdir(exist_ok=True)
-        report_file = log_dir / f"server_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-        report_file.write_text(report_str)
+        report_file = log_dir / f"server_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        report_file.write_text(html_content)
         self.get_logger().info(f"Server session report saved to {report_file}")
 
     # ------------------------------------------------------------------
