@@ -70,7 +70,7 @@ class TimeJumpResetNode(Node):
 
         self.get_logger().info("노드 초기화 완료. 클라이언트 연결 및 /clock 수신 대기 중...")
         # rtabmap은 파라미터로 정지, icp_odometry는 서비스로 정지
-        self._call_services(self.pause_services, silent=True)
+        self._call_services(self.pause_services)
 
     def _call_services(
         self, service_names: List[str], silent: bool = False
