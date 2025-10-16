@@ -3,7 +3,6 @@ backup_pre_cleanup_*.tar.gz
 *.tar.gz
 
 # Runtime outputs and logs
-logs/
 ros2_ws/log/
 ros2_ws/data/
 build/
