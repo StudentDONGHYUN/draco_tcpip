@@ -147,6 +147,9 @@ class EncoderNode(Node):
             frame_name = f"{self.prefix}_{frame_idx:010d}"
             try:
                 pts_src = to_xyz_array_from_pc2(msg)
+                if pts_src.size == 0:
+                    self.get_logger().info(f"Skipping empty point cloud frame {frame_name}.")
+                    continue
                 original_size = pts_src.nbytes
                 future = self._executor.submit(encode_points, pts_src, self.encoder_options)
                 job = EncodingJob(
@@ -171,6 +174,11 @@ class EncoderNode(Node):
             try:
                 result = job.future.result()  # Wait for encoding to complete
                 drc_bytes = result.encoded_data
+                if not drc_bytes:
+                    self.get_logger().warning(
+                        f"Encoding resulted in empty data for frame {job.frame_name}. Skipping publish."
+                    )
+                    continue
                 compression_time_ns = int(result.duration * 1e9)
 
                 # Create and publish the custom message
