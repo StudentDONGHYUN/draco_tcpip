@@ -111,3 +111,21 @@ ros2 service call /rtabmap/save_map rtabmap_msgs/srv/SaveMap "{output: '/tmp/rta
 ```
 
 서비스 호출 전 `ros2 service list | grep save_map`으로 서비스가 준비되었는지 확인하세요.
+
+### 6) 장애 대응 피드백 루프
+
+`rtabmap_stream.launch.py`에는 `rtabmap_feedback_loop` 노드가 함께 실행되어 SLAM 파이프라인의 상태를 지속적으로 감시합니다.
+
+- `/stream_pair/decoded` 포인트클라우드가 끊기면 즉시 경고를 출력하고, `cloud_restart_service` 파라미터가 지정되어 있을 경우 자동으로 스트리밍 노드를 재기동합니다.
+- ICP Odometry(`odometry_topic`, 기본 `/odom`)가 정지하면 최대 `max_icp_reset_attempts` 횟수까지 `/icp_odometry/reset` 서비스를 호출해 복구를 시도하고, 그래도 회복되지 않으면 `/rtabmap/reset`으로 전체 SLAM을 재시작합니다.
+- RTAB-Map의 누적 맵(`map_data_topic`, 기본 `/rtabmap/map_data`)이 갱신되지 않으면 `/rtabmap/cleanup` → `/rtabmap/reset` 순으로 단계적인 복구를 수행합니다.
+
+중요 파라미터는 런치 인자로 덮어쓸 수 있습니다.
+
+```bash
+ros2 launch draco-ros2-roundtrip rtabmap_stream.launch.py \
+  odometry_topic:=/rtabmap/odom map_data_topic:=/rtabmap/map_data \
+  params_file:=configs/rtabmap_stream.yaml
+```
+
+필요하다면 `ros2 param describe /rtabmap_feedback_loop` 명령으로 노드가 제공하는 타임아웃 및 서비스 파라미터를 확인/수정하세요.

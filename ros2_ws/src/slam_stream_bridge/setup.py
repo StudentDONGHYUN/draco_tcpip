@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'time_jump_reset = slam_stream_bridge.nodes.time_jump_reset:main',
+            'rtabmap_feedback_loop = slam_stream_bridge.nodes.rtabmap_feedback_loop:main',
         ],
     },
 )
