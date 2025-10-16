@@ -45,8 +45,6 @@ class RtabmapFeedbackLoopNode(Node):
     def __init__(self) -> None:
         super().__init__("rtabmap_feedback_loop")
 
-        self.declare_parameter("use_sim_time", False)
-
         self._startup_monotonic = time.monotonic()
 
         self.cloud_topic: str = self._declare_string(
