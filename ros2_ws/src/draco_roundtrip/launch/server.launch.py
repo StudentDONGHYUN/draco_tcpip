@@ -2,7 +2,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition, NotCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -70,7 +70,7 @@ def generate_launch_description() -> LaunchDescription:
 
         # === Visualization/Testing Mode (run_slam:=false) ===
         Node(
-            condition=IfCondition(NotCondition(run_slam)),
+            condition=UnlessCondition(run_slam),
             package='tf2_ros',
             executable='static_transform_publisher',
             name='static_map_to_odom',
@@ -78,7 +78,7 @@ def generate_launch_description() -> LaunchDescription:
             parameters=[{'use_sim_time': use_sim_time}],
         ),
         Node(
-            condition=IfCondition(NotCondition(run_slam)),
+            condition=UnlessCondition(run_slam),
             package='tf2_ros',
             executable='static_transform_publisher',
             name='static_odom_to_base_link',
