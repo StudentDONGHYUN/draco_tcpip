@@ -21,8 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <Eigen/Core>
+#include <chrono>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
 #include <memory>
 #include <sophus/se3.hpp>
+#include <sstream>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -45,6 +51,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/empty.hpp>
+#include <std_srvs/srv/trigger.hpp>
 namespace {
 Sophus::SE3d LookupTransform(const std::string &target_frame,
                              const std::string &source_frame,
@@ -62,6 +69,25 @@ Sophus::SE3d LookupTransform(const std::string &target_frame,
                 err_msg.c_str());
     // default construction is the identity
     return Sophus::SE3d();
+}
+
+std::filesystem::path ExpandUserPath(const std::string &input) {
+    if (input.empty()) {
+        return {};
+    }
+    if (input == "~") {
+        if (const char *home = std::getenv("HOME")) {
+            return std::filesystem::path(home);
+        }
+        return {};
+    }
+    if (input.size() > 2 && input[0] == '~' && input[1] == '/') {
+        if (const char *home = std::getenv("HOME")) {
+            return std::filesystem::path(home) / input.substr(2);
+        }
+        return std::filesystem::path(input.substr(2));
+    }
+    return std::filesystem::path(input);
 }
 }  // namespace
 
@@ -102,6 +128,9 @@ OdometryServer::OdometryServer(const rclcpp::NodeOptions &options)
     reset_service_ = create_service<std_srvs::srv::Empty>(
         "kiss/reset", std::bind(&OdometryServer::ResetService, this, std::placeholders::_1,
                                 std::placeholders::_2));
+    save_map_service_ = create_service<std_srvs::srv::Trigger>(
+        "kiss/save_map", std::bind(&OdometryServer::SaveMapService, this, std::placeholders::_1,
+                                   std::placeholders::_2));
 
     RCLCPP_INFO(this->get_logger(), "KISS-ICP ROS 2 odometry node initialized");
 }
@@ -123,6 +152,21 @@ void OdometryServer::initializeParameters(kiss_icp::pipeline::KISSConfig &config
     RCLCPP_INFO(this->get_logger(), "\tPosition covariance: %.2f", position_covariance_);
     orientation_covariance_ = declare_parameter<double>("orientation_covariance", 0.1);
     RCLCPP_INFO(this->get_logger(), "\tOrientation covariance: %.2f", orientation_covariance_);
+    const auto map_dir_param =
+        declare_parameter<std::string>("map.save_directory", "~/kiss_icp_maps");
+    map_save_directory_ = ExpandUserPath(map_dir_param);
+    if (map_save_directory_.empty()) {
+        map_save_directory_ = std::filesystem::current_path();
+    }
+    std::error_code dir_ec;
+    auto abs_dir = std::filesystem::absolute(map_save_directory_, dir_ec);
+    if (!dir_ec) {
+        map_save_directory_ = abs_dir;
+    }
+    const auto map_dir_string = map_save_directory_.string();
+    RCLCPP_INFO(this->get_logger(), "\tMap save directory: %s", map_dir_string.c_str());
+    map_save_binary_ = declare_parameter<bool>("map.save_binary", true);
+    RCLCPP_INFO(this->get_logger(), "\tMap save binary: %d", static_cast<int>(map_save_binary_));
 
     config.max_range = declare_parameter<double>("data.max_range", config.max_range);
     RCLCPP_INFO(this->get_logger(), "\tMax range: %.2f", config.max_range);
@@ -240,6 +284,107 @@ void OdometryServer::ResetService(
     kiss_icp_->Reset();
 
     RCLCPP_INFO(this->get_logger(), "KISS-ICP reset completed successfully");
+}
+
+void OdometryServer::SaveMapService(
+    [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+    const auto local_map = kiss_icp_->LocalMap();
+    if (local_map.empty()) {
+        response->success = false;
+        response->message = "Local map is empty; nothing to save.";
+        RCLCPP_WARN(this->get_logger(), "%s", response->message.c_str());
+        return;
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories(map_save_directory_, ec);
+    if (ec) {
+        response->success = false;
+        response->message =
+            "Failed to create map output directory: " + map_save_directory_.string();
+        RCLCPP_ERROR(this->get_logger(), "%s (error: %s)", response->message.c_str(),
+                     ec.message().c_str());
+        return;
+    }
+
+    const auto now = std::chrono::system_clock::now();
+    const auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm time_info{};
+#if defined(_WIN32)
+    localtime_s(&time_info, &time_t_now);
+#else
+    localtime_r(&time_t_now, &time_info);
+#endif
+    std::ostringstream filename;
+    filename << "kiss_map_" << std::put_time(&time_info, "%Y%m%d_%H%M%S") << ".ply";
+    auto filepath = map_save_directory_ / filename.str();
+
+    if (!WriteLocalMapToFile(local_map, filepath)) {
+        response->success = false;
+        response->message = "Failed to write map to " + filepath.string();
+        return;
+    }
+
+    response->success = true;
+    response->message = "Saved map to " + filepath.string();
+    RCLCPP_INFO(this->get_logger(), "%s", response->message.c_str());
+}
+
+bool OdometryServer::WriteLocalMapToFile(const std::vector<Eigen::Vector3d> &points,
+                                         const std::filesystem::path &path) const {
+    if (points.empty()) {
+        RCLCPP_WARN(this->get_logger(), "Requested to write map, but local map is empty.");
+        return false;
+    }
+
+    std::ofstream output;
+    if (map_save_binary_) {
+        output.open(path, std::ios::binary);
+    } else {
+        output.open(path);
+    }
+    if (!output.good()) {
+        RCLCPP_ERROR(this->get_logger(), "Unable to open %s for writing.", path.string().c_str());
+        return false;
+    }
+
+    output << "ply\n";
+    if (map_save_binary_) {
+        output << "format binary_little_endian 1.0\n";
+    } else {
+        output << "format ascii 1.0\n";
+    }
+    output << "element vertex " << points.size() << "\n";
+    output << "property float x\n";
+    output << "property float y\n";
+    output << "property float z\n";
+    output << "end_header\n";
+
+    if (map_save_binary_) {
+        for (const auto &point : points) {
+            const float x = static_cast<float>(point.x());
+            const float y = static_cast<float>(point.y());
+            const float z = static_cast<float>(point.z());
+            output.write(reinterpret_cast<const char *>(&x), sizeof(float));
+            output.write(reinterpret_cast<const char *>(&y), sizeof(float));
+            output.write(reinterpret_cast<const char *>(&z), sizeof(float));
+        }
+    } else {
+        output << std::fixed << std::setprecision(6);
+        for (const auto &point : points) {
+            output << static_cast<float>(point.x()) << ' ' << static_cast<float>(point.y()) << ' '
+                   << static_cast<float>(point.z()) << '\n';
+        }
+    }
+
+    if (!output.good()) {
+        RCLCPP_ERROR(this->get_logger(), "Error occurred while writing %s.",
+                     path.string().c_str());
+        return false;
+    }
+
+    return true;
 }
 }  // namespace kiss_icp_ros
 

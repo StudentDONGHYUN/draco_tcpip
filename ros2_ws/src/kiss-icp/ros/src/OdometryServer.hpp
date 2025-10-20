@@ -35,7 +35,10 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <std_srvs/srv/empty.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <filesystem>
 #include <string>
+#include <vector>
 
 namespace kiss_icp_ros {
 
@@ -62,6 +65,10 @@ private:
                        const std_msgs::msg::Header &header);
     void ResetService(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
                       std::shared_ptr<std_srvs::srv::Empty::Response> response);
+    void SaveMapService(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    bool WriteLocalMapToFile(const std::vector<Eigen::Vector3d> &points,
+                             const std::filesystem::path &path) const;
 
 private:
     /// Tools for broadcasting TFs.
@@ -83,6 +90,7 @@ private:
 
     /// Service servers.
     rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_map_service_;
 
     /// KISS-ICP
     std::unique_ptr<kiss_icp::pipeline::KissICP> kiss_icp_;
@@ -94,6 +102,8 @@ private:
     /// Covariance diagonal
     double position_covariance_;
     double orientation_covariance_;
+    std::filesystem::path map_save_directory_;
+    bool map_save_binary_;
 };
 
 }  // namespace kiss_icp_ros
