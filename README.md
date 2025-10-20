@@ -6,6 +6,7 @@ Draco(구글의 3D 압축 라이브러리)를 이용해 LiDAR 포인트클라우
 - **목표**: 제한된 네트워크 환경에서 3D 포인트클라우드를 실시간 스트리밍하면서도 복원 품질을 모니터링합니다.
 - **핵심 역할**: 로봇(클라이언트)은 포인트클라우드를 압축해 업링크로 전송하고, 서버는 복원 및 분석 후 ROS 토픽으로 재배포하며 제어·경로 정보를 다운링크로 돌려줍니다.
 - **파이프라인 범위**: 오프라인 PLY 전처리 → 실시간 인코더 노드 → TCP 전송(커스텀 프로토콜) → 서버 디코딩 → ROS 생태계와 SLAM 애플리케이션 연동.
+- **라이브 센서 연동**: Ouster OS 시리즈와 같은 LiDAR를 `ros2_ouster` 드라이버로 바로 수집해 동일한 스트리밍 경로에 투입할 수 있습니다.
 
 ## 아키텍처 다이어그램
 ```mermaid
@@ -36,6 +37,8 @@ flowchart LR
         listener --> downlink --> protocol
     end
 ```
+
+`rosbag2 Player` 노드는 라이브 센서를 의미하는 `ros2_ouster` 드라이버로 대체 가능합니다. 두 입력 소스는 동일한 인코더/송신 파이프라인을 공유합니다.
 
 ## 시퀀스 다이어그램
 ```mermaid
@@ -68,6 +71,7 @@ sequenceDiagram
 3. **수신·복원**: 서버 측 `stream_server` 노드는 같은 프로토콜로 프레임을 수신하고 DracoPy로 복원하며, ROS 토픽(`/stream_pair/source`, `/stream_pair/decoded`)으로 퍼블리시합니다.
 4. **품질 분석**: `draco_roundtrip.analysis` 모듈이 복원된 프레임을 기준으로 Chamfer-like metric을 계산하고, 필요 시 PNG 리포트 및 로그를 생성합니다.
 5. **제어 피드백**: 서버가 SLAM/제어 스택에서 생성한 `Pose`, `Twist`, `NavPath` 정보를 다운링크 소켓으로 밀어주고, 클라이언트는 이를 ROS 토픽으로 다시 퍼블리시하여 제어 루프에 반영합니다.
+6. **라이브 센서 모드**: `ros2_ouster` 드라이버가 `/points` 토픽을 퍼블리시하면 인코더는 `qos_best_effort` 설정에 따라 스트림을 소비하고, rosbag 없이도 동일한 왕복 경로를 실행합니다.
 
 ## 주요 구성 요소
 - `draco_roundtrip`
@@ -79,6 +83,10 @@ sequenceDiagram
   - `nodes/`, `tools/`, `cli/`: ROS 2 노드와 CLI 엔트리 포인트가 위 모듈을 import 하도록 정리되어 있습니다.
 - `draco_tools`
   - 기존 CLI는 `draco_roundtrip` 모듈을 thin wrapper 로 호출해, ROS 패키지 호환성을 유지하면서도 단일 코드베이스를 사용합니다.
+- `ros2_ouster_drivers`
+  - `ros2_ouster` 패키지를 통해 Ouster OS 시리즈 라이더를 직접 구동하며 `/points` 토픽을 퍼블리시합니다. `client_ouster.launch.py`가 기본 설정을 사용합니다.
+- `kiss-icp`
+  - PRBonn KISS-ICP 구현이 vendor 형태로 포함되어 SLAM 브리지 패키지(`slam_stream_bridge`)와 런치 파일에서 바로 사용할 수 있습니다.
 - `slam_stream_bridge`: SLAM 실험과 연동할 수 있는 런치 파일 모음
 
 ## 사전 준비
@@ -87,6 +95,7 @@ sequenceDiagram
 3. **Python 의존성**: `numpy`, `plyfile`, `scipy`, `open3d` 등이 필요합니다. 시스템 패키지 또는 `pip install numpy plyfile scipy open3d`로 설치하세요.
 4. **데이터**: 테스트 rosbag을 `data/bags/` 아래에 배치합니다. (예시: `data/bags/rosbag2_2024_09_24-14_28_57/`)
 5. **KISS-ICP 의존성**: SLAM 연동 런치에 필요한 [PRBonn/kiss-icp](https://github.com/PRBonn/kiss-icp) 패키지가 `ros2_ws/src/kiss-icp`에 포함되어 있습니다. 원저장소의 최신 기능이 필요하다면 직접 `git pull` 또는 `git remote -v`를 활용해 업데이트할 수 있습니다.
+6. **Ouster 라이브 스트리밍(선택)**: 실시간 센서를 사용할 경우 `ros2_ouster` 패키지의 `params/driver_config.yaml`을 센서 IP와 네트워크 환경에 맞게 수정하고, 센서가 동일 네트워크에서 동작 중인지 확인합니다. 필요 시 [Ouster 공식 문서](https://github.com/ouster-lidar/ouster-ros)를 참고해 방화벽 및 멀티캐스트 설정을 맞춰 주세요.
 
 ## 빌드 절차
 ```bash
@@ -131,7 +140,34 @@ ros2 launch draco_roundtrip client.launch.py \
 - `server_port` (옵션): 서버 런치에서 사용한 업링크 포트(기본값 `5000`). 다운링크 포트는 자동으로 `server_port + 1` 로 설정됩니다.
 - `bag_file` (필수): 스트리밍할 rosbag2 디렉터리 또는 DB3 파일의 절대 경로.
 - `topic_name` (필수): rosbag 안의 `sensor_msgs/msg/PointCloud2` 토픽 이름.
+- `qos_best_effort` (옵션, 기본 `false`): rosbag 기록이 Best Effort QoS로 만들어졌다면 구독 QoS를 일치시켜 드롭을 줄일 수 있습니다.
+- `idle_shutdown_timeout` (옵션, 기본 `5.0`): 입력이 끊긴 뒤 지정 초가 지나면 `sender_node`가 종료됩니다. 무한 대기하려면 `0`으로 두세요.
+- `loop` (옵션, 기본 `false`): rosbag을 반복 재생합니다.
 - `work_dir`, `encoder`, `telemetry_rate` 등의 추가 인자는 런치 인자로 전달하면 해당 ROS 2 파라미터가 설정됩니다.
+
+**실시간 Ouster 센서(옵션)**
+
+`ros2_ouster` 드라이버와 스트리밍 노드를 동시에 실행하려면:
+
+```bash
+source /opt/ros/humble/setup.bash
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+source install/setup.bash
+ros2 launch draco_roundtrip client_ouster.launch.py \
+    server_host:=192.168.3.16 \
+    server_port:=5000 \
+    prefix:=robot1 \
+    telemetry_rate:=10.0 \
+    idle_shutdown_timeout:=0.0 \
+    driver_params_file:=/home/kkit/newdisk/draco_tcpip/ros2_ws/src/ros2_ouster_drivers/ros2_ouster/params/driver_config.yaml \
+    pointcloud_topic:=/points \
+    qos_best_effort:=true
+```
+
+- `driver_params_file`: 센서 IP, 포트, 모드를 정의한 YAML. 센서 환경에 맞춰 수정하세요.
+- `pointcloud_topic`: 드라이버가 퍼블리시하는 `PointCloud2` 토픽 이름. 기본값은 `/points`입니다.
+- `qos_best_effort`: 라이브 센서 노이즈로 인해 패킷 유실이 발생할 수 있으므로 Best Effort를 사용하는 것이 일반적입니다.
+- `idle_shutdown_timeout`: 라이브 모드에서 `0`으로 두면 지속 실행합니다.
 
 각 런치 파일은 ROS 2 파라미터 기반으로 노드를 구성합니다. 세부 동작을 바꾸고 싶다면 `ros2 launch ... telemetry_rate:=5.0` 처럼 런치 인자에서 원하는 값을 덮어쓰거나, `--ros-args --params-file custom.yaml` 을 추가해 YAML 파라미터 파일을 전달하면 됩니다. 클라이언트가 실행되면 `data/ply_stream/`에 생성된 PLY 파일을 인코딩한 뒤 서버로 전송하고, 서버에서 돌려받은 복원 결과는 `data/decoded_from_server/`에 저장되며 동시에 ROS 토픽(`stream_pair/source`, `stream_pair/decoded`)으로 퍼블리시됩니다. RViz에서 두 토픽을 비교하면 복원 품질을 시각적으로 확인할 수 있습니다.
 
@@ -154,115 +190,18 @@ ros2 launch draco_roundtrip client.launch.py \
 각 노드/스크립트는 `--help` 옵션으로 세부 인자를 확인할 수 있습니다.
 
 ## 디렉터리 구조
-- 루트에서 `tree -L 2` 실행 결과
-  ```bash
-  $ tree -L 2
-  .
-  ├── configs
-  │   ├── client.profile.yaml
-  │   ├── draco.json
-  │   ├── hdl_graph_slam_stream.yaml
-  │   ├── netem.profiles.yaml
-  │   ├── qos_override.yaml
-  │   ├── ros_topics.yaml
-  │   ├── rtabmap_stream.yaml
-  │   └── server.profile.yaml
-  ├── data
-  │   ├── bags
-  │   ├── bags_keep
-  │   ├── client_tmp
-  │   ├── decoded_from_server
-  │   ├── ply_stream
-  │   ├── results
-  │   └── server_tmp
-  ├── docs
-  │   ├── 3d_slam_setup.md
-  │   ├── apps_legacy
-  │   ├── HOWTO.md
-  │   ├── results_template.md
-  │   └── webui
-  ├── draco-ros2-roundtrip
-  │   ├── analysis
-  │   ├── apps
-  │   ├── configs
-  │   ├── data
-  │   ├── docs
-  │   ├── launch
-  │   ├── logs
-  │   ├── Makefile
-  │   ├── offline_pipeline.py
-  │   ├── pcd_diff.log
-  │   ├── qos_override.yaml
-  │   ├── README.md
-  │   ├── requirements.txt
-  │   ├── scripts
-  │   └── webui
-  ├── logs
-  │   ├── ros
-  │   └── runs
-  ├── migrate_refactor.sh
-  ├── README.md
-  ├── README.md.keep
-  ├── refac.md
-  ├── ros2_ws
-  │   ├── build
-  │   ├── install
-  │   ├── log
-  │   └── src
-  ├── scripts
-  │   ├── ddscycle.sh
-  │   ├── netem_apply.sh
-  │   ├── run_client.sh
-  │   ├── run_server.sh
-  │   └── summarize.sh
-  └── tmp_ply
-  
-  32 directories, 26 files
-  ```
-
-- 주요 하위 디렉터리 샘플
-  ```bash
-  $ tree data/bags -L 2
-  data/bags
-  ├── rosbag2_2024_09_24-14_28_57
-  │   ├── metadata.yaml
-  │   └── rosbag2_2024_09_24-14_28_57_0.db3
-  └── rosbag2_2024_09_24-14_30_22
-      ├── metadata.yaml
-      └── rosbag2_2024_09_24-14_30_22_0.db3
-  
-  2 directories, 4 files
-  
-  $ tree ros2_ws/src -L 2
-  ros2_ws/src
-  ├── draco_roundtrip
-  │   ├── draco_roundtrip
-  │   ├── package.xml
-  │   ├── resource
-  │   ├── setup.cfg
-  │   └── setup.py
-  ├── draco_tools
-  │   ├── draco_tools
-  │   ├── package.xml
-  │   ├── resource
-  │   ├── setup.cfg
-  │   └── setup.py
-  └── slam_stream_bridge
-      ├── package.xml
-      ├── resource
-      ├── setup.cfg
-      ├── setup.py
-      └── slam_stream_bridge
-  
-  9 directories, 9 files
-  ```
-
-- `data/`: rosbag, 인코딩된 `.drc`, 복원된 `.ply` 등 실험 산출물이 위치합니다. `.gitignore` 대상이므로 자유롭게 사용 가능합니다.
-- `logs/`: 실행 로그 저장 위치. 필요 시 비우고 다시 사용하세요.
-- `ros2_ws/`: ROS 2 패키지 소스 및 빌드 아티팩트가 있는 워크스페이스 루트입니다.
+- `configs/`: 스트리밍 프로파일, QoS 오버라이드, 네트워크 에뮬레이션 설정이 정리되어 있습니다.
+- `data/`: 실험 산출물과 맵 데이터를 보관합니다. `.gitignore` 처리로 자유롭게 활용 가능합니다.
+- `docs/`: 아키텍처 설명, 마이그레이션 가이드, 레퍼런스 노트가 정리되어 있습니다.
+- `ros2_ws/src/draco_roundtrip`: 인코더/송신/서버 노드와 런치 파일이 위치한 핵심 패키지입니다.
+- `ros2_ws/src/draco_tools`: rosbag ↔︎ PLY 변환 등 오프라인 유틸리티가 포함됩니다.
+- `ros2_ws/src/ros2_ouster_drivers/ros2_ouster`: Ouster 공식 드라이버에서 포크된 ROS 2 드라이버와 설정 파일이 포함되어 라이브 센서를 구동합니다.
+- `ros2_ws/src/kiss-icp`: SLAM 브리지를 위한 PRBonn KISS-ICP 구현이 vendor 형태로 제공됩니다.
+- `ros2_ws/src/slam_stream_bridge`: RTAB-Map, HDL Graph SLAM 등과의 통합 런치 파일 및 노드를 제공합니다.
+- `ros2_ws/build`, `ros2_ws/install`, `ros2_ws/log`: `colcon build` 수행 시 생성되는 바이너리/로그 산출물입니다. 필요 시 `colcon build --merge-install` 등으로 재생성하면 됩니다.
 
 ## 문제 해결
-- **QoS mismatch**로 메시지가 수신되지 않을 경우, 클라이언트를 `--reliable` 로 실행하거나 rosbag을 재생할 때 다른 QoS 설정을 사용해 보세요.
+- **QoS mismatch**로 메시지가 수신되지 않을 경우, `client.launch.py`에서는 `qos_best_effort:=true` 또는 `telemetry_rate`를 조정해 확인하고, rosbag 재생 시 `--qos-profile-overrides-path` 옵션을 사용해 출판 QoS를 일치시켜 보세요.
 - `.ros/log` 가 가득 차 Permission 오류가 발생하면 `rm -rf ~/.ros/log/*` 로 정리한 뒤 다시 실행합니다.
 - Draco 실행 파일을 찾지 못하면 PATH 또는 환경 변수를 재확인하세요 (`which draco_encoder` 로 확인 가능).
 
