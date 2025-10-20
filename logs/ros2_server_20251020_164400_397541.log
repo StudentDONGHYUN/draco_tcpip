@@ -1,0 +1,19 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-20T16:44:00.397541
+[2025-10-20 16:44:00.449614][static_transform_publisher-3][STDERR] [WARN] [1760946240.449051945] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:44:00.450210][static_transform_publisher-4][STDERR] [WARN] [1760946240.449052558] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:44:00.459205][static_transform_publisher-3][STDERR] [INFO] [1760946240.458264967] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-20 16:44:00.459205][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:44:00.459205][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:44:00.459205][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-20 16:44:00.460077][static_transform_publisher-4][STDERR] [INFO] [1760946240.459210475] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-20 16:44:00.460077][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:44:00.460077][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:44:00.460077][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-20 16:44:00.461577][robot_state_publisher-1][STDERR] [INFO] [1760946240.461231031] [robot_state_publisher]: got segment base_link
+[2025-10-20 16:44:00.461932][robot_state_publisher-1][STDERR] [INFO] [1760946240.461302239] [robot_state_publisher]: got segment lidar_frame
+[2025-10-20 16:44:03.237693][stream_server-2][STDERR] [INFO] [1760946243.237297431] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-20 16:44:03.238210][stream_server-2][STDERR] [INFO] [1760946243.237475729] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-20 16:44:10.745818][stream_server-2][STDERR] [INFO] [1760946250.745475476] [stream_server]: Downlink client connected from ('127.0.0.1', 37756)
+[2025-10-20 16:44:10.746228][stream_server-2][STDERR] [INFO] [1760946250.745687407] [stream_server]: Uplink client connected from ('127.0.0.1', 36230)

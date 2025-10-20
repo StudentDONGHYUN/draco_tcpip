@@ -1,0 +1,23 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-20T16:31:19.441547
+[2025-10-20 16:31:19.504390][static_transform_publisher-3][STDERR] [WARN] [1760945479.503923241] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:31:19.505771][static_transform_publisher-4][STDERR] [WARN] [1760945479.505370133] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:31:19.516013][static_transform_publisher-3][STDERR] [INFO] [1760945479.515029049] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-20 16:31:19.516013][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:31:19.516013][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:31:19.516013][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-20 16:31:19.517615][static_transform_publisher-4][STDERR] [INFO] [1760945479.516398473] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-20 16:31:19.517615][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:31:19.517615][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:31:19.517615][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-20 16:31:19.526163][robot_state_publisher-1][STDERR] [INFO] [1760945479.525729237] [robot_state_publisher]: got segment base_link
+[2025-10-20 16:31:19.526675][robot_state_publisher-1][STDERR] [INFO] [1760945479.525825670] [robot_state_publisher]: got segment lidar_frame
+[2025-10-20 16:31:22.385399][stream_server-2][STDERR] [INFO] [1760945482.384923356] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-20 16:31:22.385886][stream_server-2][STDERR] [INFO] [1760945482.385145606] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-20 16:31:25.270428][stream_server-2][STDERR] [INFO] [1760945485.269900930] [stream_server]: Downlink client connected from ('127.0.0.1', 53446)
+[2025-10-20 16:31:25.271288][stream_server-2][STDERR] [INFO] [1760945485.270835033] [stream_server]: Uplink client connected from ('127.0.0.1', 48704)
+[2025-10-20 16:36:39.417596][static_transform_publisher-4][STDERR] [INFO] [1760945799.413636711] [rclcpp]: signal_handler(signum=2)
+[2025-10-20 16:36:39.418082][robot_state_publisher-1][STDERR] [INFO] [1760945799.413638683] [rclcpp]: signal_handler(signum=2)
+[2025-10-20 16:36:39.418706][static_transform_publisher-3][STDERR] [INFO] [1760945799.413636898] [rclcpp]: signal_handler(signum=2)
+[2025-10-20 16:36:39.671888][stream_server-2][STDERR] [INFO] [1760945799.671512899] [stream_server]: Uplink session summary: in=284306618 bytes, out=0 bytes

@@ -1,0 +1,482 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-20T16:36:57.559063
+[2025-10-20 16:36:57.610727][static_transform_publisher-3][STDERR] [WARN] [1760945817.610260080] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:36:57.611170][static_transform_publisher-4][STDERR] [WARN] [1760945817.610511454] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:36:57.621519][static_transform_publisher-3][STDERR] [INFO] [1760945817.620667072] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-20 16:36:57.621519][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:36:57.621519][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:36:57.621519][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-20 16:36:57.622180][static_transform_publisher-4][STDERR] [INFO] [1760945817.620881530] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-20 16:36:57.622180][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:36:57.622180][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:36:57.622180][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-20 16:36:57.622605][robot_state_publisher-1][STDERR] [INFO] [1760945817.622082553] [robot_state_publisher]: got segment base_link
+[2025-10-20 16:36:57.622605][robot_state_publisher-1][STDERR] [INFO] [1760945817.622146815] [robot_state_publisher]: got segment lidar_frame
+[2025-10-20 16:37:00.440648][stream_server-2][STDERR] [INFO] [1760945820.440287614] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-20 16:37:00.441056][stream_server-2][STDERR] [INFO] [1760945820.440425517] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-20 16:37:02.118054][stream_server-2][STDERR] [INFO] [1760945822.117673777] [stream_server]: Uplink client connected from ('127.0.0.1', 38816)
+[2025-10-20 16:37:02.159226][stream_server-2][STDERR] [INFO] [1760945822.158881337] [stream_server]: Downlink client connected from ('127.0.0.1', 57072)
+[2025-10-20 16:43:42.837572][stream_server-2][STDERR] [INFO] [1760946222.837122427] [stream_server]: Uplink session summary: in=303236789 bytes, out=0 bytes
+[2025-10-20 16:43:42.892993][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 54532 (\N{HANGUL SYLLABLE PEU}) missing from current font.
+[2025-10-20 16:43:42.892993][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.893864][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47112 (\N{HANGUL SYLLABLE RE}) missing from current font.
+[2025-10-20 16:43:42.893864][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.893864][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 51076 (\N{HANGUL SYLLABLE IM}) missing from current font.
+[2025-10-20 16:43:42.893864][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.894523][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 49692 (\N{HANGUL SYLLABLE SUN}) missing from current font.
+[2025-10-20 16:43:42.894523][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.894523][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 49436 (\N{HANGUL SYLLABLE SEO}) missing from current font.
+[2025-10-20 16:43:42.894523][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.906127][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 51648 (\N{HANGUL SYLLABLE JI}) missing from current font.
+[2025-10-20 16:43:42.906127][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.906127][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 50672 (\N{HANGUL SYLLABLE YEON}) missing from current font.
+[2025-10-20 16:43:42.906127][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.907038][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 49884 (\N{HANGUL SYLLABLE SI}) missing from current font.
+[2025-10-20 16:43:42.907038][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.907038][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 44036 (\N{HANGUL SYLLABLE GAN}) missing from current font.
+[2025-10-20 16:43:42.907038][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.910571][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 48324 (\N{HANGUL SYLLABLE BYEOL}) missing from current font.
+[2025-10-20 16:43:42.910571][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.911493][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 51333 (\N{HANGUL SYLLABLE JONG}) missing from current font.
+[2025-10-20 16:43:42.911493][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.911493][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 45800 (\N{HANGUL SYLLABLE DAN}) missing from current font.
+[2025-10-20 16:43:42.911493][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:42.925327][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 54532 (\N{HANGUL SYLLABLE PEU}) missing from current font.
+[2025-10-20 16:43:42.925327][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.926170][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47112 (\N{HANGUL SYLLABLE RE}) missing from current font.
+[2025-10-20 16:43:42.926170][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.926170][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 51076 (\N{HANGUL SYLLABLE IM}) missing from current font.
+[2025-10-20 16:43:42.926170][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.926743][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 49692 (\N{HANGUL SYLLABLE SUN}) missing from current font.
+[2025-10-20 16:43:42.926743][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.926743][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 49436 (\N{HANGUL SYLLABLE SEO}) missing from current font.
+[2025-10-20 16:43:42.926743][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.934702][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 51648 (\N{HANGUL SYLLABLE JI}) missing from current font.
+[2025-10-20 16:43:42.934702][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.935517][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 50672 (\N{HANGUL SYLLABLE YEON}) missing from current font.
+[2025-10-20 16:43:42.935517][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.935517][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 49884 (\N{HANGUL SYLLABLE SI}) missing from current font.
+[2025-10-20 16:43:42.935517][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.936147][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 44036 (\N{HANGUL SYLLABLE GAN}) missing from current font.
+[2025-10-20 16:43:42.936147][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.956975][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 48324 (\N{HANGUL SYLLABLE BYEOL}) missing from current font.
+[2025-10-20 16:43:42.956975][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.957681][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 51333 (\N{HANGUL SYLLABLE JONG}) missing from current font.
+[2025-10-20 16:43:42.957681][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:42.957681][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 45800 (\N{HANGUL SYLLABLE DAN}) missing from current font.
+[2025-10-20 16:43:42.957681][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.030755][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 50517 (\N{HANGUL SYLLABLE AB}) missing from current font.
+[2025-10-20 16:43:43.030755][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.031724][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 52629 (\N{HANGUL SYLLABLE CUG}) missing from current font.
+[2025-10-20 16:43:43.031724][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.031724][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 46108 (\N{HANGUL SYLLABLE DOEN}) missing from current font.
+[2025-10-20 16:43:43.031724][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.031724][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 53356 (\N{HANGUL SYLLABLE KEU}) missing from current font.
+[2025-10-20 16:43:43.031724][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.032255][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 44592 (\N{HANGUL SYLLABLE GI}) missing from current font.
+[2025-10-20 16:43:43.032255][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.033070][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 52376 (\N{HANGUL SYLLABLE CEO}) missing from current font.
+[2025-10-20 16:43:43.033070][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.033070][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47532 (\N{HANGUL SYLLABLE RI}) missing from current font.
+[2025-10-20 16:43:43.033070][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.033070][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47049 (\N{HANGUL SYLLABLE RYANG}) missing from current font.
+[2025-10-20 16:43:43.033070][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.052209][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 50517 (\N{HANGUL SYLLABLE AB}) missing from current font.
+[2025-10-20 16:43:43.052209][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 52629 (\N{HANGUL SYLLABLE CUG}) missing from current font.
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 46108 (\N{HANGUL SYLLABLE DOEN}) missing from current font.
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 53356 (\N{HANGUL SYLLABLE KEU}) missing from current font.
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 44592 (\N{HANGUL SYLLABLE GI}) missing from current font.
+[2025-10-20 16:43:43.053231][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.070401][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 52376 (\N{HANGUL SYLLABLE CEO}) missing from current font.
+[2025-10-20 16:43:43.070401][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.071149][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47532 (\N{HANGUL SYLLABLE RI}) missing from current font.
+[2025-10-20 16:43:43.071149][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.071149][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47049 (\N{HANGUL SYLLABLE RYANG}) missing from current font.
+[2025-10-20 16:43:43.071149][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.200831][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 48708 (\N{HANGUL SYLLABLE BI}) missing from current font.
+[2025-10-20 16:43:43.200831][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.201492][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 50984 (\N{HANGUL SYLLABLE YUL}) missing from current font.
+[2025-10-20 16:43:43.201492][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.202213][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47456 (\N{HANGUL SYLLABLE RYUL}) missing from current font.
+[2025-10-20 16:43:43.202213][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-20 16:43:43.221805][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 48708 (\N{HANGUL SYLLABLE BI}) missing from current font.
+[2025-10-20 16:43:43.221805][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.222302][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 50984 (\N{HANGUL SYLLABLE YUL}) missing from current font.
+[2025-10-20 16:43:43.222302][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.239881][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47456 (\N{HANGUL SYLLABLE RYUL}) missing from current font.
+[2025-10-20 16:43:43.239881][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-20 16:43:43.283423][stream_server-2][STDERR] [INFO] [1760946223.283005791] [stream_server]: Server session report saved to logs/server_report_20251020_164343.html
+[2025-10-20 16:43:43.284139][stream_server-2][STDERR] [INFO] [1760946223.283884770] [stream_server]: Uplink connection closed by peer
+[2025-10-20 16:43:43.285738][stream_server-2][STDERR] [INFO] [1760946223.285473490] [stream_server]: Uplink session finished
+[2025-10-20 16:43:43.286532][stream_server-2][STDERR] [INFO] [1760946223.286214643] [stream_server]: Uplink client connected from ('127.0.0.1', 38826)
+[2025-10-20 16:43:43.320999][stream_server-2][STDERR] [INFO] [1760946223.320572744] [stream_server]: Uplink session summary: in=72875 bytes, out=0 bytes
+[2025-10-20 16:43:43.555435][stream_server-2][STDERR] [INFO] [1760946223.554910189] [stream_server]: Server session report saved to logs/server_report_20251020_164343.html
+[2025-10-20 16:43:43.556011][stream_server-2][STDERR] [ERROR] [1760946223.555391308] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:43.556814][stream_server-2][STDERR] [INFO] [1760946223.555850034] [stream_server]: Uplink session finished
+[2025-10-20 16:43:43.557345][stream_server-2][STDERR] [INFO] [1760946223.556370269] [stream_server]: Uplink client connected from ('127.0.0.1', 36034)
+[2025-10-20 16:43:43.595520][stream_server-2][STDERR] [INFO] [1760946223.595086070] [stream_server]: Uplink session summary: in=72853 bytes, out=0 bytes
+[2025-10-20 16:43:43.827248][stream_server-2][STDERR] [INFO] [1760946223.826759203] [stream_server]: Server session report saved to logs/server_report_20251020_164343.html
+[2025-10-20 16:43:43.827833][stream_server-2][STDERR] [ERROR] [1760946223.827232125] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:43.828321][stream_server-2][STDERR] [INFO] [1760946223.827711947] [stream_server]: Uplink session finished
+[2025-10-20 16:43:43.828834][stream_server-2][STDERR] [INFO] [1760946223.828237829] [stream_server]: Uplink client connected from ('127.0.0.1', 36036)
+[2025-10-20 16:43:43.868374][stream_server-2][STDERR] [INFO] [1760946223.868035487] [stream_server]: Uplink session summary: in=77020 bytes, out=0 bytes
+[2025-10-20 16:43:43.894537][stream_server-2][STDERR] [INFO] [1760946223.894028447] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.895982][stream_server-2][STDERR] [INFO] [1760946223.895675880] [stream_server]: Downlink client connected from ('127.0.0.1', 57082)
+[2025-10-20 16:43:43.897307][stream_server-2][STDERR] [INFO] [1760946223.897025580] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.898794][stream_server-2][STDERR] [INFO] [1760946223.898500573] [stream_server]: Downlink client connected from ('127.0.0.1', 37924)
+[2025-10-20 16:43:43.899907][stream_server-2][STDERR] [INFO] [1760946223.899631722] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.915689][stream_server-2][STDERR] [INFO] [1760946223.915045858] [stream_server]: Downlink client connected from ('127.0.0.1', 37926)
+[2025-10-20 16:43:43.918656][stream_server-2][STDERR] [INFO] [1760946223.918201071] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.921032][stream_server-2][STDERR] [INFO] [1760946223.920614764] [stream_server]: Downlink client connected from ('127.0.0.1', 37930)
+[2025-10-20 16:43:43.922650][stream_server-2][STDERR] [INFO] [1760946223.922420685] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.924702][stream_server-2][STDERR] [INFO] [1760946223.924413727] [stream_server]: Downlink client connected from ('127.0.0.1', 51280)
+[2025-10-20 16:43:43.926348][stream_server-2][STDERR] [INFO] [1760946223.926111723] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.928280][stream_server-2][STDERR] [INFO] [1760946223.928009958] [stream_server]: Downlink client connected from ('127.0.0.1', 51290)
+[2025-10-20 16:43:43.930244][stream_server-2][STDERR] [INFO] [1760946223.930016157] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.932256][stream_server-2][STDERR] [INFO] [1760946223.931987477] [stream_server]: Downlink client connected from ('127.0.0.1', 54410)
+[2025-10-20 16:43:43.937141][stream_server-2][STDERR] [INFO] [1760946223.936290811] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.939967][stream_server-2][STDERR] [INFO] [1760946223.939571350] [stream_server]: Downlink client connected from ('127.0.0.1', 54420)
+[2025-10-20 16:43:43.941491][stream_server-2][STDERR] [INFO] [1760946223.941165612] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.944350][stream_server-2][STDERR] [INFO] [1760946223.944038592] [stream_server]: Downlink client connected from ('127.0.0.1', 54424)
+[2025-10-20 16:43:43.952726][stream_server-2][STDERR] [INFO] [1760946223.952217568] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.954790][stream_server-2][STDERR] [INFO] [1760946223.954460017] [stream_server]: Downlink client connected from ('127.0.0.1', 36690)
+[2025-10-20 16:43:43.956582][stream_server-2][STDERR] [INFO] [1760946223.956300687] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.959295][stream_server-2][STDERR] [INFO] [1760946223.959005699] [stream_server]: Downlink client connected from ('127.0.0.1', 36696)
+[2025-10-20 16:43:43.961992][stream_server-2][STDERR] [INFO] [1760946223.961687105] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.963282][stream_server-2][STDERR] [INFO] [1760946223.963003724] [stream_server]: Downlink client connected from ('127.0.0.1', 49294)
+[2025-10-20 16:43:43.966245][stream_server-2][STDERR] [INFO] [1760946223.965932911] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.969174][stream_server-2][STDERR] [INFO] [1760946223.968651785] [stream_server]: Downlink client connected from ('127.0.0.1', 49298)
+[2025-10-20 16:43:43.972105][stream_server-2][STDERR] [INFO] [1760946223.971608024] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.975169][stream_server-2][STDERR] [INFO] [1760946223.974755948] [stream_server]: Downlink client connected from ('127.0.0.1', 49310)
+[2025-10-20 16:43:43.978028][stream_server-2][STDERR] [INFO] [1760946223.977610856] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.982568][stream_server-2][STDERR] [INFO] [1760946223.982071544] [stream_server]: Downlink client connected from ('127.0.0.1', 60412)
+[2025-10-20 16:43:43.987472][stream_server-2][STDERR] [INFO] [1760946223.986902300] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.990222][stream_server-2][STDERR] [INFO] [1760946223.989951697] [stream_server]: Downlink client connected from ('127.0.0.1', 60428)
+[2025-10-20 16:43:43.991172][stream_server-2][STDERR] [INFO] [1760946223.990949738] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.992483][stream_server-2][STDERR] [INFO] [1760946223.992268907] [stream_server]: Downlink client connected from ('127.0.0.1', 39864)
+[2025-10-20 16:43:43.993501][stream_server-2][STDERR] [INFO] [1760946223.993266129] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.994685][stream_server-2][STDERR] [INFO] [1760946223.994480771] [stream_server]: Downlink client connected from ('127.0.0.1', 39874)
+[2025-10-20 16:43:43.995689][stream_server-2][STDERR] [INFO] [1760946223.995487693] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.996796][stream_server-2][STDERR] [INFO] [1760946223.996596219] [stream_server]: Downlink client connected from ('127.0.0.1', 39884)
+[2025-10-20 16:43:43.997802][stream_server-2][STDERR] [INFO] [1760946223.997617291] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:43.999184][stream_server-2][STDERR] [INFO] [1760946223.998821091] [stream_server]: Downlink client connected from ('127.0.0.1', 45362)
+[2025-10-20 16:43:44.000490][stream_server-2][STDERR] [INFO] [1760946224.000060035] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.001903][stream_server-2][STDERR] [INFO] [1760946224.001608220] [stream_server]: Downlink client connected from ('127.0.0.1', 45364)
+[2025-10-20 16:43:44.003059][stream_server-2][STDERR] [INFO] [1760946224.002831137] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.004222][stream_server-2][STDERR] [INFO] [1760946224.004004651] [stream_server]: Downlink client connected from ('127.0.0.1', 35026)
+[2025-10-20 16:43:44.005197][stream_server-2][STDERR] [INFO] [1760946224.004982051] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.006256][stream_server-2][STDERR] [INFO] [1760946224.006039274] [stream_server]: Downlink client connected from ('127.0.0.1', 35030)
+[2025-10-20 16:43:44.007229][stream_server-2][STDERR] [INFO] [1760946224.007020861] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.008342][stream_server-2][STDERR] [INFO] [1760946224.008133217] [stream_server]: Downlink client connected from ('127.0.0.1', 35046)
+[2025-10-20 16:43:44.009337][stream_server-2][STDERR] [INFO] [1760946224.009127964] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.010403][stream_server-2][STDERR] [INFO] [1760946224.010185579] [stream_server]: Downlink client connected from ('127.0.0.1', 55060)
+[2025-10-20 16:43:44.011431][stream_server-2][STDERR] [INFO] [1760946224.011211331] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.012622][stream_server-2][STDERR] [INFO] [1760946224.012390688] [stream_server]: Downlink client connected from ('127.0.0.1', 55062)
+[2025-10-20 16:43:44.013642][stream_server-2][STDERR] [INFO] [1760946224.013419019] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.014846][stream_server-2][STDERR] [INFO] [1760946224.014607919] [stream_server]: Downlink client connected from ('127.0.0.1', 57976)
+[2025-10-20 16:43:44.015889][stream_server-2][STDERR] [INFO] [1760946224.015687025] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.017025][stream_server-2][STDERR] [INFO] [1760946224.016823533] [stream_server]: Downlink client connected from ('127.0.0.1', 57984)
+[2025-10-20 16:43:44.018086][stream_server-2][STDERR] [INFO] [1760946224.017832518] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.019180][stream_server-2][STDERR] [INFO] [1760946224.018958579] [stream_server]: Downlink client connected from ('127.0.0.1', 57992)
+[2025-10-20 16:43:44.020481][stream_server-2][STDERR] [INFO] [1760946224.020070561] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.021637][stream_server-2][STDERR] [INFO] [1760946224.021378219] [stream_server]: Downlink client connected from ('127.0.0.1', 60104)
+[2025-10-20 16:43:44.022705][stream_server-2][STDERR] [INFO] [1760946224.022464453] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.023806][stream_server-2][STDERR] [INFO] [1760946224.023558388] [stream_server]: Downlink client connected from ('127.0.0.1', 60118)
+[2025-10-20 16:43:44.024212][stream_server-2][STDERR] [INFO] [1760946224.024043401] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.024747][stream_server-2][STDERR] [INFO] [1760946224.024597063] [stream_server]: Downlink client connected from ('127.0.0.1', 59724)
+[2025-10-20 16:43:44.025214][stream_server-2][STDERR] [INFO] [1760946224.025069669] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.025777][stream_server-2][STDERR] [INFO] [1760946224.025565933] [stream_server]: Downlink client connected from ('127.0.0.1', 59730)
+[2025-10-20 16:43:44.026242][stream_server-2][STDERR] [INFO] [1760946224.026037810] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.026731][stream_server-2][STDERR] [INFO] [1760946224.026530926] [stream_server]: Downlink client connected from ('127.0.0.1', 59736)
+[2025-10-20 16:43:44.027159][stream_server-2][STDERR] [INFO] [1760946224.026962215] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.027680][stream_server-2][STDERR] [INFO] [1760946224.027480985] [stream_server]: Downlink client connected from ('127.0.0.1', 59518)
+[2025-10-20 16:43:44.028130][stream_server-2][STDERR] [INFO] [1760946224.027944214] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.028659][stream_server-2][STDERR] [INFO] [1760946224.028457494] [stream_server]: Downlink client connected from ('127.0.0.1', 59534)
+[2025-10-20 16:43:44.029086][stream_server-2][STDERR] [INFO] [1760946224.028887483] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.029560][stream_server-2][STDERR] [INFO] [1760946224.029407743] [stream_server]: Downlink client connected from ('127.0.0.1', 53412)
+[2025-10-20 16:43:44.030029][stream_server-2][STDERR] [INFO] [1760946224.029887074] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.030811][stream_server-2][STDERR] [INFO] [1760946224.030592432] [stream_server]: Downlink client connected from ('127.0.0.1', 53426)
+[2025-10-20 16:43:44.031785][stream_server-2][STDERR] [INFO] [1760946224.031426951] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.032440][stream_server-2][STDERR] [INFO] [1760946224.032150204] [stream_server]: Downlink client connected from ('127.0.0.1', 53436)
+[2025-10-20 16:43:44.033040][stream_server-2][STDERR] [INFO] [1760946224.032721612] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.033856][stream_server-2][STDERR] [INFO] [1760946224.033500893] [stream_server]: Downlink client connected from ('127.0.0.1', 52004)
+[2025-10-20 16:43:44.058462][stream_server-2][STDERR] [INFO] [1760946224.058098355] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.061806][stream_server-2][STDERR] [INFO] [1760946224.061548267] [stream_server]: Downlink client connected from ('127.0.0.1', 52018)
+[2025-10-20 16:43:44.066134][stream_server-2][STDERR] [INFO] [1760946224.065768030] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.077164][stream_server-2][STDERR] [INFO] [1760946224.076674434] [stream_server]: Downlink client connected from ('127.0.0.1', 33124)
+[2025-10-20 16:43:44.079502][stream_server-2][STDERR] [INFO] [1760946224.079205293] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.083260][stream_server-2][STDERR] [INFO] [1760946224.083007766] [stream_server]: Downlink client connected from ('127.0.0.1', 33128)
+[2025-10-20 16:43:44.095070][stream_server-2][STDERR] [INFO] [1760946224.094569450] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.098967][stream_server-2][STDERR] [INFO] [1760946224.098565560] [stream_server]: Downlink client connected from ('127.0.0.1', 33130)
+[2025-10-20 16:43:44.101927][stream_server-2][STDERR] [INFO] [1760946224.101662406] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.104904][stream_server-2][STDERR] [INFO] [1760946224.104621105] [stream_server]: Downlink client connected from ('127.0.0.1', 54822)
+[2025-10-20 16:43:44.112144][stream_server-2][STDERR] [INFO] [1760946224.111772022] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.113756][stream_server-2][STDERR] [INFO] [1760946224.113485651] [stream_server]: Downlink client connected from ('127.0.0.1', 54826)
+[2025-10-20 16:43:44.118072][stream_server-2][STDERR] [INFO] [1760946224.117827230] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.128825][stream_server-2][STDERR] [INFO] [1760946224.128386725] [stream_server]: Downlink client connected from ('127.0.0.1', 43578)
+[2025-10-20 16:43:44.131838][stream_server-2][STDERR] [INFO] [1760946224.131471760] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.135397][stream_server-2][STDERR] [INFO] [1760946224.135114352] [stream_server]: Downlink client connected from ('127.0.0.1', 43584)
+[2025-10-20 16:43:44.136821][stream_server-2][STDERR] [INFO] [1760946224.136580952] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.138028][stream_server-2][STDERR] [INFO] [1760946224.137752724] [stream_server]: Downlink client connected from ('127.0.0.1', 33736)
+[2025-10-20 16:43:44.139037][stream_server-2][STDERR] [INFO] [1760946224.138812696] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.140230][stream_server-2][STDERR] [INFO] [1760946224.139959745] [stream_server]: Downlink client connected from ('127.0.0.1', 33744)
+[2025-10-20 16:43:44.141213][stream_server-2][STDERR] [INFO] [1760946224.140988608] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.142305][stream_server-2][STDERR] [INFO] [1760946224.142105922] [stream_server]: Downlink client connected from ('127.0.0.1', 33758)
+[2025-10-20 16:43:44.143258][stream_server-2][STDERR] [INFO] [1760946224.143065514] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.144313][stream_server-2][STDERR] [INFO] [1760946224.144121378] [stream_server]: Downlink client connected from ('127.0.0.1', 48004)
+[2025-10-20 16:43:44.145252][stream_server-2][STDERR] [INFO] [1760946224.145057433] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.146302][stream_server-2][STDERR] [INFO] [1760946224.146103542] [stream_server]: Downlink client connected from ('127.0.0.1', 48016)
+[2025-10-20 16:43:44.147268][stream_server-2][STDERR] [INFO] [1760946224.147068913] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.148324][stream_server-2][STDERR] [INFO] [1760946224.148108373] [stream_server]: Downlink client connected from ('127.0.0.1', 54128)
+[2025-10-20 16:43:44.149242][stream_server-2][STDERR] [INFO] [1760946224.149047595] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.150290][stream_server-2][STDERR] [INFO] [1760946224.150081979] [stream_server]: Downlink client connected from ('127.0.0.1', 54144)
+[2025-10-20 16:43:44.151266][stream_server-2][STDERR] [INFO] [1760946224.151059017] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.152336][stream_server-2][STDERR] [INFO] [1760946224.152115225] [stream_server]: Downlink client connected from ('127.0.0.1', 54146)
+[2025-10-20 16:43:44.153422][stream_server-2][STDERR] [INFO] [1760946224.153138325] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.154554][stream_server-2][STDERR] [INFO] [1760946224.154332191] [stream_server]: Downlink client connected from ('127.0.0.1', 39458)
+[2025-10-20 16:43:44.155524][stream_server-2][STDERR] [INFO] [1760946224.155312253] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.156590][stream_server-2][STDERR] [INFO] [1760946224.156387728] [stream_server]: Downlink client connected from ('127.0.0.1', 39470)
+[2025-10-20 16:43:44.157535][stream_server-2][STDERR] [INFO] [1760946224.157338025] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.158656][stream_server-2][STDERR] [INFO] [1760946224.158402816] [stream_server]: Downlink client connected from ('127.0.0.1', 51292)
+[2025-10-20 16:43:44.159983][stream_server-2][STDERR] [INFO] [1760946224.159581818] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.161431][stream_server-2][STDERR] [INFO] [1760946224.161029042] [stream_server]: Downlink client connected from ('127.0.0.1', 51298)
+[2025-10-20 16:43:44.162365][stream_server-2][STDERR] [INFO] [1760946224.162133639] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.163499][stream_server-2][STDERR] [INFO] [1760946224.163285227] [stream_server]: Downlink client connected from ('127.0.0.1', 51300)
+[2025-10-20 16:43:44.190641][stream_server-2][STDERR] [INFO] [1760946224.190254866] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.193931][stream_server-2][STDERR] [INFO] [1760946224.193511261] [stream_server]: Downlink client connected from ('127.0.0.1', 42500)
+[2025-10-20 16:43:44.195261][stream_server-2][STDERR] [INFO] [1760946224.194987304] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.196871][stream_server-2][STDERR] [INFO] [1760946224.196599597] [stream_server]: Downlink client connected from ('127.0.0.1', 42512)
+[2025-10-20 16:43:44.199086][stream_server-2][STDERR] [INFO] [1760946224.198846345] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.209897][stream_server-2][STDERR] [INFO] [1760946224.209461329] [stream_server]: Downlink client connected from ('127.0.0.1', 40840)
+[2025-10-20 16:43:44.211119][stream_server-2][STDERR] [INFO] [1760946224.210863107] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.212334][stream_server-2][STDERR] [INFO] [1760946224.212081917] [stream_server]: Downlink client connected from ('127.0.0.1', 40852)
+[2025-10-20 16:43:44.213464][stream_server-2][STDERR] [INFO] [1760946224.213221345] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.214749][stream_server-2][STDERR] [INFO] [1760946224.214500442] [stream_server]: Downlink client connected from ('127.0.0.1', 40864)
+[2025-10-20 16:43:44.215964][stream_server-2][STDERR] [INFO] [1760946224.215732910] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.217812][stream_server-2][STDERR] [INFO] [1760946224.217474970] [stream_server]: Downlink client connected from ('127.0.0.1', 57620)
+[2025-10-20 16:43:44.219768][stream_server-2][STDERR] [INFO] [1760946224.219424494] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.223650][stream_server-2][STDERR] [INFO] [1760946224.223176152] [stream_server]: Downlink client connected from ('127.0.0.1', 57636)
+[2025-10-20 16:43:44.229041][stream_server-2][STDERR] [INFO] [1760946224.228688632] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.242021][stream_server-2][STDERR] [INFO] [1760946224.241637906] [stream_server]: Downlink client connected from ('127.0.0.1', 34698)
+[2025-10-20 16:43:44.247347][stream_server-2][STDERR] [INFO] [1760946224.247061857] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.253714][stream_server-2][STDERR] [INFO] [1760946224.253353656] [stream_server]: Downlink client connected from ('127.0.0.1', 34712)
+[2025-10-20 16:43:44.258114][stream_server-2][STDERR] [INFO] [1760946224.257736575] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.263950][stream_server-2][STDERR] [INFO] [1760946224.263579887] [stream_server]: Downlink client connected from ('127.0.0.1', 34716)
+[2025-10-20 16:43:44.268123][stream_server-2][STDERR] [INFO] [1760946224.267779667] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.269848][stream_server-2][STDERR] [INFO] [1760946224.269507475] [stream_server]: Downlink client connected from ('127.0.0.1', 58962)
+[2025-10-20 16:43:44.270874][stream_server-2][STDERR] [INFO] [1760946224.270636049] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.272109][stream_server-2][STDERR] [INFO] [1760946224.271857163] [stream_server]: Downlink client connected from ('127.0.0.1', 58976)
+[2025-10-20 16:43:44.273035][stream_server-2][STDERR] [INFO] [1760946224.272836718] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.274111][stream_server-2][STDERR] [INFO] [1760946224.273904446] [stream_server]: Downlink client connected from ('127.0.0.1', 58182)
+[2025-10-20 16:43:44.275072][stream_server-2][STDERR] [INFO] [1760946224.274868946] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.276131][stream_server-2][STDERR] [INFO] [1760946224.275923147] [stream_server]: Downlink client connected from ('127.0.0.1', 58198)
+[2025-10-20 16:43:44.277085][stream_server-2][STDERR] [INFO] [1760946224.276880699] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.278169][stream_server-2][STDERR] [INFO] [1760946224.277960170] [stream_server]: Downlink client connected from ('127.0.0.1', 42784)
+[2025-10-20 16:43:44.279129][stream_server-2][STDERR] [INFO] [1760946224.278925592] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.280205][stream_server-2][STDERR] [INFO] [1760946224.279982168] [stream_server]: Downlink client connected from ('127.0.0.1', 42790)
+[2025-10-20 16:43:44.281196][stream_server-2][STDERR] [INFO] [1760946224.280948072] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.282240][stream_server-2][STDERR] [INFO] [1760946224.282026135] [stream_server]: Downlink client connected from ('127.0.0.1', 51752)
+[2025-10-20 16:43:44.283209][stream_server-2][STDERR] [INFO] [1760946224.283004829] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.284274][stream_server-2][STDERR] [INFO] [1760946224.284053978] [stream_server]: Downlink client connected from ('127.0.0.1', 51768)
+[2025-10-20 16:43:44.285239][stream_server-2][STDERR] [INFO] [1760946224.285035698] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.286432][stream_server-2][STDERR] [INFO] [1760946224.286113792] [stream_server]: Downlink client connected from ('127.0.0.1', 50576)
+[2025-10-20 16:43:44.287649][stream_server-2][STDERR] [INFO] [1760946224.287275335] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.289167][stream_server-2][STDERR] [INFO] [1760946224.288812110] [stream_server]: Downlink client connected from ('127.0.0.1', 50586)
+[2025-10-20 16:43:44.290236][stream_server-2][STDERR] [INFO] [1760946224.289978393] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.291438][stream_server-2][STDERR] [INFO] [1760946224.291203131] [stream_server]: Downlink client connected from ('127.0.0.1', 50592)
+[2025-10-20 16:43:44.292698][stream_server-2][STDERR] [INFO] [1760946224.292489033] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.293858][stream_server-2][STDERR] [INFO] [1760946224.293620909] [stream_server]: Downlink client connected from ('127.0.0.1', 44920)
+[2025-10-20 16:43:44.296165][stream_server-2][STDERR] [INFO] [1760946224.295814287] [stream_server]: Downlink connection closed
+[2025-10-20 16:43:44.297195][stream_server-2][STDERR] [INFO] [1760946224.296913344] [stream_server]: Server session report saved to logs/server_report_20251020_164344.html
+[2025-10-20 16:43:44.297953][stream_server-2][STDERR] [ERROR] [1760946224.297736361] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:44.298778][stream_server-2][STDERR] [INFO] [1760946224.298567795] [stream_server]: Uplink session finished
+[2025-10-20 16:43:44.299589][stream_server-2][STDERR] [INFO] [1760946224.299379825] [stream_server]: Uplink client connected from ('127.0.0.1', 36048)
+[2025-10-20 16:43:44.362752][stream_server-2][STDERR] [INFO] [1760946224.362421683] [stream_server]: Uplink session summary: in=106588 bytes, out=0 bytes
+[2025-10-20 16:43:44.652998][stream_server-2][STDERR] [INFO] [1760946224.652511884] [stream_server]: Server session report saved to logs/server_report_20251020_164344.html
+[2025-10-20 16:43:44.653576][stream_server-2][STDERR] [ERROR] [1760946224.653114327] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:44.654061][stream_server-2][STDERR] [INFO] [1760946224.653703261] [stream_server]: Uplink session finished
+[2025-10-20 16:43:44.654631][stream_server-2][STDERR] [INFO] [1760946224.654327042] [stream_server]: Uplink client connected from ('127.0.0.1', 58730)
+[2025-10-20 16:43:44.703710][stream_server-2][STDERR] [INFO] [1760946224.703156305] [stream_server]: Uplink session summary: in=84906 bytes, out=0 bytes
+[2025-10-20 16:43:44.964550][stream_server-2][STDERR] [INFO] [1760946224.964148995] [stream_server]: Server session report saved to logs/server_report_20251020_164344.html
+[2025-10-20 16:43:44.965009][stream_server-2][STDERR] [ERROR] [1760946224.964847176] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:44.965614][stream_server-2][STDERR] [INFO] [1760946224.965412561] [stream_server]: Uplink session finished
+[2025-10-20 16:43:44.966199][stream_server-2][STDERR] [INFO] [1760946224.965997398] [stream_server]: Uplink client connected from ('127.0.0.1', 58736)
+[2025-10-20 16:43:45.008182][stream_server-2][STDERR] [INFO] [1760946225.007895297] [stream_server]: Uplink session summary: in=83874 bytes, out=0 bytes
+[2025-10-20 16:43:45.386554][stream_server-2][STDERR] [INFO] [1760946225.386226207] [stream_server]: Server session report saved to logs/server_report_20251020_164345.html
+[2025-10-20 16:43:45.387000][stream_server-2][STDERR] [ERROR] [1760946225.386801599] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:45.387600][stream_server-2][STDERR] [INFO] [1760946225.387398753] [stream_server]: Uplink session finished
+[2025-10-20 16:43:45.388260][stream_server-2][STDERR] [INFO] [1760946225.388055362] [stream_server]: Uplink client connected from ('127.0.0.1', 56690)
+[2025-10-20 16:43:45.450501][stream_server-2][STDERR] [INFO] [1760946225.450135628] [stream_server]: Uplink session summary: in=98396 bytes, out=0 bytes
+[2025-10-20 16:43:45.715158][stream_server-2][STDERR] [INFO] [1760946225.714854403] [stream_server]: Server session report saved to logs/server_report_20251020_164345.html
+[2025-10-20 16:43:45.715792][stream_server-2][STDERR] [ERROR] [1760946225.715620745] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:45.716637][stream_server-2][STDERR] [INFO] [1760946225.716448149] [stream_server]: Uplink session finished
+[2025-10-20 16:43:45.717421][stream_server-2][STDERR] [INFO] [1760946225.717210216] [stream_server]: Uplink client connected from ('127.0.0.1', 56702)
+[2025-10-20 16:43:45.787664][stream_server-2][STDERR] [INFO] [1760946225.787304113] [stream_server]: Uplink session summary: in=113363 bytes, out=0 bytes
+[2025-10-20 16:43:46.077657][stream_server-2][STDERR] [INFO] [1760946226.077349782] [stream_server]: Server session report saved to logs/server_report_20251020_164346.html
+[2025-10-20 16:43:46.078449][stream_server-2][STDERR] [ERROR] [1760946226.078177992] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:46.079587][stream_server-2][STDERR] [INFO] [1760946226.079245811] [stream_server]: Uplink session finished
+[2025-10-20 16:43:46.080340][stream_server-2][STDERR] [INFO] [1760946226.079969510] [stream_server]: Uplink client connected from ('127.0.0.1', 56714)
+[2025-10-20 16:43:46.129852][stream_server-2][STDERR] [INFO] [1760946226.129545485] [stream_server]: Uplink session summary: in=99936 bytes, out=0 bytes
+[2025-10-20 16:43:46.422357][stream_server-2][STDERR] [INFO] [1760946226.422005614] [stream_server]: Server session report saved to logs/server_report_20251020_164346.html
+[2025-10-20 16:43:46.422888][stream_server-2][STDERR] [ERROR] [1760946226.422680590] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:46.423365][stream_server-2][STDERR] [INFO] [1760946226.423168539] [stream_server]: Uplink session finished
+[2025-10-20 16:43:46.424132][stream_server-2][STDERR] [INFO] [1760946226.423942763] [stream_server]: Uplink client connected from ('127.0.0.1', 43380)
+[2025-10-20 16:43:46.476469][stream_server-2][STDERR] [INFO] [1760946226.476091854] [stream_server]: Uplink session summary: in=86644 bytes, out=0 bytes
+[2025-10-20 16:43:46.758493][stream_server-2][STDERR] [INFO] [1760946226.758170341] [stream_server]: Server session report saved to logs/server_report_20251020_164346.html
+[2025-10-20 16:43:46.758878][stream_server-2][STDERR] [ERROR] [1760946226.758676328] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:46.759442][stream_server-2][STDERR] [INFO] [1760946226.759166511] [stream_server]: Uplink session finished
+[2025-10-20 16:43:46.760019][stream_server-2][STDERR] [INFO] [1760946226.759696657] [stream_server]: Uplink client connected from ('127.0.0.1', 43394)
+[2025-10-20 16:43:46.794844][stream_server-2][STDERR] [INFO] [1760946226.794499842] [stream_server]: Uplink session summary: in=89209 bytes, out=0 bytes
+[2025-10-20 16:43:47.081030][stream_server-2][STDERR] [INFO] [1760946227.080723471] [stream_server]: Server session report saved to logs/server_report_20251020_164347.html
+[2025-10-20 16:43:47.081471][stream_server-2][STDERR] [ERROR] [1760946227.081305827] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:47.082104][stream_server-2][STDERR] [INFO] [1760946227.081907248] [stream_server]: Uplink session finished
+[2025-10-20 16:43:47.082749][stream_server-2][STDERR] [INFO] [1760946227.082559052] [stream_server]: Uplink client connected from ('127.0.0.1', 36044)
+[2025-10-20 16:43:47.126449][stream_server-2][STDERR] [INFO] [1760946227.126053812] [stream_server]: Uplink session summary: in=83234 bytes, out=0 bytes
+[2025-10-20 16:43:47.449772][stream_server-2][STDERR] [INFO] [1760946227.449468110] [stream_server]: Server session report saved to logs/server_report_20251020_164347.html
+[2025-10-20 16:43:47.450117][stream_server-2][STDERR] [ERROR] [1760946227.449960054] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:47.450621][stream_server-2][STDERR] [INFO] [1760946227.450434068] [stream_server]: Uplink session finished
+[2025-10-20 16:43:47.451163][stream_server-2][STDERR] [INFO] [1760946227.450967380] [stream_server]: Uplink client connected from ('127.0.0.1', 36050)
+[2025-10-20 16:43:47.486823][stream_server-2][STDERR] [INFO] [1760946227.486279545] [stream_server]: Uplink session summary: in=80998 bytes, out=0 bytes
+[2025-10-20 16:43:47.722025][stream_server-2][STDERR] [INFO] [1760946227.721732005] [stream_server]: Server session report saved to logs/server_report_20251020_164347.html
+[2025-10-20 16:43:47.722596][stream_server-2][STDERR] [ERROR] [1760946227.722369314] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:47.722986][stream_server-2][STDERR] [INFO] [1760946227.722842353] [stream_server]: Uplink session finished
+[2025-10-20 16:43:47.723556][stream_server-2][STDERR] [INFO] [1760946227.723372894] [stream_server]: Uplink client connected from ('127.0.0.1', 36060)
+[2025-10-20 16:43:47.758682][stream_server-2][STDERR] [INFO] [1760946227.758356487] [stream_server]: Uplink session summary: in=101559 bytes, out=0 bytes
+[2025-10-20 16:43:47.989060][stream_server-2][STDERR] [INFO] [1760946227.988735243] [stream_server]: Server session report saved to logs/server_report_20251020_164347.html
+[2025-10-20 16:43:47.989398][stream_server-2][STDERR] [ERROR] [1760946227.989231090] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:47.989842][stream_server-2][STDERR] [INFO] [1760946227.989658353] [stream_server]: Uplink session finished
+[2025-10-20 16:43:47.990320][stream_server-2][STDERR] [INFO] [1760946227.990128442] [stream_server]: Uplink client connected from ('127.0.0.1', 47792)
+[2025-10-20 16:43:48.023496][stream_server-2][STDERR] [INFO] [1760946228.023186547] [stream_server]: Uplink session summary: in=79736 bytes, out=0 bytes
+[2025-10-20 16:43:48.259307][stream_server-2][STDERR] [INFO] [1760946228.258989296] [stream_server]: Server session report saved to logs/server_report_20251020_164348.html
+[2025-10-20 16:43:48.259871][stream_server-2][STDERR] [ERROR] [1760946228.259674221] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:48.260344][stream_server-2][STDERR] [INFO] [1760946228.260138765] [stream_server]: Uplink session finished
+[2025-10-20 16:43:48.260844][stream_server-2][STDERR] [INFO] [1760946228.260655542] [stream_server]: Uplink client connected from ('127.0.0.1', 47798)
+[2025-10-20 16:43:48.294878][stream_server-2][STDERR] [INFO] [1760946228.294534464] [stream_server]: Uplink session summary: in=82970 bytes, out=0 bytes
+[2025-10-20 16:43:48.538126][stream_server-2][STDERR] [INFO] [1760946228.537828756] [stream_server]: Server session report saved to logs/server_report_20251020_164348.html
+[2025-10-20 16:43:48.538472][stream_server-2][STDERR] [ERROR] [1760946228.538309312] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:48.538951][stream_server-2][STDERR] [INFO] [1760946228.538753555] [stream_server]: Uplink session finished
+[2025-10-20 16:43:48.539466][stream_server-2][STDERR] [INFO] [1760946228.539288403] [stream_server]: Uplink client connected from ('127.0.0.1', 38218)
+[2025-10-20 16:43:48.572034][stream_server-2][STDERR] [INFO] [1760946228.571713046] [stream_server]: Uplink session summary: in=83280 bytes, out=0 bytes
+[2025-10-20 16:43:48.816886][stream_server-2][STDERR] [INFO] [1760946228.816590308] [stream_server]: Server session report saved to logs/server_report_20251020_164348.html
+[2025-10-20 16:43:48.817225][stream_server-2][STDERR] [ERROR] [1760946228.817066052] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:48.817703][stream_server-2][STDERR] [INFO] [1760946228.817516457] [stream_server]: Uplink session finished
+[2025-10-20 16:43:48.818217][stream_server-2][STDERR] [INFO] [1760946228.818017566] [stream_server]: Uplink client connected from ('127.0.0.1', 38230)
+[2025-10-20 16:43:48.852233][stream_server-2][STDERR] [INFO] [1760946228.851882437] [stream_server]: Uplink session summary: in=77094 bytes, out=0 bytes
+[2025-10-20 16:43:49.172240][stream_server-2][STDERR] [INFO] [1760946229.171928821] [stream_server]: Server session report saved to logs/server_report_20251020_164349.html
+[2025-10-20 16:43:49.172570][stream_server-2][STDERR] [ERROR] [1760946229.172418490] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:49.173039][stream_server-2][STDERR] [INFO] [1760946229.172857866] [stream_server]: Uplink session finished
+[2025-10-20 16:43:49.173577][stream_server-2][STDERR] [INFO] [1760946229.173393616] [stream_server]: Uplink client connected from ('127.0.0.1', 38232)
+[2025-10-20 16:43:49.207208][stream_server-2][STDERR] [INFO] [1760946229.206854065] [stream_server]: Uplink session summary: in=83477 bytes, out=0 bytes
+[2025-10-20 16:43:49.459649][stream_server-2][STDERR] [INFO] [1760946229.459344476] [stream_server]: Server session report saved to logs/server_report_20251020_164349.html
+[2025-10-20 16:43:49.459975][stream_server-2][STDERR] [ERROR] [1760946229.459804454] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:49.460417][stream_server-2][STDERR] [INFO] [1760946229.460229821] [stream_server]: Uplink session finished
+[2025-10-20 16:43:49.460923][stream_server-2][STDERR] [INFO] [1760946229.460726744] [stream_server]: Uplink client connected from ('127.0.0.1', 38534)
+[2025-10-20 16:43:49.494704][stream_server-2][STDERR] [INFO] [1760946229.494389681] [stream_server]: Uplink session summary: in=72786 bytes, out=0 bytes
+[2025-10-20 16:43:49.740189][stream_server-2][STDERR] [INFO] [1760946229.739888613] [stream_server]: Server session report saved to logs/server_report_20251020_164349.html
+[2025-10-20 16:43:49.740708][stream_server-2][STDERR] [ERROR] [1760946229.740516316] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:49.741199][stream_server-2][STDERR] [INFO] [1760946229.741015410] [stream_server]: Uplink session finished
+[2025-10-20 16:43:49.741861][stream_server-2][STDERR] [INFO] [1760946229.741674973] [stream_server]: Uplink client connected from ('127.0.0.1', 38544)
+[2025-10-20 16:43:49.774921][stream_server-2][STDERR] [INFO] [1760946229.774619324] [stream_server]: Uplink session summary: in=77088 bytes, out=0 bytes
+[2025-10-20 16:43:50.019359][stream_server-2][STDERR] [INFO] [1760946230.018831361] [stream_server]: Server session report saved to logs/server_report_20251020_164350.html
+[2025-10-20 16:43:50.020067][stream_server-2][STDERR] [ERROR] [1760946230.019395395] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:50.020605][stream_server-2][STDERR] [INFO] [1760946230.019864537] [stream_server]: Uplink session finished
+[2025-10-20 16:43:50.021213][stream_server-2][STDERR] [INFO] [1760946230.020450580] [stream_server]: Uplink client connected from ('127.0.0.1', 42456)
+[2025-10-20 16:43:50.056583][stream_server-2][STDERR] [INFO] [1760946230.056248849] [stream_server]: Uplink session summary: in=97811 bytes, out=0 bytes
+[2025-10-20 16:43:50.297964][stream_server-2][STDERR] [INFO] [1760946230.297457312] [stream_server]: Server session report saved to logs/server_report_20251020_164350.html
+[2025-10-20 16:43:50.298512][stream_server-2][STDERR] [ERROR] [1760946230.298065007] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:50.298998][stream_server-2][STDERR] [INFO] [1760946230.298542554] [stream_server]: Uplink session finished
+[2025-10-20 16:43:50.299535][stream_server-2][STDERR] [INFO] [1760946230.299124585] [stream_server]: Uplink client connected from ('127.0.0.1', 42466)
+[2025-10-20 16:43:50.333823][stream_server-2][STDERR] [INFO] [1760946230.333408792] [stream_server]: Uplink session summary: in=84263 bytes, out=0 bytes
+[2025-10-20 16:43:50.577671][stream_server-2][STDERR] [INFO] [1760946230.577167182] [stream_server]: Server session report saved to logs/server_report_20251020_164350.html
+[2025-10-20 16:43:50.578180][stream_server-2][STDERR] [ERROR] [1760946230.577676693] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:50.578605][stream_server-2][STDERR] [INFO] [1760946230.578107447] [stream_server]: Uplink session finished
+[2025-10-20 16:43:50.579053][stream_server-2][STDERR] [INFO] [1760946230.578600943] [stream_server]: Uplink client connected from ('127.0.0.1', 42474)
+[2025-10-20 16:43:50.613614][stream_server-2][STDERR] [INFO] [1760946230.613207460] [stream_server]: Uplink session summary: in=84177 bytes, out=0 bytes
+[2025-10-20 16:43:50.934708][stream_server-2][STDERR] [INFO] [1760946230.934182146] [stream_server]: Server session report saved to logs/server_report_20251020_164350.html
+[2025-10-20 16:43:50.935216][stream_server-2][STDERR] [ERROR] [1760946230.934779261] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:50.935688][stream_server-2][STDERR] [INFO] [1760946230.935235430] [stream_server]: Uplink session finished
+[2025-10-20 16:43:50.936145][stream_server-2][STDERR] [INFO] [1760946230.935781542] [stream_server]: Uplink client connected from ('127.0.0.1', 56480)
+[2025-10-20 16:43:50.969735][stream_server-2][STDERR] [INFO] [1760946230.969419374] [stream_server]: Uplink session summary: in=98373 bytes, out=0 bytes
+[2025-10-20 16:43:51.215813][stream_server-2][STDERR] [INFO] [1760946231.215267434] [stream_server]: Server session report saved to logs/server_report_20251020_164351.html
+[2025-10-20 16:43:51.216341][stream_server-2][STDERR] [ERROR] [1760946231.215787924] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:51.216796][stream_server-2][STDERR] [INFO] [1760946231.216295888] [stream_server]: Uplink session finished
+[2025-10-20 16:43:51.217257][stream_server-2][STDERR] [INFO] [1760946231.216819081] [stream_server]: Uplink client connected from ('127.0.0.1', 56488)
+[2025-10-20 16:43:51.250229][stream_server-2][STDERR] [INFO] [1760946231.249912839] [stream_server]: Uplink session summary: in=97767 bytes, out=0 bytes
+[2025-10-20 16:43:51.498817][stream_server-2][STDERR] [INFO] [1760946231.498278737] [stream_server]: Server session report saved to logs/server_report_20251020_164351.html
+[2025-10-20 16:43:51.499371][stream_server-2][STDERR] [ERROR] [1760946231.498801089] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:51.499839][stream_server-2][STDERR] [INFO] [1760946231.499222680] [stream_server]: Uplink session finished
+[2025-10-20 16:43:51.500287][stream_server-2][STDERR] [INFO] [1760946231.499783455] [stream_server]: Uplink client connected from ('127.0.0.1', 47444)
+[2025-10-20 16:43:51.533366][stream_server-2][STDERR] [INFO] [1760946231.533027239] [stream_server]: Uplink session summary: in=94170 bytes, out=0 bytes
+[2025-10-20 16:43:51.779162][stream_server-2][STDERR] [INFO] [1760946231.778614539] [stream_server]: Server session report saved to logs/server_report_20251020_164351.html
+[2025-10-20 16:43:51.779739][stream_server-2][STDERR] [ERROR] [1760946231.779126295] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:51.780203][stream_server-2][STDERR] [INFO] [1760946231.779589902] [stream_server]: Uplink session finished
+[2025-10-20 16:43:51.780696][stream_server-2][STDERR] [INFO] [1760946231.780201703] [stream_server]: Uplink client connected from ('127.0.0.1', 47452)
+[2025-10-20 16:43:51.813296][stream_server-2][STDERR] [INFO] [1760946231.812955009] [stream_server]: Uplink session summary: in=86644 bytes, out=0 bytes
+[2025-10-20 16:43:52.048424][stream_server-2][STDERR] [INFO] [1760946232.047934040] [stream_server]: Server session report saved to logs/server_report_20251020_164352.html
+[2025-10-20 16:43:52.049036][stream_server-2][STDERR] [ERROR] [1760946232.048414905] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:52.049511][stream_server-2][STDERR] [INFO] [1760946232.048909113] [stream_server]: Uplink session finished
+[2025-10-20 16:43:52.049990][stream_server-2][STDERR] [INFO] [1760946232.049453189] [stream_server]: Uplink client connected from ('127.0.0.1', 47456)
+[2025-10-20 16:43:52.083978][stream_server-2][STDERR] [INFO] [1760946232.083641591] [stream_server]: Uplink session summary: in=94948 bytes, out=0 bytes
+[2025-10-20 16:43:52.324736][stream_server-2][STDERR] [INFO] [1760946232.324199820] [stream_server]: Server session report saved to logs/server_report_20251020_164352.html
+[2025-10-20 16:43:52.325321][stream_server-2][STDERR] [ERROR] [1760946232.324740062] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:52.325796][stream_server-2][STDERR] [INFO] [1760946232.325328033] [stream_server]: Uplink session finished
+[2025-10-20 16:43:52.326325][stream_server-2][STDERR] [INFO] [1760946232.325885925] [stream_server]: Uplink client connected from ('127.0.0.1', 42670)
+[2025-10-20 16:43:52.358916][stream_server-2][STDERR] [INFO] [1760946232.358543168] [stream_server]: Uplink session summary: in=80330 bytes, out=0 bytes
+[2025-10-20 16:43:52.683901][stream_server-2][STDERR] [INFO] [1760946232.683417112] [stream_server]: Server session report saved to logs/server_report_20251020_164352.html
+[2025-10-20 16:43:52.684471][stream_server-2][STDERR] [ERROR] [1760946232.683879446] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:52.684927][stream_server-2][STDERR] [INFO] [1760946232.684393207] [stream_server]: Uplink session finished
+[2025-10-20 16:43:52.685390][stream_server-2][STDERR] [INFO] [1760946232.684918630] [stream_server]: Uplink client connected from ('127.0.0.1', 42680)
+[2025-10-20 16:43:52.719601][stream_server-2][STDERR] [INFO] [1760946232.719269879] [stream_server]: Uplink session summary: in=81913 bytes, out=0 bytes
+[2025-10-20 16:43:52.981046][stream_server-2][STDERR] [INFO] [1760946232.980532261] [stream_server]: Server session report saved to logs/server_report_20251020_164352.html
+[2025-10-20 16:43:52.981648][stream_server-2][STDERR] [ERROR] [1760946232.981042963] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:52.982133][stream_server-2][STDERR] [INFO] [1760946232.981534831] [stream_server]: Uplink session finished
+[2025-10-20 16:43:52.982642][stream_server-2][STDERR] [INFO] [1760946232.982064381] [stream_server]: Uplink client connected from ('127.0.0.1', 50066)
+[2025-10-20 16:43:53.014483][stream_server-2][STDERR] [INFO] [1760946233.013977277] [stream_server]: Uplink session summary: in=99905 bytes, out=0 bytes
+[2025-10-20 16:43:53.252073][stream_server-2][STDERR] [INFO] [1760946233.251593126] [stream_server]: Server session report saved to logs/server_report_20251020_164353.html
+[2025-10-20 16:43:53.252665][stream_server-2][STDERR] [ERROR] [1760946233.252073108] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:53.253128][stream_server-2][STDERR] [INFO] [1760946233.252538581] [stream_server]: Uplink session finished
+[2025-10-20 16:43:53.253645][stream_server-2][STDERR] [INFO] [1760946233.253113550] [stream_server]: Uplink client connected from ('127.0.0.1', 50082)
+[2025-10-20 16:43:53.285627][stream_server-2][STDERR] [INFO] [1760946233.285243143] [stream_server]: Uplink session summary: in=82854 bytes, out=0 bytes
+[2025-10-20 16:43:53.535201][stream_server-2][STDERR] [INFO] [1760946233.534859997] [stream_server]: Server session report saved to logs/server_report_20251020_164353.html
+[2025-10-20 16:43:53.535830][stream_server-2][STDERR] [ERROR] [1760946233.535510190] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:53.536437][stream_server-2][STDERR] [INFO] [1760946233.536075924] [stream_server]: Uplink session finished
+[2025-10-20 16:43:53.537251][stream_server-2][STDERR] [INFO] [1760946233.536886150] [stream_server]: Uplink client connected from ('127.0.0.1', 50084)
+[2025-10-20 16:43:53.569522][stream_server-2][STDERR] [INFO] [1760946233.569110834] [stream_server]: Uplink session summary: in=76754 bytes, out=0 bytes
+[2025-10-20 16:43:53.799949][stream_server-2][STDERR] [INFO] [1760946233.799443774] [stream_server]: Server session report saved to logs/server_report_20251020_164353.html
+[2025-10-20 16:43:53.800515][stream_server-2][STDERR] [ERROR] [1760946233.799927824] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:53.800977][stream_server-2][STDERR] [INFO] [1760946233.800562682] [stream_server]: Uplink session finished
+[2025-10-20 16:43:53.801566][stream_server-2][STDERR] [INFO] [1760946233.801219254] [stream_server]: Uplink client connected from ('127.0.0.1', 54374)
+[2025-10-20 16:43:53.834671][stream_server-2][STDERR] [INFO] [1760946233.834337149] [stream_server]: Uplink session summary: in=83620 bytes, out=0 bytes
+[2025-10-20 16:43:54.061470][stream_server-2][STDERR] [INFO] [1760946234.060942627] [stream_server]: Server session report saved to logs/server_report_20251020_164354.html
+[2025-10-20 16:43:54.062048][stream_server-2][STDERR] [ERROR] [1760946234.061445143] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:54.062538][stream_server-2][STDERR] [INFO] [1760946234.061902981] [stream_server]: Uplink session finished
+[2025-10-20 16:43:54.063015][stream_server-2][STDERR] [INFO] [1760946234.062434752] [stream_server]: Uplink client connected from ('127.0.0.1', 54380)
+[2025-10-20 16:43:54.096870][stream_server-2][STDERR] [INFO] [1760946234.096395919] [stream_server]: Uplink session summary: in=77009 bytes, out=0 bytes
+[2025-10-20 16:43:54.391960][stream_server-2][STDERR] [INFO] [1760946234.391485353] [stream_server]: Server session report saved to logs/server_report_20251020_164354.html
+[2025-10-20 16:43:54.392554][stream_server-2][STDERR] [ERROR] [1760946234.391943628] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:54.393039][stream_server-2][STDERR] [INFO] [1760946234.392420515] [stream_server]: Uplink session finished
+[2025-10-20 16:43:54.393560][stream_server-2][STDERR] [INFO] [1760946234.392937052] [stream_server]: Uplink client connected from ('127.0.0.1', 55512)
+[2025-10-20 16:43:54.429651][stream_server-2][STDERR] [INFO] [1760946234.429301513] [stream_server]: Uplink session summary: in=83477 bytes, out=0 bytes
+[2025-10-20 16:43:54.654179][stream_server-2][STDERR] [INFO] [1760946234.653629576] [stream_server]: Server session report saved to logs/server_report_20251020_164354.html
+[2025-10-20 16:43:54.654751][stream_server-2][STDERR] [ERROR] [1760946234.654152711] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:54.655301][stream_server-2][STDERR] [INFO] [1760946234.654641959] [stream_server]: Uplink session finished
+[2025-10-20 16:43:54.656184][stream_server-2][STDERR] [INFO] [1760946234.655330374] [stream_server]: Uplink client connected from ('127.0.0.1', 55526)
+[2025-10-20 16:43:54.690004][stream_server-2][STDERR] [INFO] [1760946234.689402108] [stream_server]: Uplink session summary: in=73023 bytes, out=0 bytes
+[2025-10-20 16:43:54.903034][stream_server-2][STDERR] [INFO] [1760946234.902526150] [stream_server]: Server session report saved to logs/server_report_20251020_164354.html
+[2025-10-20 16:43:54.903606][stream_server-2][STDERR] [ERROR] [1760946234.903020268] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:54.904090][stream_server-2][STDERR] [INFO] [1760946234.903492314] [stream_server]: Uplink session finished
+[2025-10-20 16:43:54.904591][stream_server-2][STDERR] [INFO] [1760946234.904020651] [stream_server]: Uplink client connected from ('127.0.0.1', 55536)
+[2025-10-20 16:43:54.938259][stream_server-2][STDERR] [INFO] [1760946234.937758118] [stream_server]: Uplink session summary: in=73043 bytes, out=0 bytes
+[2025-10-20 16:43:55.155839][stream_server-2][STDERR] [INFO] [1760946235.155330860] [stream_server]: Server session report saved to logs/server_report_20251020_164355.html
+[2025-10-20 16:43:55.156449][stream_server-2][STDERR] [ERROR] [1760946235.155821414] [stream_server]: Uplink session error: [Errno 32] Broken pipe
+[2025-10-20 16:43:55.156936][stream_server-2][STDERR] [INFO] [1760946235.156289315] [stream_server]: Uplink session finished
+[2025-10-20 16:43:55.157442][stream_server-2][STDERR] [INFO] [1760946235.156849046] [stream_server]: Uplink client connected from ('127.0.0.1', 44794)
+[2025-10-20 16:43:55.191309][stream_server-2][STDERR] [INFO] [1760946235.190798199] [stream_server]: Uplink session summary: in=93656 bytes, out=0 bytes
+[2025-10-20 16:43:55.300576][static_transform_publisher-3][STDERR] [INFO] [1760946235.295579198] [rclcpp]: signal_handler(signum=2)
+[2025-10-20 16:43:55.301044][static_transform_publisher-4][STDERR] [INFO] [1760946235.295579153] [rclcpp]: signal_handler(signum=2)
+[2025-10-20 16:43:55.301347][robot_state_publisher-1][STDERR] [INFO] [1760946235.295611246] [rclcpp]: signal_handler(signum=2)

@@ -1,0 +1,32 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-20T16:28:47.002748
+[2025-10-20 16:28:47.053518][static_transform_publisher-3][STDERR] [WARN] [1760945327.053034924] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:28:47.054847][static_transform_publisher-4][STDERR] [WARN] [1760945327.054394491] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-20 16:28:47.063896][static_transform_publisher-4][STDERR] [INFO] [1760945327.063026679] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-20 16:28:47.063896][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:28:47.063896][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:28:47.063896][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-20 16:28:47.065082][static_transform_publisher-3][STDERR] [INFO] [1760945327.064386031] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-20 16:28:47.065082][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-20 16:28:47.065082][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-20 16:28:47.065082][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-20 16:28:47.068534][robot_state_publisher-1][STDERR] [INFO] [1760945327.068065642] [robot_state_publisher]: got segment base_link
+[2025-10-20 16:28:47.068927][robot_state_publisher-1][STDERR] [INFO] [1760945327.068143006] [robot_state_publisher]: got segment lidar_frame
+[2025-10-20 16:28:49.750184][stream_server-2][STDERR] [INFO] [1760945329.749859531] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-20 16:28:49.750531][stream_server-2][STDERR] [INFO] [1760945329.749986480] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-20 16:28:51.609373][stream_server-2][STDERR] [INFO] [1760945331.609061291] [stream_server]: Uplink client connected from ('127.0.0.1', 42764)
+[2025-10-20 16:28:51.609687][stream_server-2][STDERR] [INFO] [1760945331.609408138] [stream_server]: Downlink client connected from ('127.0.0.1', 47098)
+[2025-10-20 16:28:54.612634][stream_server-2][STDERR] [INFO] [1760945334.612299212] [stream_server]: Downlink connection closed
+[2025-10-20 16:28:55.614285][stream_server-2][STDERR] [INFO] [1760945335.613956064] [stream_server]: Downlink client connected from ('127.0.0.1', 47114)
+[2025-10-20 16:28:58.618086][stream_server-2][STDERR] [INFO] [1760945338.617674239] [stream_server]: Downlink connection closed
+[2025-10-20 16:28:59.619216][stream_server-2][STDERR] [INFO] [1760945339.618870503] [stream_server]: Downlink client connected from ('127.0.0.1', 36444)
+[2025-10-20 16:29:02.622533][stream_server-2][STDERR] [INFO] [1760945342.622113958] [stream_server]: Downlink connection closed
+[2025-10-20 16:29:03.623894][stream_server-2][STDERR] [INFO] [1760945343.623543648] [stream_server]: Downlink client connected from ('127.0.0.1', 36446)
+[2025-10-20 16:29:06.627677][stream_server-2][STDERR] [INFO] [1760945346.627240781] [stream_server]: Downlink connection closed
+[2025-10-20 16:29:07.628864][stream_server-2][STDERR] [INFO] [1760945347.628506321] [stream_server]: Downlink client connected from ('127.0.0.1', 36462)
+[2025-10-20 16:29:10.629579][stream_server-2][STDERR] [INFO] [1760945350.629213455] [stream_server]: Downlink connection closed
+[2025-10-20 16:29:11.633685][stream_server-2][STDERR] [INFO] [1760945351.632139320] [stream_server]: Downlink client connected from ('127.0.0.1', 43196)
+[2025-10-20 16:30:37.032762][robot_state_publisher-1][STDERR] [INFO] [1760945437.029439590] [rclcpp]: signal_handler(signum=2)
+[2025-10-20 16:30:37.033167][static_transform_publisher-3][STDERR] [INFO] [1760945437.029437596] [rclcpp]: signal_handler(signum=2)
+[2025-10-20 16:30:37.033584][static_transform_publisher-4][STDERR] [INFO] [1760945437.029439849] [rclcpp]: signal_handler(signum=2)
