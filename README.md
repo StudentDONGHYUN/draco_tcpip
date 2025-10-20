@@ -73,6 +73,60 @@ sequenceDiagram
 5. **제어 피드백**: 서버가 SLAM/제어 스택에서 생성한 `Pose`, `Twist`, `NavPath` 정보를 다운링크 소켓으로 밀어주고, 클라이언트는 이를 ROS 토픽으로 다시 퍼블리시하여 제어 루프에 반영합니다.
 6. **라이브 센서 모드**: `ros2_ouster` 드라이버가 `/points` 토픽을 퍼블리시하면 인코더는 `qos_best_effort` 설정에 따라 스트림을 소비하고, rosbag 없이도 동일한 왕복 경로를 실행합니다.
 
+## 시스템 구조도
+```mermaid
+flowchart TB
+    subgraph Inputs["센서 / 입력 소스"]
+        Rosbag["ros2 bag 플레이어<br/>launch/client.launch.py"]
+        Ouster["ros2_ouster 드라이버<br/>ros2_ouster/launch/*.py"]
+    end
+
+    subgraph Client["Streaming Client (draco_roundtrip)"]
+        PlySaver["io/bag_recorder.py<br/>scripts/ply_saver"]
+        Encoder["nodes/encoder_node.py<br/>↳ io/ply_codec.py<br/>↳ draco/encoder.py"]
+        Sender["nodes/sender_node.py<br/>↳ net/protocol.py<br/>↳ net/control_plane.py<br/>↳ analysis/metrics.py"]
+    end
+
+    subgraph Transport["TCP 전송 계층"]
+        Protocol["net/protocol.py<br/>MSG_DATA / MSG_ACK"]
+        Control["net/control_plane.py<br/>Pose / Twist / Path"]
+    end
+
+    subgraph Server["Streaming Server (draco_roundtrip)"]
+        StreamServer["nodes/stream_server.py<br/>↳ draco/_draco_adapter.py<br/>↳ analysis/quality.py"]
+        Playback["ros/playback.py<br/>↳ utils/metrics.py"]
+    end
+
+    subgraph Tooling["오프라인 도구 / 모니터링"]
+        DracoTools["draco_tools/*<br/>↳ draco_roundtrip 모듈 재사용"]
+        Monitor["tools/monitor.py / replay.py"]
+        BagToPly["data/bag_to_ply.py"]
+    end
+
+    subgraph SLAM["SLAM / 외부 연동"]
+        SlamBridge["slam_stream_bridge/launch/*"]
+        KissICP["vendor kiss-icp<br/>(ros2_ws/src/kiss-icp)"]
+    end
+
+    Rosbag --> Encoder
+    Ouster --> Encoder
+    PlySaver --> Encoder
+    Encoder --> Sender
+    Sender --> Protocol
+    Protocol --> StreamServer
+    StreamServer --> Playback
+    StreamServer --> Control
+    Control --> Sender
+    Playback --> SlamBridge
+    SlamBridge --> KissICP
+    DracoTools --> Encoder
+    DracoTools --> StreamServer
+    Monitor --> DracoTools
+    BagToPly --> DracoTools
+```
+
+각 노드는 실질적으로 사용하는 하위 모듈을 함께 표기했습니다. `draco_tools` 및 CLI 스크립트는 `draco_roundtrip` 내부 구현을 재사용하며, SLAM 브리지는 `stream_server`가 퍼블리시하는 토픽을 KISS-ICP 등 외부 패키지에 연결합니다.
+
 ## 주요 구성 요소
 - `draco_roundtrip`
   - `io/`: `ply_codec.py`, `bag_recorder.py` 등 PLY 로딩·저장과 rosbag 추출 로직을 제공합니다.
