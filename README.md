@@ -2,6 +2,73 @@
 
 Draco(구글의 3D 압축 라이브러리)를 이용해 LiDAR 포인트클라우드를 스트리밍하고 복원 품질을 검증하는 ROS 2 워크스페이스입니다. rosbag에 담긴 포인트클라우드를 PLY로 변환 → Draco로 압축 → TCP를 통해 서버에 전송 → 복원된 포인트클라우드를 다시 ROS 토픽으로 재생하는 전체 라운드트립 파이프라인을 제공합니다.
 
+## 시스템 개요
+- **목표**: 제한된 네트워크 환경에서 3D 포인트클라우드를 실시간 스트리밍하면서도 복원 품질을 모니터링합니다.
+- **핵심 역할**: 로봇(클라이언트)은 포인트클라우드를 압축해 업링크로 전송하고, 서버는 복원 및 분석 후 ROS 토픽으로 재배포하며 제어·경로 정보를 다운링크로 돌려줍니다.
+- **파이프라인 범위**: 오프라인 PLY 전처리 → 실시간 인코더 노드 → TCP 전송(커스텀 프로토콜) → 서버 디코딩 → ROS 생태계와 SLAM 애플리케이션 연동.
+
+## 아키텍처 다이어그램
+```mermaid
+flowchart LR
+    subgraph Robot["로봇 / 클라이언트"]
+        bag[rosbag2 Player]
+        encoder[Encoder Node<br/>draco_roundtrip.nodes.encoder_node]
+        compressor[DracoPy Encoder]
+        uplink["Uplink TCP Socket"]
+        telemetry_rx["Telemetry Subscriber<br/>(Pose/Path/Twist)"]
+        bag --> encoder --> compressor --> uplink
+        telemetry_rx --> encoder
+    end
+
+    subgraph Network["TCP 네트워크"]
+        protocol["Custom Draco Protocol<br/>(MSG_DATA/MSG_ACK/MSG_HEARTBEAT)"]
+    end
+
+    subgraph Server["서버 / 베이스 스테이션"]
+        listener["Stream Server Node<br/>draco_roundtrip.nodes.stream_server"]
+        decoder[DracoPy Decoder]
+        quality["Analysis Metrics<br/>draco_roundtrip.analysis"]
+        ros_pub["ROS 2 Publishers<br/>(PointCloud2, Pose, Path, Twist)"]
+        downlink["Control-plane Socket"]
+        uplink --> protocol --> listener
+        listener --> decoder --> ros_pub
+        ros_pub --> quality
+        listener --> downlink --> protocol
+    end
+```
+
+## 시퀀스 다이어그램
+```mermaid
+sequenceDiagram
+    participant BagPlayer as rosbag2 Player
+    participant Encoder as Encoder Node
+    participant Protocol as Draco Protocol
+    participant Server as Stream Server
+    participant ROS as ROS 2 Topics
+    participant Downlink as Downlink Telemetry
+
+    BagPlayer->>Encoder: PointCloud2 frame
+    Encoder->>Encoder: Convert to PLY (shared buffer)
+    Encoder->>Encoder: DracoPy encode → Compressed bytes
+    Encoder->>Protocol: MSG_DATA (Draco payload)
+    Protocol->>Server: TCP uplink transfer
+    Server->>Server: DracoPy decode
+    Server->>ROS: Publish decoded PointCloud2
+    Server->>ROS: Publish Pose/Path/Twist telemetry
+    ROS-->>Downlink: Bridge via node parameters
+    Downlink->>Protocol: MSG_POSE / MSG_PATH / MSG_TWIST
+    Protocol->>Encoder: Downlink data (binary or JSON)
+    Encoder->>ROS: Re-publish telemetry topics
+    Server-->>Encoder: MSG_ACK / MSG_HEARTBEAT
+```
+
+## 데이터 파이프라인 요약
+1. **전처리(선택적)**: `draco_tools` 패키지의 `bag_to_ply`로 rosbag을 PLY 시퀀스로 변환합니다. 실시간 실행 시에는 인코더 노드가 rosbag에서 직접 읽어 동일한 변환을 수행합니다.
+2. **압축 송신**: `draco_roundtrip.nodes.encoder_node`가 PLY 버퍼를 DracoPy로 압축하고, `draco_roundtrip.net.protocol`이 정의한 프레이밍(MSG_DATA, MSG_HEARTBEAT 등)을 사용해 TCP uplink로 전송합니다.
+3. **수신·복원**: 서버 측 `stream_server` 노드는 같은 프로토콜로 프레임을 수신하고 DracoPy로 복원하며, ROS 토픽(`/stream_pair/source`, `/stream_pair/decoded`)으로 퍼블리시합니다.
+4. **품질 분석**: `draco_roundtrip.analysis` 모듈이 복원된 프레임을 기준으로 Chamfer-like metric을 계산하고, 필요 시 PNG 리포트 및 로그를 생성합니다.
+5. **제어 피드백**: 서버가 SLAM/제어 스택에서 생성한 `Pose`, `Twist`, `NavPath` 정보를 다운링크 소켓으로 밀어주고, 클라이언트는 이를 ROS 토픽으로 다시 퍼블리시하여 제어 루프에 반영합니다.
+
 ## 주요 구성 요소
 - `draco_roundtrip`
   - `io/`: `ply_codec.py`, `bag_recorder.py` 등 PLY 로딩·저장과 rosbag 추출 로직을 제공합니다.
