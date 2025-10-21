@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import os
+import re
 import signal
 import subprocess
 import sys
+import threading
 import tkinter as tk
 from dataclasses import dataclass
+from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import List, Sequence
 
@@ -17,7 +20,13 @@ def _as_launch_arg(name: str, value: str) -> str:
 
     if value == "":
         return f"{name}:="
-    return f'{name}:="{value}"'
+    return f"{name}:={value}"
+
+
+def _normalise_path(path_value: str) -> str:
+    """Strip surrounding quotes and whitespace from a path-like string."""
+
+    return path_value.strip().strip('"').strip("'")
 
 
 class ManagedProcess:
@@ -110,12 +119,15 @@ class ClientConfig:
     generic_quantization_bits: int
 
     def as_launch_args(self) -> List[str]:
-        if not self.bag_file:
+        bag_path = _normalise_path(self.bag_file)
+        if not bag_path:
             raise ValueError("Bag file path is required for the client launch.")
+        if not Path(bag_path).exists():
+            raise ValueError(f"Bag path does not exist: {bag_path}")
         args = [
             _as_launch_arg("server_host", self.server_host or "127.0.0.1"),
             f"server_port:={self.server_port or '5000'}",
-            _as_launch_arg("bag_file", self.bag_file),
+            _as_launch_arg("bag_file", bag_path),
             _as_launch_arg("topic_name", self.topic_name or "/sensing/lidar/top/pointcloud"),
             _as_launch_arg("prefix", self.prefix or "client"),
             f"use_sim_time:={'true' if self.use_sim_time else 'false'}",
@@ -135,14 +147,21 @@ class SlamConfig:
     base_frame: str
     use_sim_time: bool
     visualize: bool
+    map_save_directory: str
+    keep_full_history: bool
 
     def as_launch_args(self) -> List[str]:
-        return [
+        args = [
             _as_launch_arg("topic", self.topic or "/stream_pair/decoded"),
             _as_launch_arg("base_frame", self.base_frame or "lidar_frame"),
             f"use_sim_time:={'true' if self.use_sim_time else 'false'}",
             f"visualize:={'true' if self.visualize else 'false'}",
         ]
+        map_dir = _normalise_path(self.map_save_directory)
+        if map_dir:
+            args.append(_as_launch_arg("map_save_directory", map_dir))
+        args.append(f"map_keep_full_history:={'true' if self.keep_full_history else 'false'}")
+        return args
 
 
 class ControlPanel(tk.Tk):
@@ -269,11 +288,14 @@ class ControlPanel(tk.Tk):
 
         slam_frame = ttk.Labelframe(self, text="KISS-ICP SLAM")
         slam_frame.grid(row=2, column=0, sticky="nsew", **padding)
+        slam_frame.grid_columnconfigure(1, weight=1)
 
         self.slam_topic = tk.StringVar(value="/stream_pair/decoded")
         self.slam_base_frame = tk.StringVar(value="lidar_frame")
         self.slam_use_sim_time = tk.BooleanVar(value=True)
         self.slam_visualize = tk.BooleanVar(value=True)
+        self.slam_map_directory = tk.StringVar(value=str(Path.home() / "kiss_icp_maps"))
+        self.slam_keep_full_history = tk.BooleanVar(value=True)
 
         self._add_labeled_entry(slam_frame, "Input Topic", self.slam_topic, row=0)
         self._add_labeled_entry(slam_frame, "Base Frame", self.slam_base_frame, row=1)
@@ -283,17 +305,31 @@ class ControlPanel(tk.Tk):
         ttk.Checkbutton(
             slam_frame, text="Launch RViz", variable=self.slam_visualize
         ).grid(row=3, column=0, columnspan=2, sticky="w", pady=(0, 5))
+        ttk.Checkbutton(
+            slam_frame, text="Keep Full Map History", variable=self.slam_keep_full_history
+        ).grid(row=4, column=0, columnspan=2, sticky="w", pady=(0, 5))
+
+        ttk.Label(slam_frame, text="Map Save Dir").grid(row=5, column=0, sticky="e")
+        ttk.Entry(slam_frame, textvariable=self.slam_map_directory, width=24).grid(
+            row=5, column=1, sticky="we", pady=2
+        )
+        ttk.Button(slam_frame, text="Browse", command=self._browse_map_directory).grid(
+            row=5, column=2, sticky="we", padx=(5, 0)
+        )
 
         ttk.Button(slam_frame, text="Start SLAM", command=self._start_slam).grid(
-            row=4, column=0, sticky="we", pady=(8, 0)
+            row=6, column=0, sticky="we", pady=(8, 0)
         )
         ttk.Button(slam_frame, text="Stop SLAM", command=self._stop_slam).grid(
-            row=4, column=1, sticky="we", pady=(8, 0), padx=(5, 0)
+            row=6, column=1, sticky="we", pady=(8, 0), padx=(5, 0)
+        )
+        ttk.Button(slam_frame, text="Save Map", command=self._save_map).grid(
+            row=6, column=2, sticky="we", pady=(8, 0)
         )
 
         self.slam_status = tk.StringVar(value="Stopped")
         ttk.Label(slam_frame, textvariable=self.slam_status).grid(
-            row=5, column=0, columnspan=2, sticky="we", pady=(5, 0)
+            row=7, column=0, columnspan=3, sticky="we", pady=(5, 0)
         )
 
     def _add_labeled_entry(
@@ -319,6 +355,13 @@ class ControlPanel(tk.Tk):
         )
         if filename:
             self.client_bag_file.set(filename)
+
+    def _browse_map_directory(self) -> None:
+        directory = filedialog.askdirectory(
+            title="Select map output directory",
+        )
+        if directory:
+            self.slam_map_directory.set(directory)
 
     def _start_server(self) -> None:
         if self.server_process.is_running():
@@ -348,10 +391,12 @@ class ControlPanel(tk.Tk):
         if self.client_process.is_running():
             messagebox.showinfo("Client", "Client pipeline is already running.")
             return
+        bag_value = _normalise_path(self.client_bag_file.get())
+        self.client_bag_file.set(bag_value)
         config = ClientConfig(
             server_host=self.client_host.get(),
             server_port=self.client_port.get(),
-            bag_file=self.client_bag_file.get(),
+            bag_file=bag_value,
             topic_name=self.client_topic_name.get(),
             prefix=self.client_prefix.get(),
             use_sim_time=self.client_use_sim_time.get(),
@@ -393,6 +438,8 @@ class ControlPanel(tk.Tk):
             base_frame=self.slam_base_frame.get(),
             use_sim_time=self.slam_use_sim_time.get(),
             visualize=self.slam_visualize.get(),
+            map_save_directory=self.slam_map_directory.get(),
+            keep_full_history=self.slam_keep_full_history.get(),
         )
         command = [
             "ros2",
@@ -411,6 +458,56 @@ class ControlPanel(tk.Tk):
         self.slam_process.stop()
         self.slam_status.set("Stopped")
 
+    def _save_map(self) -> None:
+        if not self.slam_process.is_running():
+            messagebox.showinfo("SLAM", "KISS-ICP가 실행 중일 때만 맵을 저장할 수 있습니다.")
+            return
+
+        command = [
+            "ros2",
+            "service",
+            "call",
+            "/kiss/save_map",
+            "std_srvs/srv/Trigger",
+            "{}",
+        ]
+
+        def _invoke() -> None:
+            try:
+                completed = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                output = (completed.stdout or "") + (completed.stderr or "")
+                success, detail = self._parse_trigger_response(output)
+                if success:
+                    self.after(
+                        0,
+                        lambda: messagebox.showinfo(
+                            "SLAM", detail or "KISS-ICP 맵을 저장했습니다."
+                        ),
+                    )
+                else:
+                    self.after(
+                        0,
+                        lambda: messagebox.showerror(
+                            "SLAM", detail or "맵 저장 서비스가 실패로 응답했습니다."
+                        ),
+                    )
+            except subprocess.CalledProcessError as exc:
+                output = (exc.stdout or "") + (exc.stderr or "")
+                self.after(
+                    0,
+                    lambda: messagebox.showerror(
+                        "SLAM",
+                        f"맵 저장 명령이 실패했습니다: {output.strip() or exc}",
+                    ),
+                )
+
+        threading.Thread(target=_invoke, daemon=True).start()
+
     def _schedule_status_refresh(self) -> None:
         self._refresh_status()
         self.after(1000, self._schedule_status_refresh)
@@ -425,6 +522,13 @@ class ControlPanel(tk.Tk):
         self.client_process.stop()
         self.slam_process.stop()
         super().destroy()
+
+    @staticmethod
+    def _parse_trigger_response(output: str) -> tuple[bool, str]:
+        success = bool(re.search(r"success\s*=\s*True", output))
+        match = re.search(r"message\s*=\s*['\"]([^'\"]*)['\"]", output)
+        message = match.group(1) if match else ""
+        return success, message
 
 
 def main() -> None:
