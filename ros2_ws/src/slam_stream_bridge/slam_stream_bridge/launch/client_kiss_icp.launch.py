@@ -21,6 +21,9 @@ def generate_launch_description() -> LaunchDescription:
     base_frame = LaunchConfiguration("base_frame")
     telemetry_rate = LaunchConfiguration("telemetry_rate")
     idle_shutdown_timeout = LaunchConfiguration("idle_shutdown_timeout")
+    compress_level = LaunchConfiguration("compress_level")
+    position_quantization_bits = LaunchConfiguration("position_quantization_bits")
+    generic_quantization_bits = LaunchConfiguration("generic_quantization_bits")
 
     client_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -38,6 +41,9 @@ def generate_launch_description() -> LaunchDescription:
             "loop": loop,
             "telemetry_rate": telemetry_rate,
             "idle_shutdown_timeout": idle_shutdown_timeout,
+            "compress_level": compress_level,
+            "position_quantization_bits": position_quantization_bits,
+            "generic_quantization_bits": generic_quantization_bits,
         }.items(),
     )
 
@@ -103,6 +109,21 @@ def generate_launch_description() -> LaunchDescription:
                 "idle_shutdown_timeout",
                 default_value="5.0",
                 description="Seconds of inactivity before shutting down (0 disables).",
+            ),
+            DeclareLaunchArgument(
+                "compress_level",
+                default_value="8",
+                description="Draco compression level (0-10) used by the encoder.",
+            ),
+            DeclareLaunchArgument(
+                "position_quantization_bits",
+                default_value="12",
+                description="Number of quantisation bits for point positions.",
+            ),
+            DeclareLaunchArgument(
+                "generic_quantization_bits",
+                default_value="10",
+                description="Generic attribute quantisation bits (kept for compatibility).",
             ),
             DeclareLaunchArgument(
                 "base_frame",

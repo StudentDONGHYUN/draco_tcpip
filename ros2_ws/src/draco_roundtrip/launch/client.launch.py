@@ -67,6 +67,21 @@ def generate_launch_description() -> LaunchDescription:
         default_value='false',
         description='If true, loop the rosbag playback.',
     )
+    declare_compress_level = DeclareLaunchArgument(
+        'compress_level',
+        default_value='8',
+        description='Draco compression level (0-10) used by the encoder.',
+    )
+    declare_position_qbits = DeclareLaunchArgument(
+        'position_quantization_bits',
+        default_value='12',
+        description='Number of quantisation bits for point positions.',
+    )
+    declare_generic_qbits = DeclareLaunchArgument(
+        'generic_quantization_bits',
+        default_value='10',
+        description='Generic attribute quantisation bits (kept for compatibility).',
+    )
     declare_idle_shutdown_timeout = DeclareLaunchArgument(
         'idle_shutdown_timeout',
         default_value='5.0',
@@ -91,6 +106,9 @@ def generate_launch_description() -> LaunchDescription:
     use_sim_time = LaunchConfiguration('use_sim_time')
     save_ply_files = LaunchConfiguration('save_ply_files')
     qos_best_effort = LaunchConfiguration('qos_best_effort')
+    compress_level = LaunchConfiguration('compress_level')
+    position_quantization_bits = LaunchConfiguration('position_quantization_bits')
+    generic_quantization_bits = LaunchConfiguration('generic_quantization_bits')
     idle_timeout = LaunchConfiguration('idle_timeout')
     max_frames = LaunchConfiguration('max_frames')
     play_rate = LaunchConfiguration('play_rate')
@@ -149,6 +167,9 @@ def generate_launch_description() -> LaunchDescription:
                 'qos_best_effort': qos_best_effort,
                 'prefix': prefix,
                 'use_sim_time': use_sim_time,
+                'cl': compress_level,
+                'qp': position_quantization_bits,
+                'qg': generic_quantization_bits,
             }
         ],
     )
@@ -183,6 +204,9 @@ def generate_launch_description() -> LaunchDescription:
         declare_qos_best_effort,
         declare_play_rate,
         declare_loop,
+        declare_compress_level,
+        declare_position_qbits,
+        declare_generic_qbits,
         declare_idle_shutdown_timeout,
         DeclareLaunchArgument('telemetry_rate', default_value='10.0'),
         declare_idle_timeout,

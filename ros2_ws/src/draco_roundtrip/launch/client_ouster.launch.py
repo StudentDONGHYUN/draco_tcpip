@@ -63,6 +63,21 @@ def generate_launch_description() -> LaunchDescription:
         default_value="true",
         description="Use Best Effort QoS when subscribing to the live point cloud stream.",
     )
+    declare_compress_level = DeclareLaunchArgument(
+        "compress_level",
+        default_value="8",
+        description="Draco compression level (0-10) used by the encoder.",
+    )
+    declare_position_qbits = DeclareLaunchArgument(
+        "position_quantization_bits",
+        default_value="12",
+        description="Number of quantisation bits for point positions.",
+    )
+    declare_generic_qbits = DeclareLaunchArgument(
+        "generic_quantization_bits",
+        default_value="10",
+        description="Generic attribute quantisation bits (kept for compatibility).",
+    )
 
     server_host = LaunchConfiguration("server_host")
     server_port = LaunchConfiguration("server_port")
@@ -72,6 +87,9 @@ def generate_launch_description() -> LaunchDescription:
     driver_params_file = LaunchConfiguration("driver_params_file")
     pointcloud_topic = LaunchConfiguration("pointcloud_topic")
     qos_best_effort = LaunchConfiguration("qos_best_effort")
+    compress_level = LaunchConfiguration("compress_level")
+    position_quantization_bits = LaunchConfiguration("position_quantization_bits")
+    generic_quantization_bits = LaunchConfiguration("generic_quantization_bits")
 
     driver_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -94,6 +112,9 @@ def generate_launch_description() -> LaunchDescription:
                 "topic_name": pointcloud_topic,
                 "qos_best_effort": qos_best_effort,
                 "prefix": prefix,
+                "cl": compress_level,
+                "qp": position_quantization_bits,
+                "qg": generic_quantization_bits,
             }
         ],
     )
@@ -125,6 +146,9 @@ def generate_launch_description() -> LaunchDescription:
             declare_driver_params,
             declare_pointcloud_topic,
             declare_qos_best_effort,
+            declare_compress_level,
+            declare_position_qbits,
+            declare_generic_qbits,
             driver_launch,
             encoder_node,
             sender_node,

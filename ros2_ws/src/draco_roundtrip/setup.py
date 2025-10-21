@@ -21,6 +21,7 @@ setup(
             'stream_monitor = draco_roundtrip.tools.monitor:main',
             'stream_replay = draco_roundtrip.tools.replay:main',
             'ply_saver = draco_roundtrip.io.bag_recorder:main',
+            'stream_control = draco_roundtrip.gui.control_panel:main',
         ],
     },
 )

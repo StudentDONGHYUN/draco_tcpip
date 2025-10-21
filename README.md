@@ -175,6 +175,10 @@ ros2 launch draco_roundtrip server.launch.py [port:=5000]
 
 - `port` (옵션): 업링크(TCP) 포트. 기본값은 `5000`이며, `downlink_port`를 지정하지 않으면 다운링크 포트가 자동으로 `port + 1` 로 계산됩니다.
 - `downlink_port` (옵션): 다운링크 제어 포트. `0`(기본값)으로 두면 서버 노드가 실행 시점에 `port + 1`을 사용합니다.
+- `points_topic` (옵션): 복원된 포인트클라우드를 퍼블리시할 토픽 이름. 기본값은 `/stream_pair/decoded`입니다.
+- `points_frame_id` (옵션): 복원된 포인트클라우드의 Frame ID. 기본값은 `lidar_frame`입니다.
+- `downlink_protocol` (옵션): 다운링크 프로토콜(`binary` 또는 `json`). 기본값은 `binary`입니다.
+- `downlink_rate` (옵션): 다운링크 텔레메트리 주기(Hz). 기본값은 `10.0`입니다.
 
 **2. 클라이언트 PC (로봇)**
 
@@ -197,7 +201,42 @@ ros2 launch draco_roundtrip client.launch.py \
 - `qos_best_effort` (옵션, 기본 `false`): rosbag 기록이 Best Effort QoS로 만들어졌다면 구독 QoS를 일치시켜 드롭을 줄일 수 있습니다.
 - `idle_shutdown_timeout` (옵션, 기본 `5.0`): 입력이 끊긴 뒤 지정 초가 지나면 `sender_node`가 종료됩니다. 무한 대기하려면 `0`으로 두세요.
 - `loop` (옵션, 기본 `false`): rosbag을 반복 재생합니다.
+- `compress_level`, `position_quantization_bits`, `generic_quantization_bits` (옵션): Draco 인코더 압축 단계 및 포지션/제너릭 양자화 비트를 제어합니다.
 - `work_dir`, `encoder`, `telemetry_rate` 등의 추가 인자는 런치 인자로 전달하면 해당 ROS 2 파라미터가 설정됩니다.
+
+**3. SLAM (옵션)**
+
+클라이언트가 서버와 통신 중이라면, 별도 터미널에서 KISS-ICP 오도메트리를 실행해 복원 포인트클라우드를 처리할 수 있습니다.
+
+```bash
+ros2 launch slam_stream_bridge kiss_icp.launch.py \
+    topic:=/stream_pair/decoded \
+    base_frame:=lidar_frame \
+    visualize:=true \
+    use_sim_time:=true
+```
+
+- `topic` (옵션, 기본 `/stream_pair/decoded`): SLAM 입력으로 사용할 포인트클라우드 토픽.
+- `base_frame` (옵션, 기본 `lidar_frame`): TF 트리에서 SLAM 기준 프레임.
+- `visualize` (옵션, 기본 `true`): `true`면 RViz2를 함께 띄웁니다.
+- `use_sim_time` (옵션, 기본 `true`): 시뮬레이션 시간 사용 여부.
+
+### GUI 기반 제어 패널
+터미널 명령 대신 GUI에서 인코더/디코더 옵션을 조정하고 서버와 클라이언트 SLAM 파이프라인을 실행·종료하려면 새로 추가된 `stream_control` 콘솔 스크립트를 사용하세요.
+
+```bash
+source /opt/ros/humble/setup.bash
+cd /home/kkit/newdisk/draco_tcpip/ros2_ws
+source install/setup.bash
+ros2 run draco_roundtrip stream_control
+```
+
+- **Encoder Controls**: `Compression Level`, `Position QBits`, `Generic QBits` 스핀박스를 통해 `encoder_node`의 `cl`, `qp`, `qg` 파라미터를 즉시 지정할 수 있습니다.
+- **Server Controls**: 디코더 측 `points_topic`, `points_frame_id`, `downlink_protocol`, `downlink_rate` 등을 GUI에서 설정 후 서버를 실행합니다.
+- **Process Management**: `Start/Stop Server`, `Start/Stop Client`, `Start/Stop SLAM` 버튼이 각각 서버 런치, 클라이언트 런치, KISS-ICP 런치를 독립적으로 구동/종료합니다. 창을 닫으면 실행 중인 프로세스를 모두 안전하게 종료합니다.
+- **Bag 선택 지원**: `Browse` 버튼으로 rosbag2 DB3 파일을 선택하면 경로에 공백이 있어도 자동으로 런치 인자에 인용부호를 추가합니다.
+
+GUI는 단일 워크스테이션에서 서버와 클라이언트를 함께 실행할 때 유용하며, 분산 환경에서는 SSH 포워딩 또는 X11 터널링을 통해 동일한 명령을 사용할 수 있습니다.
 
 **실시간 Ouster 센서(옵션)**
 

@@ -29,6 +29,10 @@ def generate_launch_description() -> LaunchDescription:
     port = LaunchConfiguration('port')
     downlink_port = LaunchConfiguration('downlink_port')
     use_sim_time = LaunchConfiguration('use_sim_time')
+    points_topic = LaunchConfiguration('points_topic')
+    points_frame_id = LaunchConfiguration('points_frame_id')
+    downlink_protocol = LaunchConfiguration('downlink_protocol')
+    downlink_rate = LaunchConfiguration('downlink_rate')
 
     project_root = _find_project_root(Path(__file__).resolve())
     log_dir = project_root / 'logs'
@@ -90,6 +94,26 @@ def generate_launch_description() -> LaunchDescription:
             'use_sim_time',
             default_value='true',
             description='Use simulation (rosbag) clock if true'),
+        DeclareLaunchArgument(
+            'points_topic',
+            default_value='/stream_pair/decoded',
+            description='Topic where decoded PointCloud2 messages are published.',
+        ),
+        DeclareLaunchArgument(
+            'points_frame_id',
+            default_value='lidar_frame',
+            description='Frame ID assigned to decoded point clouds.',
+        ),
+        DeclareLaunchArgument(
+            'downlink_protocol',
+            default_value='binary',
+            description='Control-plane protocol used for downlink telemetry.',
+        ),
+        DeclareLaunchArgument(
+            'downlink_rate',
+            default_value='10.0',
+            description='Downlink telemetry publishing rate in Hz.',
+        ),
 
         # Always launch the robot_state_publisher and stream_server
         Node(
@@ -110,9 +134,11 @@ def generate_launch_description() -> LaunchDescription:
             parameters=[{
                 'port': port,
                 'downlink_port': downlink_port,
-                'points_topic': '/stream_pair/decoded',
+                'points_topic': points_topic,
                 'use_sim_time': use_sim_time,
-                'points_frame_id': 'lidar_frame'
+                'points_frame_id': points_frame_id,
+                'downlink_protocol': downlink_protocol,
+                'downlink_rate': downlink_rate,
             }],
         ),
 

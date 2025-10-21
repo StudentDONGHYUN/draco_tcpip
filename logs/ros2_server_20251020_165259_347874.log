@@ -1,0 +1,5 @@
+[2025-10-20 17:27:26.079127][stream_server-2][STDERR] [INFO] [1760948846.078828198] [stream_server]: Uplink session summary: in=63055887 bytes, out=0 bytes
+[2025-10-20 17:27:26.402724][stream_server-2][STDERR] [INFO] [1760948846.402010554] [stream_server]: Server session report saved to logs/server_report_20251020_172726.html
+[2025-10-20 17:27:26.403201][stream_server-2][STDERR] [INFO] [1760948846.402860746] [stream_server]: Uplink connection closed by peer
+[2025-10-20 17:27:26.404379][stream_server-2][STDERR] [INFO] [1760948846.404003276] [stream_server]: Uplink session finished
+[2025-10-20 17:27:45.053495][stream_server-2][STDERR] [INFO] [1760948865.053095347] [stream_server]: Uplink client connected from ('127.0.0.1', 57970)

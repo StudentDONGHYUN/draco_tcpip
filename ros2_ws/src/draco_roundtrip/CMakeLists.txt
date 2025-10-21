@@ -25,6 +25,7 @@ install(
     scripts/stream_monitor
     scripts/stream_replay
     scripts/ply_saver
+    scripts/stream_control
     scripts/tf_fallback
   DESTINATION lib/${PROJECT_NAME}
 )

@@ -1,0 +1,771 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-21T10:59:24.185408
+[2025-10-21 10:59:24.242656][static_transform_publisher-3][STDERR] [WARN] [1761011964.242149075] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 10:59:24.247790][static_transform_publisher-4][STDERR] [WARN] [1761011964.246036800] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 10:59:24.263683][static_transform_publisher-3][STDERR] [INFO] [1761011964.260834096] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-21 10:59:24.263683][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 10:59:24.263683][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 10:59:24.263683][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-21 10:59:24.271791][robot_state_publisher-1][STDERR] [INFO] [1761011964.270551856] [robot_state_publisher]: got segment base_link
+[2025-10-21 10:59:24.271791][robot_state_publisher-1][STDERR] [INFO] [1761011964.270640043] [robot_state_publisher]: got segment lidar_frame
+[2025-10-21 10:59:24.280002][static_transform_publisher-4][STDERR] [INFO] [1761011964.279278839] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-21 10:59:24.280002][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 10:59:24.280002][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 10:59:24.280002][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-21 10:59:27.053648][stream_server-2][STDERR] [INFO] [1761011967.053336542] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-21 10:59:27.053968][stream_server-2][STDERR] [INFO] [1761011967.053476361] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-21 10:59:27.452676][stream_server-2][STDERR] [INFO] [1761011967.452372299] [stream_server]: Uplink client connected from ('127.0.0.1', 54854)
+[2025-10-21 10:59:27.453057][stream_server-2][STDERR] [INFO] [1761011967.452589295] [stream_server]: Downlink client connected from ('127.0.0.1', 43330)
+[2025-10-21 10:59:30.456833][stream_server-2][STDERR] [INFO] [1761011970.456504868] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:30.457526][stream_server-2][STDERR] [INFO] [1761011970.457208372] [stream_server]: Downlink client connected from ('127.0.0.1', 43334)
+[2025-10-21 10:59:30.825274][stream_server-2][STDERR] [INFO] [1761011970.824840647] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:30.826067][stream_server-2][STDERR] [INFO] [1761011970.825714182] [stream_server]: Downlink client connected from ('127.0.0.1', 43348)
+[2025-10-21 10:59:31.528717][stream_server-2][STDERR] [INFO] [1761011971.528300482] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:31.529379][stream_server-2][STDERR] [INFO] [1761011971.529097724] [stream_server]: Downlink client connected from ('127.0.0.1', 43364)
+[2025-10-21 10:59:34.081673][stream_server-2][STDERR] [INFO] [1761011974.081334230] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:34.082366][stream_server-2][STDERR] [INFO] [1761011974.082039946] [stream_server]: Downlink client connected from ('127.0.0.1', 43374)
+[2025-10-21 10:59:34.461077][stream_server-2][STDERR] [INFO] [1761011974.460706863] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:34.461753][stream_server-2][STDERR] [INFO] [1761011974.461524526] [stream_server]: Downlink client connected from ('127.0.0.1', 43384)
+[2025-10-21 10:59:34.462691][stream_server-2][STDERR] [INFO] [1761011974.462360712] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:34.463528][stream_server-2][STDERR] [INFO] [1761011974.463233591] [stream_server]: Downlink client connected from ('127.0.0.1', 43392)
+[2025-10-21 10:59:35.833152][stream_server-2][STDERR] [INFO] [1761011975.832803304] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:35.833881][stream_server-2][STDERR] [INFO] [1761011975.833588160] [stream_server]: Downlink client connected from ('127.0.0.1', 34490)
+[2025-10-21 10:59:36.534349][stream_server-2][STDERR] [INFO] [1761011976.533982877] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:36.535414][stream_server-2][STDERR] [INFO] [1761011976.534989303] [stream_server]: Downlink client connected from ('127.0.0.1', 34500)
+[2025-10-21 10:59:38.086548][stream_server-2][STDERR] [INFO] [1761011978.086139452] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:38.087528][stream_server-2][STDERR] [INFO] [1761011978.087165939] [stream_server]: Downlink client connected from ('127.0.0.1', 34508)
+[2025-10-21 10:59:38.465218][stream_server-2][STDERR] [INFO] [1761011978.464695913] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:38.465852][stream_server-2][STDERR] [INFO] [1761011978.465490760] [stream_server]: Downlink client connected from ('127.0.0.1', 34524)
+[2025-10-21 10:59:38.466572][stream_server-2][STDERR] [INFO] [1761011978.466329857] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:38.467384][stream_server-2][STDERR] [INFO] [1761011978.467104989] [stream_server]: Downlink client connected from ('127.0.0.1', 34536)
+[2025-10-21 10:59:40.536358][stream_server-2][STDERR] [INFO] [1761011980.535922879] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:40.537062][stream_server-2][STDERR] [INFO] [1761011980.536783986] [stream_server]: Downlink client connected from ('127.0.0.1', 34538)
+[2025-10-21 10:59:40.841217][stream_server-2][STDERR] [INFO] [1761011980.840863135] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:40.842129][stream_server-2][STDERR] [INFO] [1761011980.841837651] [stream_server]: Downlink client connected from ('127.0.0.1', 34546)
+[2025-10-21 10:59:41.093050][stream_server-2][STDERR] [INFO] [1761011981.092612287] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:41.094051][stream_server-2][STDERR] [INFO] [1761011981.093694373] [stream_server]: Downlink client connected from ('127.0.0.1', 34548)
+[2025-10-21 10:59:42.094223][stream_server-2][STDERR] [INFO] [1761011982.093884949] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:42.095224][stream_server-2][STDERR] [INFO] [1761011982.094921337] [stream_server]: Downlink client connected from ('127.0.0.1', 34562)
+[2025-10-21 10:59:42.468469][stream_server-2][STDERR] [INFO] [1761011982.468112664] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:42.468986][stream_server-2][STDERR] [INFO] [1761011982.468738612] [stream_server]: Downlink client connected from ('127.0.0.1', 34578)
+[2025-10-21 10:59:43.544230][stream_server-2][STDERR] [INFO] [1761011983.543876829] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:43.545176][stream_server-2][STDERR] [INFO] [1761011983.544895587] [stream_server]: Downlink client connected from ('127.0.0.1', 34586)
+[2025-10-21 10:59:45.847024][stream_server-2][STDERR] [INFO] [1761011985.846669425] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:45.847843][stream_server-2][STDERR] [INFO] [1761011985.847498576] [stream_server]: Downlink client connected from ('127.0.0.1', 34598)
+[2025-10-21 10:59:46.098274][stream_server-2][STDERR] [INFO] [1761011986.097977814] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:46.098834][stream_server-2][STDERR] [INFO] [1761011986.098579495] [stream_server]: Downlink client connected from ('127.0.0.1', 34602)
+[2025-10-21 10:59:46.473065][stream_server-2][STDERR] [INFO] [1761011986.472653996] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:46.473656][stream_server-2][STDERR] [INFO] [1761011986.473339724] [stream_server]: Downlink client connected from ('127.0.0.1', 56240)
+[2025-10-21 10:59:47.551132][stream_server-2][STDERR] [INFO] [1761011987.550827086] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:47.552014][stream_server-2][STDERR] [INFO] [1761011987.551715451] [stream_server]: Downlink client connected from ('127.0.0.1', 56252)
+[2025-10-21 10:59:49.851901][stream_server-2][STDERR] [INFO] [1761011989.851559354] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:49.852501][stream_server-2][STDERR] [INFO] [1761011989.852255869] [stream_server]: Downlink client connected from ('127.0.0.1', 56258)
+[2025-10-21 10:59:49.853465][stream_server-2][STDERR] [INFO] [1761011989.853029103] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:49.854593][stream_server-2][STDERR] [INFO] [1761011989.854201020] [stream_server]: Downlink client connected from ('127.0.0.1', 56262)
+[2025-10-21 10:59:50.477648][stream_server-2][STDERR] [INFO] [1761011990.477294583] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:50.478171][stream_server-2][STDERR] [INFO] [1761011990.477918593] [stream_server]: Downlink client connected from ('127.0.0.1', 56270)
+[2025-10-21 10:59:50.555434][stream_server-2][STDERR] [INFO] [1761011990.554693736] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:50.556281][stream_server-2][STDERR] [INFO] [1761011990.555869844] [stream_server]: Downlink client connected from ('127.0.0.1', 56272)
+[2025-10-21 10:59:51.106148][stream_server-2][STDERR] [INFO] [1761011991.105727980] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:51.106623][stream_server-2][STDERR] [INFO] [1761011991.106412194] [stream_server]: Downlink client connected from ('127.0.0.1', 56274)
+[2025-10-21 10:59:51.556900][stream_server-2][STDERR] [INFO] [1761011991.556580824] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:51.557712][stream_server-2][STDERR] [INFO] [1761011991.557345524] [stream_server]: Downlink client connected from ('127.0.0.1', 56284)
+[2025-10-21 10:59:52.855062][stream_server-2][STDERR] [INFO] [1761011992.854489502] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:52.856039][stream_server-2][STDERR] [INFO] [1761011992.855596170] [stream_server]: Downlink client connected from ('127.0.0.1', 56294)
+[2025-10-21 10:59:53.856477][stream_server-2][STDERR] [INFO] [1761011993.856121795] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:53.857109][stream_server-2][STDERR] [INFO] [1761011993.856806976] [stream_server]: Downlink client connected from ('127.0.0.1', 56302)
+[2025-10-21 10:59:54.480039][stream_server-2][STDERR] [INFO] [1761011994.479672466] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:54.480878][stream_server-2][STDERR] [INFO] [1761011994.480642030] [stream_server]: Downlink client connected from ('127.0.0.1', 56306)
+[2025-10-21 10:59:54.481785][stream_server-2][STDERR] [INFO] [1761011994.481545875] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:54.482809][stream_server-2][STDERR] [INFO] [1761011994.482567881] [stream_server]: Downlink client connected from ('127.0.0.1', 56322)
+[2025-10-21 10:59:54.483760][stream_server-2][STDERR] [INFO] [1761011994.483535686] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:54.484671][stream_server-2][STDERR] [INFO] [1761011994.484456804] [stream_server]: Downlink client connected from ('127.0.0.1', 56338)
+[2025-10-21 10:59:55.564063][stream_server-2][STDERR] [INFO] [1761011995.563630407] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:55.564628][stream_server-2][STDERR] [INFO] [1761011995.564373324] [stream_server]: Downlink client connected from ('127.0.0.1', 56340)
+[2025-10-21 10:59:56.113265][stream_server-2][STDERR] [INFO] [1761011996.112919249] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:56.113928][stream_server-2][STDERR] [INFO] [1761011996.113644730] [stream_server]: Downlink client connected from ('127.0.0.1', 58360)
+[2025-10-21 10:59:57.861271][stream_server-2][STDERR] [INFO] [1761011997.860894130] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:57.862067][stream_server-2][STDERR] [INFO] [1761011997.861819071] [stream_server]: Downlink client connected from ('127.0.0.1', 58366)
+[2025-10-21 10:59:58.485026][stream_server-2][STDERR] [INFO] [1761011998.484684057] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:58.485802][stream_server-2][STDERR] [INFO] [1761011998.485484635] [stream_server]: Downlink client connected from ('127.0.0.1', 58374)
+[2025-10-21 10:59:58.486729][stream_server-2][STDERR] [INFO] [1761011998.486314215] [stream_server]: Downlink connection closed
+[2025-10-21 10:59:58.487710][stream_server-2][STDERR] [INFO] [1761011998.487320165] [stream_server]: Downlink client connected from ('127.0.0.1', 58382)
+[2025-10-21 11:00:00.571581][stream_server-2][STDERR] [INFO] [1761012000.571095192] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:00.572398][stream_server-2][STDERR] [INFO] [1761012000.572065226] [stream_server]: Downlink client connected from ('127.0.0.1', 58384)
+[2025-10-21 11:00:01.119121][stream_server-2][STDERR] [INFO] [1761012001.118736781] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:01.119879][stream_server-2][STDERR] [INFO] [1761012001.119546586] [stream_server]: Downlink client connected from ('127.0.0.1', 58394)
+[2025-10-21 11:00:02.489450][stream_server-2][STDERR] [INFO] [1761012002.488980034] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:02.490386][stream_server-2][STDERR] [INFO] [1761012002.490013129] [stream_server]: Downlink client connected from ('127.0.0.1', 58400)
+[2025-10-21 11:00:02.866997][stream_server-2][STDERR] [INFO] [1761012002.866585227] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:02.867823][stream_server-2][STDERR] [INFO] [1761012002.867573332] [stream_server]: Downlink client connected from ('127.0.0.1', 58406)
+[2025-10-21 11:00:02.868715][stream_server-2][STDERR] [INFO] [1761012002.868458943] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:02.869725][stream_server-2][STDERR] [INFO] [1761012002.869433090] [stream_server]: Downlink client connected from ('127.0.0.1', 58408)
+[2025-10-21 11:00:05.578240][stream_server-2][STDERR] [INFO] [1761012005.577873339] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:05.579008][stream_server-2][STDERR] [INFO] [1761012005.578612650] [stream_server]: Downlink client connected from ('127.0.0.1', 58414)
+[2025-10-21 11:00:06.128538][stream_server-2][STDERR] [INFO] [1761012006.128108848] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:06.129753][stream_server-2][STDERR] [INFO] [1761012006.129375811] [stream_server]: Downlink client connected from ('127.0.0.1', 42238)
+[2025-10-21 11:00:06.493876][stream_server-2][STDERR] [INFO] [1761012006.493561942] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:06.494605][stream_server-2][STDERR] [INFO] [1761012006.494224816] [stream_server]: Downlink client connected from ('127.0.0.1', 42244)
+[2025-10-21 11:00:07.873217][stream_server-2][STDERR] [INFO] [1761012007.872835462] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:07.874106][stream_server-2][STDERR] [INFO] [1761012007.873805282] [stream_server]: Downlink client connected from ('127.0.0.1', 42258)
+[2025-10-21 11:00:10.499113][stream_server-2][STDERR] [INFO] [1761012010.498714874] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:10.499889][stream_server-2][STDERR] [INFO] [1761012010.499644321] [stream_server]: Downlink client connected from ('127.0.0.1', 42262)
+[2025-10-21 11:00:10.584211][stream_server-2][STDERR] [INFO] [1761012010.583821539] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:10.584893][stream_server-2][STDERR] [INFO] [1761012010.584563227] [stream_server]: Downlink client connected from ('127.0.0.1', 42266)
+[2025-10-21 11:00:11.133959][stream_server-2][STDERR] [INFO] [1761012011.133539098] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:11.134490][stream_server-2][STDERR] [INFO] [1761012011.134188708] [stream_server]: Downlink client connected from ('127.0.0.1', 42282)
+[2025-10-21 11:00:11.134902][stream_server-2][STDERR] [INFO] [1761012011.134696477] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:11.135538][stream_server-2][STDERR] [INFO] [1761012011.135306643] [stream_server]: Downlink client connected from ('127.0.0.1', 42292)
+[2025-10-21 11:00:12.888235][stream_server-2][STDERR] [INFO] [1761012012.887887276] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:12.889270][stream_server-2][STDERR] [INFO] [1761012012.888976417] [stream_server]: Downlink client connected from ('127.0.0.1', 42300)
+[2025-10-21 11:00:14.501422][stream_server-2][STDERR] [INFO] [1761012014.501049916] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:14.502175][stream_server-2][STDERR] [INFO] [1761012014.501949440] [stream_server]: Downlink client connected from ('127.0.0.1', 42302)
+[2025-10-21 11:00:14.503023][stream_server-2][STDERR] [INFO] [1761012014.502737941] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:14.503659][stream_server-2][STDERR] [INFO] [1761012014.503347099] [stream_server]: Downlink client connected from ('127.0.0.1', 42310)
+[2025-10-21 11:00:15.138583][stream_server-2][STDERR] [INFO] [1761012015.138214845] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:15.139212][stream_server-2][STDERR] [INFO] [1761012015.138990526] [stream_server]: Downlink client connected from ('127.0.0.1', 42322)
+[2025-10-21 11:00:15.590581][stream_server-2][STDERR] [INFO] [1761012015.590297265] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:15.591101][stream_server-2][STDERR] [INFO] [1761012015.590823179] [stream_server]: Downlink client connected from ('127.0.0.1', 50776)
+[2025-10-21 11:00:17.892111][stream_server-2][STDERR] [INFO] [1761012017.891723474] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:17.892815][stream_server-2][STDERR] [INFO] [1761012017.892516974] [stream_server]: Downlink client connected from ('127.0.0.1', 50792)
+[2025-10-21 11:00:18.144836][stream_server-2][STDERR] [INFO] [1761012018.143701379] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:18.145365][stream_server-2][STDERR] [INFO] [1761012018.144638522] [stream_server]: Downlink client connected from ('127.0.0.1', 50796)
+[2025-10-21 11:00:18.506208][stream_server-2][STDERR] [INFO] [1761012018.505806942] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:18.506928][stream_server-2][STDERR] [INFO] [1761012018.506670959] [stream_server]: Downlink client connected from ('127.0.0.1', 50810)
+[2025-10-21 11:00:19.144624][stream_server-2][STDERR] [INFO] [1761012019.144249017] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:19.145460][stream_server-2][STDERR] [INFO] [1761012019.145194712] [stream_server]: Downlink client connected from ('127.0.0.1', 50812)
+[2025-10-21 11:00:19.594771][stream_server-2][STDERR] [INFO] [1761012019.594440832] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:19.595299][stream_server-2][STDERR] [INFO] [1761012019.595082965] [stream_server]: Downlink client connected from ('127.0.0.1', 50822)
+[2025-10-21 11:00:19.596080][stream_server-2][STDERR] [INFO] [1761012019.595780357] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:19.596768][stream_server-2][STDERR] [INFO] [1761012019.596451262] [stream_server]: Downlink client connected from ('127.0.0.1', 50836)
+[2025-10-21 11:00:19.597746][stream_server-2][STDERR] [INFO] [1761012019.597372178] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:19.598595][stream_server-2][STDERR] [INFO] [1761012019.598300337] [stream_server]: Downlink client connected from ('127.0.0.1', 50850)
+[2025-10-21 11:00:22.511165][stream_server-2][STDERR] [INFO] [1761012022.510757648] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:22.511861][stream_server-2][STDERR] [INFO] [1761012022.511584782] [stream_server]: Downlink client connected from ('127.0.0.1', 50852)
+[2025-10-21 11:00:22.599246][stream_server-2][STDERR] [INFO] [1761012022.598912259] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:22.599863][stream_server-2][STDERR] [INFO] [1761012022.599618143] [stream_server]: Downlink client connected from ('127.0.0.1', 50858)
+[2025-10-21 11:00:22.897875][stream_server-2][STDERR] [INFO] [1761012022.897501434] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:22.898755][stream_server-2][STDERR] [INFO] [1761012022.898405597] [stream_server]: Downlink client connected from ('127.0.0.1', 50874)
+[2025-10-21 11:00:23.153738][stream_server-2][STDERR] [INFO] [1761012023.153291376] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:23.512189][stream_server-2][STDERR] [INFO] [1761012023.511783168] [stream_server]: Downlink client connected from ('127.0.0.1', 38920)
+[2025-10-21 11:00:26.515127][stream_server-2][STDERR] [INFO] [1761012026.514726675] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:26.515844][stream_server-2][STDERR] [INFO] [1761012026.515500821] [stream_server]: Downlink client connected from ('127.0.0.1', 38934)
+[2025-10-21 11:00:26.902829][stream_server-2][STDERR] [INFO] [1761012026.902402620] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:26.903689][stream_server-2][STDERR] [INFO] [1761012026.903374582] [stream_server]: Downlink client connected from ('127.0.0.1', 38950)
+[2025-10-21 11:00:27.603865][stream_server-2][STDERR] [INFO] [1761012027.603557692] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:27.604748][stream_server-2][STDERR] [INFO] [1761012027.604490570] [stream_server]: Downlink client connected from ('127.0.0.1', 38966)
+[2025-10-21 11:00:28.159112][stream_server-2][STDERR] [INFO] [1761012028.158778395] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:28.159879][stream_server-2][STDERR] [INFO] [1761012028.159603252] [stream_server]: Downlink client connected from ('127.0.0.1', 38978)
+[2025-10-21 11:00:29.908195][stream_server-2][STDERR] [INFO] [1761012029.907781549] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:29.909130][stream_server-2][STDERR] [INFO] [1761012029.908794651] [stream_server]: Downlink client connected from ('127.0.0.1', 38988)
+[2025-10-21 11:00:30.518593][stream_server-2][STDERR] [INFO] [1761012030.518209460] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:30.519365][stream_server-2][STDERR] [INFO] [1761012030.519020457] [stream_server]: Downlink client connected from ('127.0.0.1', 38994)
+[2025-10-21 11:00:30.908981][stream_server-2][STDERR] [INFO] [1761012030.908670750] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:30.909661][stream_server-2][STDERR] [INFO] [1761012030.909410680] [stream_server]: Downlink client connected from ('127.0.0.1', 39006)
+[2025-10-21 11:00:30.910364][stream_server-2][STDERR] [INFO] [1761012030.910101289] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:30.911184][stream_server-2][STDERR] [INFO] [1761012030.910942340] [stream_server]: Downlink client connected from ('127.0.0.1', 39010)
+[2025-10-21 11:00:30.911887][stream_server-2][STDERR] [INFO] [1761012030.911638031] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:30.912731][stream_server-2][STDERR] [INFO] [1761012030.912501848] [stream_server]: Downlink client connected from ('127.0.0.1', 39014)
+[2025-10-21 11:00:32.612713][stream_server-2][STDERR] [INFO] [1761012032.612268434] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:32.613369][stream_server-2][STDERR] [INFO] [1761012032.613093091] [stream_server]: Downlink client connected from ('127.0.0.1', 39024)
+[2025-10-21 11:00:33.166726][stream_server-2][STDERR] [INFO] [1761012033.166402813] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:33.167230][stream_server-2][STDERR] [INFO] [1761012033.167025022] [stream_server]: Downlink client connected from ('127.0.0.1', 39032)
+[2025-10-21 11:00:34.521131][stream_server-2][STDERR] [INFO] [1761012034.520676550] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:34.521836][stream_server-2][STDERR] [INFO] [1761012034.521518666] [stream_server]: Downlink client connected from ('127.0.0.1', 39046)
+[2025-10-21 11:00:34.914069][stream_server-2][STDERR] [INFO] [1761012034.913733647] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:34.914635][stream_server-2][STDERR] [INFO] [1761012034.914445822] [stream_server]: Downlink client connected from ('127.0.0.1', 41406)
+[2025-10-21 11:00:34.915376][stream_server-2][STDERR] [INFO] [1761012034.915140291] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:34.915988][stream_server-2][STDERR] [INFO] [1761012034.915713917] [stream_server]: Downlink client connected from ('127.0.0.1', 41416)
+[2025-10-21 11:00:37.619158][stream_server-2][STDERR] [INFO] [1761012037.618707170] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:37.619973][stream_server-2][STDERR] [INFO] [1761012037.619689212] [stream_server]: Downlink client connected from ('127.0.0.1', 41428)
+[2025-10-21 11:00:38.172303][stream_server-2][STDERR] [INFO] [1761012038.171921042] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:38.173054][stream_server-2][STDERR] [INFO] [1761012038.172703359] [stream_server]: Downlink client connected from ('127.0.0.1', 41432)
+[2025-10-21 11:00:38.525891][stream_server-2][STDERR] [INFO] [1761012038.525528353] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:38.526549][stream_server-2][STDERR] [INFO] [1761012038.526262752] [stream_server]: Downlink client connected from ('127.0.0.1', 41444)
+[2025-10-21 11:00:39.919593][stream_server-2][STDERR] [INFO] [1761012039.919236605] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:39.920414][stream_server-2][STDERR] [INFO] [1761012039.920127305] [stream_server]: Downlink client connected from ('127.0.0.1', 41446)
+[2025-10-21 11:00:39.921235][stream_server-2][STDERR] [INFO] [1761012039.920995062] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:39.922100][stream_server-2][STDERR] [INFO] [1761012039.921781472] [stream_server]: Downlink client connected from ('127.0.0.1', 41452)
+[2025-10-21 11:00:42.530162][stream_server-2][STDERR] [INFO] [1761012042.529824516] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:42.531208][stream_server-2][STDERR] [INFO] [1761012042.530690596] [stream_server]: Downlink client connected from ('127.0.0.1', 41454)
+[2025-10-21 11:00:42.624888][stream_server-2][STDERR] [INFO] [1761012042.624503255] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:42.625582][stream_server-2][STDERR] [INFO] [1761012042.625298381] [stream_server]: Downlink client connected from ('127.0.0.1', 41460)
+[2025-10-21 11:00:43.177269][stream_server-2][STDERR] [INFO] [1761012043.176893754] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:43.178161][stream_server-2][STDERR] [INFO] [1761012043.177862214] [stream_server]: Downlink client connected from ('127.0.0.1', 41466)
+[2025-10-21 11:00:44.924062][stream_server-2][STDERR] [INFO] [1761012044.923635090] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:44.924945][stream_server-2][STDERR] [INFO] [1761012044.924591314] [stream_server]: Downlink client connected from ('127.0.0.1', 38158)
+[2025-10-21 11:00:46.534828][stream_server-2][STDERR] [INFO] [1761012046.534496166] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:46.535718][stream_server-2][STDERR] [INFO] [1761012046.535389142] [stream_server]: Downlink client connected from ('127.0.0.1', 38162)
+[2025-10-21 11:00:46.629601][stream_server-2][STDERR] [INFO] [1761012046.629290062] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:46.630499][stream_server-2][STDERR] [INFO] [1761012046.630218436] [stream_server]: Downlink client connected from ('127.0.0.1', 38176)
+[2025-10-21 11:00:46.631229][stream_server-2][STDERR] [INFO] [1761012046.631003685] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:46.631984][stream_server-2][STDERR] [INFO] [1761012046.631776449] [stream_server]: Downlink client connected from ('127.0.0.1', 38192)
+[2025-10-21 11:00:48.184103][stream_server-2][STDERR] [INFO] [1761012048.183686460] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:48.185090][stream_server-2][STDERR] [INFO] [1761012048.184782360] [stream_server]: Downlink client connected from ('127.0.0.1', 38206)
+[2025-10-21 11:00:48.928141][stream_server-2][STDERR] [INFO] [1761012048.927740213] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:48.928718][stream_server-2][STDERR] [INFO] [1761012048.928502602] [stream_server]: Downlink client connected from ('127.0.0.1', 38208)
+[2025-10-21 11:00:49.634795][stream_server-2][STDERR] [INFO] [1761012049.634411069] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:49.635696][stream_server-2][STDERR] [INFO] [1761012049.635326946] [stream_server]: Downlink client connected from ('127.0.0.1', 38224)
+[2025-10-21 11:00:50.538638][stream_server-2][STDERR] [INFO] [1761012050.538314277] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:50.539287][stream_server-2][STDERR] [INFO] [1761012050.539078499] [stream_server]: Downlink client connected from ('127.0.0.1', 38228)
+[2025-10-21 11:00:50.635513][stream_server-2][STDERR] [INFO] [1761012050.635103733] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:50.635995][stream_server-2][STDERR] [INFO] [1761012050.635758522] [stream_server]: Downlink client connected from ('127.0.0.1', 38232)
+[2025-10-21 11:00:51.934081][stream_server-2][STDERR] [INFO] [1761012051.933748150] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:51.934949][stream_server-2][STDERR] [INFO] [1761012051.934590842] [stream_server]: Downlink client connected from ('127.0.0.1', 38234)
+[2025-10-21 11:00:51.935631][stream_server-2][STDERR] [INFO] [1761012051.935326255] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:51.936624][stream_server-2][STDERR] [INFO] [1761012051.936335785] [stream_server]: Downlink client connected from ('127.0.0.1', 38246)
+[2025-10-21 11:00:52.932226][stream_server-2][STDERR] [INFO] [1761012052.931822283] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:52.932973][stream_server-2][STDERR] [INFO] [1761012052.932639186] [stream_server]: Downlink client connected from ('127.0.0.1', 38252)
+[2025-10-21 11:00:53.191909][stream_server-2][STDERR] [INFO] [1761012053.191534902] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:53.192631][stream_server-2][STDERR] [INFO] [1761012053.192340455] [stream_server]: Downlink client connected from ('127.0.0.1', 38266)
+[2025-10-21 11:00:53.640975][stream_server-2][STDERR] [INFO] [1761012053.640699242] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:53.641487][stream_server-2][STDERR] [INFO] [1761012053.641272055] [stream_server]: Downlink client connected from ('127.0.0.1', 38278)
+[2025-10-21 11:00:54.541081][stream_server-2][STDERR] [INFO] [1761012054.540721791] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:54.541843][stream_server-2][STDERR] [INFO] [1761012054.541588590] [stream_server]: Downlink client connected from ('127.0.0.1', 37944)
+[2025-10-21 11:00:56.644763][stream_server-2][STDERR] [INFO] [1761012056.644355342] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:56.645833][stream_server-2][STDERR] [INFO] [1761012056.645583899] [stream_server]: Downlink client connected from ('127.0.0.1', 37960)
+[2025-10-21 11:00:56.939851][stream_server-2][STDERR] [INFO] [1761012056.939487764] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:56.940736][stream_server-2][STDERR] [INFO] [1761012056.940418316] [stream_server]: Downlink client connected from ('127.0.0.1', 37976)
+[2025-10-21 11:00:56.941360][stream_server-2][STDERR] [INFO] [1761012056.941117440] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:56.941986][stream_server-2][STDERR] [INFO] [1761012056.941799855] [stream_server]: Downlink client connected from ('127.0.0.1', 37986)
+[2025-10-21 11:00:57.647340][stream_server-2][STDERR] [INFO] [1761012057.647071307] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:57.648150][stream_server-2][STDERR] [INFO] [1761012057.647947928] [stream_server]: Downlink client connected from ('127.0.0.1', 37992)
+[2025-10-21 11:00:58.201876][stream_server-2][STDERR] [INFO] [1761012058.201548616] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:58.202562][stream_server-2][STDERR] [INFO] [1761012058.202184263] [stream_server]: Downlink client connected from ('127.0.0.1', 38002)
+[2025-10-21 11:00:58.545568][stream_server-2][STDERR] [INFO] [1761012058.545256849] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:58.546327][stream_server-2][STDERR] [INFO] [1761012058.546056457] [stream_server]: Downlink client connected from ('127.0.0.1', 38004)
+[2025-10-21 11:00:58.546923][stream_server-2][STDERR] [INFO] [1761012058.546621345] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:58.547615][stream_server-2][STDERR] [INFO] [1761012058.547349415] [stream_server]: Downlink client connected from ('127.0.0.1', 38008)
+[2025-10-21 11:00:58.548161][stream_server-2][STDERR] [INFO] [1761012058.547903011] [stream_server]: Downlink connection closed
+[2025-10-21 11:00:58.650541][stream_server-2][STDERR] [INFO] [1761012058.650160925] [stream_server]: Downlink client connected from ('127.0.0.1', 38016)
+[2025-10-21 11:01:01.655919][stream_server-2][STDERR] [INFO] [1761012061.655569124] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:01.656921][stream_server-2][STDERR] [INFO] [1761012061.656542112] [stream_server]: Downlink client connected from ('127.0.0.1', 38032)
+[2025-10-21 11:01:01.946859][stream_server-2][STDERR] [INFO] [1761012061.946481268] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:01.947683][stream_server-2][STDERR] [INFO] [1761012061.947434291] [stream_server]: Downlink client connected from ('127.0.0.1', 38034)
+[2025-10-21 11:01:02.550381][stream_server-2][STDERR] [INFO] [1761012062.550011699] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:02.551025][stream_server-2][STDERR] [INFO] [1761012062.550756355] [stream_server]: Downlink client connected from ('127.0.0.1', 38036)
+[2025-10-21 11:01:03.207563][stream_server-2][STDERR] [INFO] [1761012063.207179108] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:03.208206][stream_server-2][STDERR] [INFO] [1761012063.207903970] [stream_server]: Downlink client connected from ('127.0.0.1', 38050)
+[2025-10-21 11:01:03.208911][stream_server-2][STDERR] [INFO] [1761012063.208688852] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:03.552286][stream_server-2][STDERR] [INFO] [1761012063.551890867] [stream_server]: Downlink client connected from ('127.0.0.1', 40028)
+[2025-10-21 11:01:06.555094][stream_server-2][STDERR] [INFO] [1761012066.554620430] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:06.555733][stream_server-2][STDERR] [INFO] [1761012066.555410545] [stream_server]: Downlink client connected from ('127.0.0.1', 40038)
+[2025-10-21 11:01:06.661982][stream_server-2][STDERR] [INFO] [1761012066.661587489] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:06.662849][stream_server-2][STDERR] [INFO] [1761012066.662541683] [stream_server]: Downlink client connected from ('127.0.0.1', 40042)
+[2025-10-21 11:01:06.954933][stream_server-2][STDERR] [INFO] [1761012066.954630564] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:06.955480][stream_server-2][STDERR] [INFO] [1761012066.955249632] [stream_server]: Downlink client connected from ('127.0.0.1', 40050)
+[2025-10-21 11:01:06.956089][stream_server-2][STDERR] [INFO] [1761012066.955807388] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:06.956738][stream_server-2][STDERR] [INFO] [1761012066.956544184] [stream_server]: Downlink client connected from ('127.0.0.1', 40056)
+[2025-10-21 11:01:08.212459][stream_server-2][STDERR] [INFO] [1761012068.212084331] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:08.213236][stream_server-2][STDERR] [INFO] [1761012068.212970767] [stream_server]: Downlink client connected from ('127.0.0.1', 40066)
+[2025-10-21 11:01:10.557660][stream_server-2][STDERR] [INFO] [1761012070.557274181] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:10.558429][stream_server-2][STDERR] [INFO] [1761012070.558170140] [stream_server]: Downlink client connected from ('127.0.0.1', 40082)
+[2025-10-21 11:01:10.559232][stream_server-2][STDERR] [INFO] [1761012070.558972213] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:10.560075][stream_server-2][STDERR] [INFO] [1761012070.559806168] [stream_server]: Downlink client connected from ('127.0.0.1', 40088)
+[2025-10-21 11:01:10.560743][stream_server-2][STDERR] [INFO] [1761012070.560541248] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:10.561503][stream_server-2][STDERR] [INFO] [1761012070.561270683] [stream_server]: Downlink client connected from ('127.0.0.1', 40100)
+[2025-10-21 11:01:11.668609][stream_server-2][STDERR] [INFO] [1761012071.668299424] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:11.669347][stream_server-2][STDERR] [INFO] [1761012071.669059835] [stream_server]: Downlink client connected from ('127.0.0.1', 40104)
+[2025-10-21 11:01:11.960413][stream_server-2][STDERR] [INFO] [1761012071.960000335] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:11.961195][stream_server-2][STDERR] [INFO] [1761012071.960881345] [stream_server]: Downlink client connected from ('127.0.0.1', 40110)
+[2025-10-21 11:01:12.217590][stream_server-2][STDERR] [INFO] [1761012072.217298880] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:12.218445][stream_server-2][STDERR] [INFO] [1761012072.218249427] [stream_server]: Downlink client connected from ('127.0.0.1', 40122)
+[2025-10-21 11:01:14.562002][stream_server-2][STDERR] [INFO] [1761012074.561632083] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:14.562707][stream_server-2][STDERR] [INFO] [1761012074.562374818] [stream_server]: Downlink client connected from ('127.0.0.1', 40136)
+[2025-10-21 11:01:15.223085][stream_server-2][STDERR] [INFO] [1761012075.222690962] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:15.224086][stream_server-2][STDERR] [INFO] [1761012075.223546956] [stream_server]: Downlink client connected from ('127.0.0.1', 40150)
+[2025-10-21 11:01:15.673923][stream_server-2][STDERR] [INFO] [1761012075.673536349] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:15.674898][stream_server-2][STDERR] [INFO] [1761012075.674374690] [stream_server]: Downlink client connected from ('127.0.0.1', 40162)
+[2025-10-21 11:01:15.964014][stream_server-2][STDERR] [INFO] [1761012075.963671020] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:15.964808][stream_server-2][STDERR] [INFO] [1761012075.964429986] [stream_server]: Downlink client connected from ('127.0.0.1', 40176)
+[2025-10-21 11:01:16.224515][stream_server-2][STDERR] [INFO] [1761012076.223958590] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:16.225311][stream_server-2][STDERR] [INFO] [1761012076.224905839] [stream_server]: Downlink client connected from ('127.0.0.1', 48190)
+[2025-10-21 11:01:18.565930][stream_server-2][STDERR] [INFO] [1761012078.565572769] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:18.566684][stream_server-2][STDERR] [INFO] [1761012078.566457102] [stream_server]: Downlink client connected from ('127.0.0.1', 48204)
+[2025-10-21 11:01:18.676110][stream_server-2][STDERR] [INFO] [1761012078.675624515] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:18.676993][stream_server-2][STDERR] [INFO] [1761012078.676645838] [stream_server]: Downlink client connected from ('127.0.0.1', 48206)
+[2025-10-21 11:01:18.972722][stream_server-2][STDERR] [INFO] [1761012078.972298854] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:18.973804][stream_server-2][STDERR] [INFO] [1761012078.973345894] [stream_server]: Downlink client connected from ('127.0.0.1', 48222)
+[2025-10-21 11:01:18.974790][stream_server-2][STDERR] [INFO] [1761012078.974310022] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:18.976039][stream_server-2][STDERR] [INFO] [1761012078.975588872] [stream_server]: Downlink client connected from ('127.0.0.1', 48238)
+[2025-10-21 11:01:19.678021][stream_server-2][STDERR] [INFO] [1761012079.677574573] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:19.678511][stream_server-2][STDERR] [INFO] [1761012079.678256942] [stream_server]: Downlink client connected from ('127.0.0.1', 48242)
+[2025-10-21 11:01:20.232588][stream_server-2][STDERR] [INFO] [1761012080.232285347] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:20.233469][stream_server-2][STDERR] [INFO] [1761012080.233118431] [stream_server]: Downlink client connected from ('127.0.0.1', 48254)
+[2025-10-21 11:01:22.570735][stream_server-2][STDERR] [INFO] [1761012082.570340176] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:22.571395][stream_server-2][STDERR] [INFO] [1761012082.571129030] [stream_server]: Downlink client connected from ('127.0.0.1', 48270)
+[2025-10-21 11:01:22.681900][stream_server-2][STDERR] [INFO] [1761012082.681640906] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:22.682440][stream_server-2][STDERR] [INFO] [1761012082.682224101] [stream_server]: Downlink client connected from ('127.0.0.1', 48272)
+[2025-10-21 11:01:23.979276][stream_server-2][STDERR] [INFO] [1761012083.978909382] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:23.979832][stream_server-2][STDERR] [INFO] [1761012083.979577603] [stream_server]: Downlink client connected from ('127.0.0.1', 48280)
+[2025-10-21 11:01:25.239363][stream_server-2][STDERR] [INFO] [1761012085.238786738] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:25.240431][stream_server-2][STDERR] [INFO] [1761012085.239971422] [stream_server]: Downlink client connected from ('127.0.0.1', 48290)
+[2025-10-21 11:01:25.684895][stream_server-2][STDERR] [INFO] [1761012085.684567748] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:25.685559][stream_server-2][STDERR] [INFO] [1761012085.685287868] [stream_server]: Downlink client connected from ('127.0.0.1', 47520)
+[2025-10-21 11:01:26.575646][stream_server-2][STDERR] [INFO] [1761012086.575345831] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:26.576630][stream_server-2][STDERR] [INFO] [1761012086.576222357] [stream_server]: Downlink client connected from ('127.0.0.1', 47528)
+[2025-10-21 11:01:26.685885][stream_server-2][STDERR] [INFO] [1761012086.685596601] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:26.686646][stream_server-2][STDERR] [INFO] [1761012086.686379399] [stream_server]: Downlink client connected from ('127.0.0.1', 47540)
+[2025-10-21 11:01:28.984904][stream_server-2][STDERR] [INFO] [1761012088.984597037] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:28.985559][stream_server-2][STDERR] [INFO] [1761012088.985309965] [stream_server]: Downlink client connected from ('127.0.0.1', 47544)
+[2025-10-21 11:01:30.246524][stream_server-2][STDERR] [INFO] [1761012090.246051845] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:30.247454][stream_server-2][STDERR] [INFO] [1761012090.246977930] [stream_server]: Downlink client connected from ('127.0.0.1', 47558)
+[2025-10-21 11:01:30.579891][stream_server-2][STDERR] [INFO] [1761012090.579543252] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:30.580632][stream_server-2][STDERR] [INFO] [1761012090.580306482] [stream_server]: Downlink client connected from ('127.0.0.1', 47560)
+[2025-10-21 11:01:30.690729][stream_server-2][STDERR] [INFO] [1761012090.690335755] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:30.691559][stream_server-2][STDERR] [INFO] [1761012090.691274037] [stream_server]: Downlink client connected from ('127.0.0.1', 47568)
+[2025-10-21 11:01:30.692362][stream_server-2][STDERR] [INFO] [1761012090.692052569] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:30.988018][stream_server-2][STDERR] [INFO] [1761012090.987597894] [stream_server]: Downlink client connected from ('127.0.0.1', 47574)
+[2025-10-21 11:01:33.992306][stream_server-2][STDERR] [INFO] [1761012093.991932783] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:33.993199][stream_server-2][STDERR] [INFO] [1761012093.992799058] [stream_server]: Downlink client connected from ('127.0.0.1', 47586)
+[2025-10-21 11:01:34.583094][stream_server-2][STDERR] [INFO] [1761012094.582735646] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:34.583657][stream_server-2][STDERR] [INFO] [1761012094.583390894] [stream_server]: Downlink client connected from ('127.0.0.1', 47602)
+[2025-10-21 11:01:35.249757][stream_server-2][STDERR] [INFO] [1761012095.249443770] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:35.250459][stream_server-2][STDERR] [INFO] [1761012095.250131476] [stream_server]: Downlink client connected from ('127.0.0.1', 47614)
+[2025-10-21 11:01:35.695898][stream_server-2][STDERR] [INFO] [1761012095.695553283] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:35.696456][stream_server-2][STDERR] [INFO] [1761012095.696201458] [stream_server]: Downlink client connected from ('127.0.0.1', 47268)
+[2025-10-21 11:01:38.586858][stream_server-2][STDERR] [INFO] [1761012098.586529605] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:38.587577][stream_server-2][STDERR] [INFO] [1761012098.587217720] [stream_server]: Downlink client connected from ('127.0.0.1', 47272)
+[2025-10-21 11:01:38.997893][stream_server-2][STDERR] [INFO] [1761012098.997581811] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:38.998466][stream_server-2][STDERR] [INFO] [1761012098.998199810] [stream_server]: Downlink client connected from ('127.0.0.1', 47284)
+[2025-10-21 11:01:39.254294][stream_server-2][STDERR] [INFO] [1761012099.253870397] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:39.255222][stream_server-2][STDERR] [INFO] [1761012099.254898820] [stream_server]: Downlink client connected from ('127.0.0.1', 47292)
+[2025-10-21 11:01:40.702600][stream_server-2][STDERR] [INFO] [1761012100.702100861] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:40.703510][stream_server-2][STDERR] [INFO] [1761012100.703234127] [stream_server]: Downlink client connected from ('127.0.0.1', 47304)
+[2025-10-21 11:01:42.260203][stream_server-2][STDERR] [INFO] [1761012102.259641550] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:42.261123][stream_server-2][STDERR] [INFO] [1761012102.260712917] [stream_server]: Downlink client connected from ('127.0.0.1', 47312)
+[2025-10-21 11:01:42.589137][stream_server-2][STDERR] [INFO] [1761012102.588734434] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:42.589992][stream_server-2][STDERR] [INFO] [1761012102.589706979] [stream_server]: Downlink client connected from ('127.0.0.1', 47326)
+[2025-10-21 11:01:43.260143][stream_server-2][STDERR] [INFO] [1761012103.259728998] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:43.260826][stream_server-2][STDERR] [INFO] [1761012103.260509755] [stream_server]: Downlink client connected from ('127.0.0.1', 47338)
+[2025-10-21 11:01:44.000690][stream_server-2][STDERR] [INFO] [1761012104.000367685] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:44.001246][stream_server-2][STDERR] [INFO] [1761012104.000979531] [stream_server]: Downlink client connected from ('127.0.0.1', 47350)
+[2025-10-21 11:01:44.002026][stream_server-2][STDERR] [INFO] [1761012104.001717110] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:44.002898][stream_server-2][STDERR] [INFO] [1761012104.002639871] [stream_server]: Downlink client connected from ('127.0.0.1', 47358)
+[2025-10-21 11:01:45.709394][stream_server-2][STDERR] [INFO] [1761012105.709006975] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:45.710302][stream_server-2][STDERR] [INFO] [1761012105.709897696] [stream_server]: Downlink client connected from ('127.0.0.1', 44754)
+[2025-10-21 11:01:46.593301][stream_server-2][STDERR] [INFO] [1761012106.592934813] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:46.594051][stream_server-2][STDERR] [INFO] [1761012106.593734664] [stream_server]: Downlink client connected from ('127.0.0.1', 44770)
+[2025-10-21 11:01:47.265101][stream_server-2][STDERR] [INFO] [1761012107.264702198] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:47.266019][stream_server-2][STDERR] [INFO] [1761012107.265702880] [stream_server]: Downlink client connected from ('127.0.0.1', 44772)
+[2025-10-21 11:01:48.005397][stream_server-2][STDERR] [INFO] [1761012108.004973156] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:48.006303][stream_server-2][STDERR] [INFO] [1761012108.005997847] [stream_server]: Downlink client connected from ('127.0.0.1', 44788)
+[2025-10-21 11:01:49.713870][stream_server-2][STDERR] [INFO] [1761012109.713572406] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:49.714458][stream_server-2][STDERR] [INFO] [1761012109.714194024] [stream_server]: Downlink client connected from ('127.0.0.1', 44792)
+[2025-10-21 11:01:50.597875][stream_server-2][STDERR] [INFO] [1761012110.597529441] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:50.598744][stream_server-2][STDERR] [INFO] [1761012110.598379762] [stream_server]: Downlink client connected from ('127.0.0.1', 44806)
+[2025-10-21 11:01:51.011045][stream_server-2][STDERR] [INFO] [1761012111.010642751] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:51.011802][stream_server-2][STDERR] [INFO] [1761012111.011426929] [stream_server]: Downlink client connected from ('127.0.0.1', 44818)
+[2025-10-21 11:01:51.012568][stream_server-2][STDERR] [INFO] [1761012111.012252059] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:51.013445][stream_server-2][STDERR] [INFO] [1761012111.013092515] [stream_server]: Downlink client connected from ('127.0.0.1', 44822)
+[2025-10-21 11:01:52.012347][stream_server-2][STDERR] [INFO] [1761012112.011990587] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:52.012964][stream_server-2][STDERR] [INFO] [1761012112.012700271] [stream_server]: Downlink client connected from ('127.0.0.1', 44828)
+[2025-10-21 11:01:52.273069][stream_server-2][STDERR] [INFO] [1761012112.272700529] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:52.273663][stream_server-2][STDERR] [INFO] [1761012112.273425794] [stream_server]: Downlink client connected from ('127.0.0.1', 44840)
+[2025-10-21 11:01:52.717245][stream_server-2][STDERR] [INFO] [1761012112.716867739] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:52.717836][stream_server-2][STDERR] [INFO] [1761012112.717593241] [stream_server]: Downlink client connected from ('127.0.0.1', 44856)
+[2025-10-21 11:01:53.717984][stream_server-2][STDERR] [INFO] [1761012113.717546930] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:53.718721][stream_server-2][STDERR] [INFO] [1761012113.718436864] [stream_server]: Downlink client connected from ('127.0.0.1', 44870)
+[2025-10-21 11:01:54.602538][stream_server-2][STDERR] [INFO] [1761012114.602203639] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:54.603445][stream_server-2][STDERR] [INFO] [1761012114.603107715] [stream_server]: Downlink client connected from ('127.0.0.1', 44872)
+[2025-10-21 11:01:56.016995][stream_server-2][STDERR] [INFO] [1761012116.016639713] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:56.017600][stream_server-2][STDERR] [INFO] [1761012116.017359656] [stream_server]: Downlink client connected from ('127.0.0.1', 44888)
+[2025-10-21 11:01:56.018362][stream_server-2][STDERR] [INFO] [1761012116.018133118] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:56.019121][stream_server-2][STDERR] [INFO] [1761012116.018917539] [stream_server]: Downlink client connected from ('127.0.0.1', 60834)
+[2025-10-21 11:01:56.019957][stream_server-2][STDERR] [INFO] [1761012116.019714149] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:56.020841][stream_server-2][STDERR] [INFO] [1761012116.020613830] [stream_server]: Downlink client connected from ('127.0.0.1', 60840)
+[2025-10-21 11:01:57.281312][stream_server-2][STDERR] [INFO] [1761012117.280934392] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:57.282122][stream_server-2][STDERR] [INFO] [1761012117.281752076] [stream_server]: Downlink client connected from ('127.0.0.1', 60848)
+[2025-10-21 11:01:57.723114][stream_server-2][STDERR] [INFO] [1761012117.722726543] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:57.724075][stream_server-2][STDERR] [INFO] [1761012117.723695612] [stream_server]: Downlink client connected from ('127.0.0.1', 60856)
+[2025-10-21 11:01:58.607337][stream_server-2][STDERR] [INFO] [1761012118.606962142] [stream_server]: Downlink connection closed
+[2025-10-21 11:01:58.608401][stream_server-2][STDERR] [INFO] [1761012118.607963605] [stream_server]: Downlink client connected from ('127.0.0.1', 60864)
+[2025-10-21 11:02:01.023765][stream_server-2][STDERR] [INFO] [1761012121.023387713] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:01.024416][stream_server-2][STDERR] [INFO] [1761012121.024165520] [stream_server]: Downlink client connected from ('127.0.0.1', 60870)
+[2025-10-21 11:02:01.025273][stream_server-2][STDERR] [INFO] [1761012121.024919946] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:01.026322][stream_server-2][STDERR] [INFO] [1761012121.025950334] [stream_server]: Downlink client connected from ('127.0.0.1', 60872)
+[2025-10-21 11:02:01.727643][stream_server-2][STDERR] [INFO] [1761012121.727257588] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:01.728267][stream_server-2][STDERR] [INFO] [1761012121.727973371] [stream_server]: Downlink client connected from ('127.0.0.1', 60878)
+[2025-10-21 11:02:02.289117][stream_server-2][STDERR] [INFO] [1761012122.288750846] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:02.289953][stream_server-2][STDERR] [INFO] [1761012122.289602039] [stream_server]: Downlink client connected from ('127.0.0.1', 60880)
+[2025-10-21 11:02:02.612180][stream_server-2][STDERR] [INFO] [1761012122.611725351] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:02.612950][stream_server-2][STDERR] [INFO] [1761012122.612601786] [stream_server]: Downlink client connected from ('127.0.0.1', 60890)
+[2025-10-21 11:02:04.734060][stream_server-2][STDERR] [INFO] [1761012124.733628104] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:04.734720][stream_server-2][STDERR] [INFO] [1761012124.734494296] [stream_server]: Downlink client connected from ('127.0.0.1', 60904)
+[2025-10-21 11:02:04.735446][stream_server-2][STDERR] [INFO] [1761012124.735186217] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:04.736107][stream_server-2][STDERR] [INFO] [1761012124.735877186] [stream_server]: Downlink client connected from ('127.0.0.1', 60910)
+[2025-10-21 11:02:05.734040][stream_server-2][STDERR] [INFO] [1761012125.733635210] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:05.734922][stream_server-2][STDERR] [INFO] [1761012125.734642681] [stream_server]: Downlink client connected from ('127.0.0.1', 60924)
+[2025-10-21 11:02:06.032148][stream_server-2][STDERR] [INFO] [1761012126.031792596] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:06.032865][stream_server-2][STDERR] [INFO] [1761012126.032599336] [stream_server]: Downlink client connected from ('127.0.0.1', 41302)
+[2025-10-21 11:02:06.616005][stream_server-2][STDERR] [INFO] [1761012126.615550785] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:06.616662][stream_server-2][STDERR] [INFO] [1761012126.616427918] [stream_server]: Downlink client connected from ('127.0.0.1', 41316)
+[2025-10-21 11:02:07.294306][stream_server-2][STDERR] [INFO] [1761012127.293924376] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:07.295325][stream_server-2][STDERR] [INFO] [1761012127.294947291] [stream_server]: Downlink client connected from ('127.0.0.1', 41332)
+[2025-10-21 11:02:07.296100][stream_server-2][STDERR] [INFO] [1761012127.295770185] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:07.296733][stream_server-2][STDERR] [INFO] [1761012127.296475510] [stream_server]: Downlink client connected from ('127.0.0.1', 41338)
+[2025-10-21 11:02:09.740681][stream_server-2][STDERR] [INFO] [1761012129.740278122] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:09.741422][stream_server-2][STDERR] [INFO] [1761012129.741081664] [stream_server]: Downlink client connected from ('127.0.0.1', 41348)
+[2025-10-21 11:02:10.618235][stream_server-2][STDERR] [INFO] [1761012130.617868935] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:10.618947][stream_server-2][STDERR] [INFO] [1761012130.618640204] [stream_server]: Downlink client connected from ('127.0.0.1', 41364)
+[2025-10-21 11:02:11.037159][stream_server-2][STDERR] [INFO] [1761012131.036743010] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:11.037739][stream_server-2][STDERR] [INFO] [1761012131.037504910] [stream_server]: Downlink client connected from ('127.0.0.1', 41380)
+[2025-10-21 11:02:11.038775][stream_server-2][STDERR] [INFO] [1761012131.038548750] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:11.039576][stream_server-2][STDERR] [INFO] [1761012131.039311808] [stream_server]: Downlink client connected from ('127.0.0.1', 41382)
+[2025-10-21 11:02:12.302055][stream_server-2][STDERR] [INFO] [1761012132.301744401] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:12.302509][stream_server-2][STDERR] [INFO] [1761012132.302313336] [stream_server]: Downlink client connected from ('127.0.0.1', 41392)
+[2025-10-21 11:02:12.303001][stream_server-2][STDERR] [INFO] [1761012132.302751233] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:12.303840][stream_server-2][STDERR] [INFO] [1761012132.303638190] [stream_server]: Downlink client connected from ('127.0.0.1', 41402)
+[2025-10-21 11:02:14.622678][stream_server-2][STDERR] [INFO] [1761012134.622325881] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:14.623400][stream_server-2][STDERR] [INFO] [1761012134.623103545] [stream_server]: Downlink client connected from ('127.0.0.1', 41412)
+[2025-10-21 11:02:14.750924][stream_server-2][STDERR] [INFO] [1761012134.750563432] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:14.751544][stream_server-2][STDERR] [INFO] [1761012134.751286008] [stream_server]: Downlink client connected from ('127.0.0.1', 41426)
+[2025-10-21 11:02:16.040044][stream_server-2][STDERR] [INFO] [1761012136.039574419] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:16.040815][stream_server-2][STDERR] [INFO] [1761012136.040501263] [stream_server]: Downlink client connected from ('127.0.0.1', 44618)
+[2025-10-21 11:02:17.307586][stream_server-2][STDERR] [INFO] [1761012137.307006159] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:17.308480][stream_server-2][STDERR] [INFO] [1761012137.308122450] [stream_server]: Downlink client connected from ('127.0.0.1', 44628)
+[2025-10-21 11:02:18.627142][stream_server-2][STDERR] [INFO] [1761012138.626682133] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:18.627784][stream_server-2][STDERR] [INFO] [1761012138.627399023] [stream_server]: Downlink client connected from ('127.0.0.1', 44632)
+[2025-10-21 11:02:18.755143][stream_server-2][STDERR] [INFO] [1761012138.754817560] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:18.756004][stream_server-2][STDERR] [INFO] [1761012138.755744164] [stream_server]: Downlink client connected from ('127.0.0.1', 44640)
+[2025-10-21 11:02:18.756770][stream_server-2][STDERR] [INFO] [1761012138.756497793] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:18.757600][stream_server-2][STDERR] [INFO] [1761012138.757346709] [stream_server]: Downlink client connected from ('127.0.0.1', 44656)
+[2025-10-21 11:02:21.047025][stream_server-2][STDERR] [INFO] [1761012141.046655023] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:21.047819][stream_server-2][STDERR] [INFO] [1761012141.047495933] [stream_server]: Downlink client connected from ('127.0.0.1', 44668)
+[2025-10-21 11:02:21.758432][stream_server-2][STDERR] [INFO] [1761012141.757987241] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:21.759318][stream_server-2][STDERR] [INFO] [1761012141.758983889] [stream_server]: Downlink client connected from ('127.0.0.1', 44676)
+[2025-10-21 11:02:22.313196][stream_server-2][STDERR] [INFO] [1761012142.312688588] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:22.313992][stream_server-2][STDERR] [INFO] [1761012142.313718262] [stream_server]: Downlink client connected from ('127.0.0.1', 44678)
+[2025-10-21 11:02:22.631063][stream_server-2][STDERR] [INFO] [1761012142.630656706] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:22.631861][stream_server-2][STDERR] [INFO] [1761012142.631593482] [stream_server]: Downlink client connected from ('127.0.0.1', 44688)
+[2025-10-21 11:02:22.760480][stream_server-2][STDERR] [INFO] [1761012142.760082638] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:22.761394][stream_server-2][STDERR] [INFO] [1761012142.761090363] [stream_server]: Downlink client connected from ('127.0.0.1', 44704)
+[2025-10-21 11:02:25.051817][stream_server-2][STDERR] [INFO] [1761012145.051552086] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:25.052348][stream_server-2][STDERR] [INFO] [1761012145.052098078] [stream_server]: Downlink client connected from ('127.0.0.1', 44712)
+[2025-10-21 11:02:25.764621][stream_server-2][STDERR] [INFO] [1761012145.764293885] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:25.765216][stream_server-2][STDERR] [INFO] [1761012145.764964201] [stream_server]: Downlink client connected from ('127.0.0.1', 44726)
+[2025-10-21 11:02:25.765928][stream_server-2][STDERR] [INFO] [1761012145.765645516] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:25.766759][stream_server-2][STDERR] [INFO] [1761012145.766517747] [stream_server]: Downlink client connected from ('127.0.0.1', 53812)
+[2025-10-21 11:02:26.634941][stream_server-2][STDERR] [INFO] [1761012146.634626348] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:26.635746][stream_server-2][STDERR] [INFO] [1761012146.635439081] [stream_server]: Downlink client connected from ('127.0.0.1', 53826)
+[2025-10-21 11:02:27.319009][stream_server-2][STDERR] [INFO] [1761012147.318660787] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:27.319801][stream_server-2][STDERR] [INFO] [1761012147.319480335] [stream_server]: Downlink client connected from ('127.0.0.1', 53836)
+[2025-10-21 11:02:28.055652][stream_server-2][STDERR] [INFO] [1761012148.055273849] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:28.056386][stream_server-2][STDERR] [INFO] [1761012148.056104949] [stream_server]: Downlink client connected from ('127.0.0.1', 53850)
+[2025-10-21 11:02:28.768167][stream_server-2][STDERR] [INFO] [1761012148.767786467] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:28.768753][stream_server-2][STDERR] [INFO] [1761012148.768454918] [stream_server]: Downlink client connected from ('127.0.0.1', 53858)
+[2025-10-21 11:02:29.056951][stream_server-2][STDERR] [INFO] [1761012149.056579992] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:29.057789][stream_server-2][STDERR] [INFO] [1761012149.057423360] [stream_server]: Downlink client connected from ('127.0.0.1', 53874)
+[2025-10-21 11:02:29.769254][stream_server-2][STDERR] [INFO] [1761012149.768908096] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:29.769844][stream_server-2][STDERR] [INFO] [1761012149.769556841] [stream_server]: Downlink client connected from ('127.0.0.1', 53890)
+[2025-10-21 11:02:30.639307][stream_server-2][STDERR] [INFO] [1761012150.638965159] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:30.639892][stream_server-2][STDERR] [INFO] [1761012150.639673100] [stream_server]: Downlink client connected from ('127.0.0.1', 53900)
+[2025-10-21 11:02:31.324763][stream_server-2][STDERR] [INFO] [1761012151.324281121] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:31.325798][stream_server-2][STDERR] [INFO] [1761012151.325319895] [stream_server]: Downlink client connected from ('127.0.0.1', 53916)
+[2025-10-21 11:02:31.326845][stream_server-2][STDERR] [INFO] [1761012151.326314517] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:31.328030][stream_server-2][STDERR] [INFO] [1761012151.327617618] [stream_server]: Downlink client connected from ('127.0.0.1', 53920)
+[2025-10-21 11:02:33.065498][stream_server-2][STDERR] [INFO] [1761012153.065180664] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:33.066002][stream_server-2][STDERR] [INFO] [1761012153.065763081] [stream_server]: Downlink client connected from ('127.0.0.1', 53930)
+[2025-10-21 11:02:33.773680][stream_server-2][STDERR] [INFO] [1761012153.773333100] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:33.774875][stream_server-2][STDERR] [INFO] [1761012153.774487759] [stream_server]: Downlink client connected from ('127.0.0.1', 53946)
+[2025-10-21 11:02:34.331703][stream_server-2][STDERR] [INFO] [1761012154.331354369] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:34.332548][stream_server-2][STDERR] [INFO] [1761012154.332192247] [stream_server]: Downlink client connected from ('127.0.0.1', 53958)
+[2025-10-21 11:02:34.644514][stream_server-2][STDERR] [INFO] [1761012154.644128884] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:34.774843][stream_server-2][STDERR] [INFO] [1761012154.774406964] [stream_server]: Downlink client connected from ('127.0.0.1', 35046)
+[2025-10-21 11:02:34.775878][stream_server-2][STDERR] [INFO] [1761012154.775401036] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:35.068669][stream_server-2][STDERR] [INFO] [1761012155.068361034] [stream_server]: Downlink client connected from ('127.0.0.1', 35054)
+[2025-10-21 11:02:38.072765][stream_server-2][STDERR] [INFO] [1761012158.072426328] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:38.073590][stream_server-2][STDERR] [INFO] [1761012158.073201783] [stream_server]: Downlink client connected from ('127.0.0.1', 35064)
+[2025-10-21 11:02:38.074334][stream_server-2][STDERR] [INFO] [1761012158.074012286] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:38.075239][stream_server-2][STDERR] [INFO] [1761012158.074853640] [stream_server]: Downlink client connected from ('127.0.0.1', 35070)
+[2025-10-21 11:02:38.648969][stream_server-2][STDERR] [INFO] [1761012158.648583212] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:38.649740][stream_server-2][STDERR] [INFO] [1761012158.649535073] [stream_server]: Downlink client connected from ('127.0.0.1', 35072)
+[2025-10-21 11:02:38.780375][stream_server-2][STDERR] [INFO] [1761012158.780010975] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:38.781341][stream_server-2][STDERR] [INFO] [1761012158.780964170] [stream_server]: Downlink client connected from ('127.0.0.1', 35082)
+[2025-10-21 11:02:39.337918][stream_server-2][STDERR] [INFO] [1761012159.337614138] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:39.338734][stream_server-2][STDERR] [INFO] [1761012159.338426992] [stream_server]: Downlink client connected from ('127.0.0.1', 35094)
+[2025-10-21 11:02:39.339611][stream_server-2][STDERR] [INFO] [1761012159.339386217] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:39.649762][stream_server-2][STDERR] [INFO] [1761012159.649458375] [stream_server]: Downlink client connected from ('127.0.0.1', 35104)
+[2025-10-21 11:02:42.653357][stream_server-2][STDERR] [INFO] [1761012162.652903951] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:42.654203][stream_server-2][STDERR] [INFO] [1761012162.653868812] [stream_server]: Downlink client connected from ('127.0.0.1', 35112)
+[2025-10-21 11:02:42.784645][stream_server-2][STDERR] [INFO] [1761012162.784349605] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:42.785324][stream_server-2][STDERR] [INFO] [1761012162.784985821] [stream_server]: Downlink client connected from ('127.0.0.1', 35122)
+[2025-10-21 11:02:43.080187][stream_server-2][STDERR] [INFO] [1761012163.079820763] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:43.080900][stream_server-2][STDERR] [INFO] [1761012163.080630663] [stream_server]: Downlink client connected from ('127.0.0.1', 35134)
+[2025-10-21 11:02:43.342429][stream_server-2][STDERR] [INFO] [1761012163.341973602] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:43.343468][stream_server-2][STDERR] [INFO] [1761012163.342979334] [stream_server]: Downlink client connected from ('127.0.0.1', 35148)
+[2025-10-21 11:02:45.789345][stream_server-2][STDERR] [INFO] [1761012165.788892042] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:45.789996][stream_server-2][STDERR] [INFO] [1761012165.789680402] [stream_server]: Downlink client connected from ('127.0.0.1', 35150)
+[2025-10-21 11:02:46.347137][stream_server-2][STDERR] [INFO] [1761012166.346769682] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:46.347860][stream_server-2][STDERR] [INFO] [1761012166.347507552] [stream_server]: Downlink client connected from ('127.0.0.1', 55550)
+[2025-10-21 11:02:46.656714][stream_server-2][STDERR] [INFO] [1761012166.656345654] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:46.657341][stream_server-2][STDERR] [INFO] [1761012166.657048778] [stream_server]: Downlink client connected from ('127.0.0.1', 55560)
+[2025-10-21 11:02:46.795899][stream_server-2][STDERR] [INFO] [1761012166.794234357] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:46.795899][stream_server-2][STDERR] [INFO] [1761012166.795215018] [stream_server]: Downlink client connected from ('127.0.0.1', 55570)
+[2025-10-21 11:02:47.349228][stream_server-2][STDERR] [INFO] [1761012167.348783280] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:47.349771][stream_server-2][STDERR] [INFO] [1761012167.349416013] [stream_server]: Downlink client connected from ('127.0.0.1', 55580)
+[2025-10-21 11:02:48.086114][stream_server-2][STDERR] [INFO] [1761012168.085695514] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:48.086705][stream_server-2][STDERR] [INFO] [1761012168.086439067] [stream_server]: Downlink client connected from ('127.0.0.1', 55590)
+[2025-10-21 11:02:50.350867][stream_server-2][STDERR] [INFO] [1761012170.350560135] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:50.351589][stream_server-2][STDERR] [INFO] [1761012170.351293799] [stream_server]: Downlink client connected from ('127.0.0.1', 55592)
+[2025-10-21 11:02:50.661104][stream_server-2][STDERR] [INFO] [1761012170.660741312] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:50.661894][stream_server-2][STDERR] [INFO] [1761012170.661586905] [stream_server]: Downlink client connected from ('127.0.0.1', 55606)
+[2025-10-21 11:02:50.794692][stream_server-2][STDERR] [INFO] [1761012170.794227067] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:50.795495][stream_server-2][STDERR] [INFO] [1761012170.795193420] [stream_server]: Downlink client connected from ('127.0.0.1', 55610)
+[2025-10-21 11:02:53.090922][stream_server-2][STDERR] [INFO] [1761012173.090542519] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:53.091635][stream_server-2][STDERR] [INFO] [1761012173.091320159] [stream_server]: Downlink client connected from ('127.0.0.1', 55616)
+[2025-10-21 11:02:53.357117][stream_server-2][STDERR] [INFO] [1761012173.356643956] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:53.358098][stream_server-2][STDERR] [INFO] [1761012173.357634084] [stream_server]: Downlink client connected from ('127.0.0.1', 55624)
+[2025-10-21 11:02:54.665489][stream_server-2][STDERR] [INFO] [1761012174.665181348] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:54.666177][stream_server-2][STDERR] [INFO] [1761012174.665812694] [stream_server]: Downlink client connected from ('127.0.0.1', 55638)
+[2025-10-21 11:02:54.799769][stream_server-2][STDERR] [INFO] [1761012174.799476620] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:54.800370][stream_server-2][STDERR] [INFO] [1761012174.800121381] [stream_server]: Downlink client connected from ('127.0.0.1', 60630)
+[2025-10-21 11:02:57.097240][stream_server-2][STDERR] [INFO] [1761012177.096816012] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:57.098065][stream_server-2][STDERR] [INFO] [1761012177.097819706] [stream_server]: Downlink client connected from ('127.0.0.1', 60638)
+[2025-10-21 11:02:57.802970][stream_server-2][STDERR] [INFO] [1761012177.802532153] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:57.803573][stream_server-2][STDERR] [INFO] [1761012177.803131277] [stream_server]: Downlink client connected from ('127.0.0.1', 60644)
+[2025-10-21 11:02:58.363706][stream_server-2][STDERR] [INFO] [1761012178.363227287] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:58.364564][stream_server-2][STDERR] [INFO] [1761012178.364218453] [stream_server]: Downlink client connected from ('127.0.0.1', 60652)
+[2025-10-21 11:02:58.669935][stream_server-2][STDERR] [INFO] [1761012178.669582347] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:58.670768][stream_server-2][STDERR] [INFO] [1761012178.670502704] [stream_server]: Downlink client connected from ('127.0.0.1', 60654)
+[2025-10-21 11:02:58.805449][stream_server-2][STDERR] [INFO] [1761012178.805123878] [stream_server]: Downlink connection closed
+[2025-10-21 11:02:58.806286][stream_server-2][STDERR] [INFO] [1761012178.805995104] [stream_server]: Downlink client connected from ('127.0.0.1', 60662)
+[2025-10-21 11:03:00.100090][stream_server-2][STDERR] [INFO] [1761012180.099673486] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:00.100693][stream_server-2][STDERR] [INFO] [1761012180.100351169] [stream_server]: Downlink client connected from ('127.0.0.1', 60674)
+[2025-10-21 11:03:01.102034][stream_server-2][STDERR] [INFO] [1761012181.101465707] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:01.102760][stream_server-2][STDERR] [INFO] [1761012181.102498631] [stream_server]: Downlink client connected from ('127.0.0.1', 60680)
+[2025-10-21 11:03:01.809327][stream_server-2][STDERR] [INFO] [1761012181.808852211] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:01.810196][stream_server-2][STDERR] [INFO] [1761012181.809843408] [stream_server]: Downlink client connected from ('127.0.0.1', 60682)
+[2025-10-21 11:03:01.811134][stream_server-2][STDERR] [INFO] [1761012181.810748247] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:01.812124][stream_server-2][STDERR] [INFO] [1761012181.811793638] [stream_server]: Downlink client connected from ('127.0.0.1', 60696)
+[2025-10-21 11:03:02.674439][stream_server-2][STDERR] [INFO] [1761012182.673923830] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:02.675451][stream_server-2][STDERR] [INFO] [1761012182.675088033] [stream_server]: Downlink client connected from ('127.0.0.1', 60700)
+[2025-10-21 11:03:03.371204][stream_server-2][STDERR] [INFO] [1761012183.370864996] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:03.371952][stream_server-2][STDERR] [INFO] [1761012183.371617262] [stream_server]: Downlink client connected from ('127.0.0.1', 60716)
+[2025-10-21 11:03:04.815088][stream_server-2][STDERR] [INFO] [1761012184.814733150] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:04.815858][stream_server-2][STDERR] [INFO] [1761012184.815464365] [stream_server]: Downlink client connected from ('127.0.0.1', 60718)
+[2025-10-21 11:03:05.107094][stream_server-2][STDERR] [INFO] [1761012185.106640961] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:05.107781][stream_server-2][STDERR] [INFO] [1761012185.107447080] [stream_server]: Downlink client connected from ('127.0.0.1', 60722)
+[2025-10-21 11:03:05.815970][stream_server-2][STDERR] [INFO] [1761012185.815597606] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:05.816607][stream_server-2][STDERR] [INFO] [1761012185.816383024] [stream_server]: Downlink client connected from ('127.0.0.1', 60416)
+[2025-10-21 11:03:06.678104][stream_server-2][STDERR] [INFO] [1761012186.677707380] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:06.678709][stream_server-2][STDERR] [INFO] [1761012186.678416604] [stream_server]: Downlink client connected from ('127.0.0.1', 60422)
+[2025-10-21 11:03:06.679376][stream_server-2][STDERR] [INFO] [1761012186.679047319] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:06.680015][stream_server-2][STDERR] [INFO] [1761012186.679729351] [stream_server]: Downlink client connected from ('127.0.0.1', 60428)
+[2025-10-21 11:03:08.378806][stream_server-2][STDERR] [INFO] [1761012188.378503103] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:08.379547][stream_server-2][STDERR] [INFO] [1761012188.379315575] [stream_server]: Downlink client connected from ('127.0.0.1', 60436)
+[2025-10-21 11:03:09.112265][stream_server-2][STDERR] [INFO] [1761012189.111885822] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:09.113311][stream_server-2][STDERR] [INFO] [1761012189.113001055] [stream_server]: Downlink client connected from ('127.0.0.1', 60452)
+[2025-10-21 11:03:09.823121][stream_server-2][STDERR] [INFO] [1761012189.822795532] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:09.823763][stream_server-2][STDERR] [INFO] [1761012189.823473006] [stream_server]: Downlink client connected from ('127.0.0.1', 60466)
+[2025-10-21 11:03:10.682988][stream_server-2][STDERR] [INFO] [1761012190.682635946] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:10.683643][stream_server-2][STDERR] [INFO] [1761012190.683387436] [stream_server]: Downlink client connected from ('127.0.0.1', 60476)
+[2025-10-21 11:03:12.116204][stream_server-2][STDERR] [INFO] [1761012192.115857152] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:12.116927][stream_server-2][STDERR] [INFO] [1761012192.116699227] [stream_server]: Downlink client connected from ('127.0.0.1', 60480)
+[2025-10-21 11:03:13.118278][stream_server-2][STDERR] [INFO] [1761012193.117862543] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:13.119006][stream_server-2][STDERR] [INFO] [1761012193.118752201] [stream_server]: Downlink client connected from ('127.0.0.1', 60486)
+[2025-10-21 11:03:13.384892][stream_server-2][STDERR] [INFO] [1761012193.384561478] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:13.385583][stream_server-2][STDERR] [INFO] [1761012193.385329127] [stream_server]: Downlink client connected from ('127.0.0.1', 60498)
+[2025-10-21 11:03:13.386482][stream_server-2][STDERR] [INFO] [1761012193.386186200] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:13.387223][stream_server-2][STDERR] [INFO] [1761012193.386887732] [stream_server]: Downlink client connected from ('127.0.0.1', 60502)
+[2025-10-21 11:03:14.687615][stream_server-2][STDERR] [INFO] [1761012194.687281391] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:14.688346][stream_server-2][STDERR] [INFO] [1761012194.688037587] [stream_server]: Downlink client connected from ('127.0.0.1', 60514)
+[2025-10-21 11:03:14.831287][stream_server-2][STDERR] [INFO] [1761012194.830852231] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:14.832164][stream_server-2][STDERR] [INFO] [1761012194.831734167] [stream_server]: Downlink client connected from ('127.0.0.1', 60518)
+[2025-10-21 11:03:14.834014][stream_server-2][STDERR] [INFO] [1761012194.832552820] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:14.834014][stream_server-2][STDERR] [INFO] [1761012194.833487677] [stream_server]: Downlink client connected from ('127.0.0.1', 60438)
+[2025-10-21 11:03:17.124360][stream_server-2][STDERR] [INFO] [1761012197.123930711] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:17.125168][stream_server-2][STDERR] [INFO] [1761012197.124811392] [stream_server]: Downlink client connected from ('127.0.0.1', 60442)
+[2025-10-21 11:03:18.390004][stream_server-2][STDERR] [INFO] [1761012198.389649163] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:18.390618][stream_server-2][STDERR] [INFO] [1761012198.390384790] [stream_server]: Downlink client connected from ('127.0.0.1', 60448)
+[2025-10-21 11:03:18.691971][stream_server-2][STDERR] [INFO] [1761012198.691580064] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:18.692896][stream_server-2][STDERR] [INFO] [1761012198.692511125] [stream_server]: Downlink client connected from ('127.0.0.1', 60464)
+[2025-10-21 11:03:18.693923][stream_server-2][STDERR] [INFO] [1761012198.693468506] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:18.694795][stream_server-2][STDERR] [INFO] [1761012198.694419688] [stream_server]: Downlink client connected from ('127.0.0.1', 60476)
+[2025-10-21 11:03:19.839161][stream_server-2][STDERR] [INFO] [1761012199.838786479] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:19.839722][stream_server-2][STDERR] [INFO] [1761012199.839442679] [stream_server]: Downlink client connected from ('127.0.0.1', 60488)
+[2025-10-21 11:03:22.130341][stream_server-2][STDERR] [INFO] [1761012202.129904144] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:22.131173][stream_server-2][STDERR] [INFO] [1761012202.130912873] [stream_server]: Downlink client connected from ('127.0.0.1', 60500)
+[2025-10-21 11:03:22.395080][stream_server-2][STDERR] [INFO] [1761012202.394630519] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:22.396023][stream_server-2][STDERR] [INFO] [1761012202.395670617] [stream_server]: Downlink client connected from ('127.0.0.1', 60504)
+[2025-10-21 11:03:22.696320][stream_server-2][STDERR] [INFO] [1761012202.695885428] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:22.697134][stream_server-2][STDERR] [INFO] [1761012202.696840933] [stream_server]: Downlink client connected from ('127.0.0.1', 60512)
+[2025-10-21 11:03:24.844991][stream_server-2][STDERR] [INFO] [1761012204.844465647] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:24.845824][stream_server-2][STDERR] [INFO] [1761012204.845466104] [stream_server]: Downlink client connected from ('127.0.0.1', 60524)
+[2025-10-21 11:03:25.400042][stream_server-2][STDERR] [INFO] [1761012205.399695211] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:25.400726][stream_server-2][STDERR] [INFO] [1761012205.400504791] [stream_server]: Downlink client connected from ('127.0.0.1', 60540)
+[2025-10-21 11:03:25.401473][stream_server-2][STDERR] [INFO] [1761012205.401135465] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:25.402246][stream_server-2][STDERR] [INFO] [1761012205.401907913] [stream_server]: Downlink client connected from ('127.0.0.1', 60544)
+[2025-10-21 11:03:26.401137][stream_server-2][STDERR] [INFO] [1761012206.400746338] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:26.401801][stream_server-2][STDERR] [INFO] [1761012206.401546290] [stream_server]: Downlink client connected from ('127.0.0.1', 49572)
+[2025-10-21 11:03:26.699817][stream_server-2][STDERR] [INFO] [1761012206.699519616] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:26.700615][stream_server-2][STDERR] [INFO] [1761012206.700284221] [stream_server]: Downlink client connected from ('127.0.0.1', 49576)
+[2025-10-21 11:03:27.137315][stream_server-2][STDERR] [INFO] [1761012207.136825043] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:27.137912][stream_server-2][STDERR] [INFO] [1761012207.137630862] [stream_server]: Downlink client connected from ('127.0.0.1', 49588)
+[2025-10-21 11:03:29.852000][stream_server-2][STDERR] [INFO] [1761012209.851609087] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:29.852692][stream_server-2][STDERR] [INFO] [1761012209.852412667] [stream_server]: Downlink client connected from ('127.0.0.1', 49600)
+[2025-10-21 11:03:30.404362][stream_server-2][STDERR] [INFO] [1761012210.404016049] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:30.405329][stream_server-2][STDERR] [INFO] [1761012210.405049907] [stream_server]: Downlink client connected from ('127.0.0.1', 49608)
+[2025-10-21 11:03:30.703566][stream_server-2][STDERR] [INFO] [1761012210.703247243] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:30.704300][stream_server-2][STDERR] [INFO] [1761012210.704031149] [stream_server]: Downlink client connected from ('127.0.0.1', 49622)
+[2025-10-21 11:03:32.143268][stream_server-2][STDERR] [INFO] [1761012212.142798912] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:32.144390][stream_server-2][STDERR] [INFO] [1761012212.143784596] [stream_server]: Downlink client connected from ('127.0.0.1', 49634)
+[2025-10-21 11:03:34.708498][stream_server-2][STDERR] [INFO] [1761012214.708080466] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:34.709324][stream_server-2][STDERR] [INFO] [1761012214.709027159] [stream_server]: Downlink client connected from ('127.0.0.1', 49648)
+[2025-10-21 11:03:34.856895][stream_server-2][STDERR] [INFO] [1761012214.856596504] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:34.857963][stream_server-2][STDERR] [INFO] [1761012214.857659441] [stream_server]: Downlink client connected from ('127.0.0.1', 54984)
+[2025-10-21 11:03:37.412044][stream_server-2][STDERR] [INFO] [1761012217.411630435] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:37.412647][stream_server-2][STDERR] [INFO] [1761012217.412376204] [stream_server]: Downlink client connected from ('127.0.0.1', 54994)
+[2025-10-21 11:03:38.713107][stream_server-2][STDERR] [INFO] [1761012218.712629698] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:38.714130][stream_server-2][STDERR] [INFO] [1761012218.713542176] [stream_server]: Downlink client connected from ('127.0.0.1', 55010)
+[2025-10-21 11:03:39.150385][stream_server-2][STDERR] [INFO] [1761012219.150050874] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:39.151105][stream_server-2][STDERR] [INFO] [1761012219.150783039] [stream_server]: Downlink client connected from ('127.0.0.1', 55024)
+[2025-10-21 11:03:41.861923][stream_server-2][STDERR] [INFO] [1761012221.861526946] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:41.862829][stream_server-2][STDERR] [INFO] [1761012221.862447646] [stream_server]: Downlink client connected from ('127.0.0.1', 55030)
+[2025-10-21 11:03:42.717866][stream_server-2][STDERR] [INFO] [1761012222.717551342] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:42.718579][stream_server-2][STDERR] [INFO] [1761012222.718180173] [stream_server]: Downlink client connected from ('127.0.0.1', 55042)
+[2025-10-21 11:03:45.416987][stream_server-2][STDERR] [INFO] [1761012225.416657591] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:45.417605][stream_server-2][STDERR] [INFO] [1761012225.417343271] [stream_server]: Downlink client connected from ('127.0.0.1', 41596)
+[2025-10-21 11:03:46.721929][stream_server-2][STDERR] [INFO] [1761012226.721628666] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:46.722741][stream_server-2][STDERR] [INFO] [1761012226.722455539] [stream_server]: Downlink client connected from ('127.0.0.1', 41606)
+[2025-10-21 11:03:47.158364][stream_server-2][STDERR] [INFO] [1761012227.156843786] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:47.158364][stream_server-2][STDERR] [INFO] [1761012227.157841401] [stream_server]: Downlink client connected from ('127.0.0.1', 41612)
+[2025-10-21 11:03:49.867025][stream_server-2][STDERR] [INFO] [1761012229.866636552] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:49.867652][stream_server-2][STDERR] [INFO] [1761012229.867362870] [stream_server]: Downlink client connected from ('127.0.0.1', 41620)
+[2025-10-21 11:03:50.727066][stream_server-2][STDERR] [INFO] [1761012230.726582323] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:50.728086][stream_server-2][STDERR] [INFO] [1761012230.727480603] [stream_server]: Downlink client connected from ('127.0.0.1', 41622)
+[2025-10-21 11:03:53.421696][stream_server-2][STDERR] [INFO] [1761012233.421410170] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:53.422266][stream_server-2][STDERR] [INFO] [1761012233.421965413] [stream_server]: Downlink client connected from ('127.0.0.1', 41632)
+[2025-10-21 11:03:54.731344][stream_server-2][STDERR] [INFO] [1761012234.731036422] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:54.732212][stream_server-2][STDERR] [INFO] [1761012234.731914270] [stream_server]: Downlink client connected from ('127.0.0.1', 41638)
+[2025-10-21 11:03:55.161673][stream_server-2][STDERR] [INFO] [1761012235.161139709] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:55.162527][stream_server-2][STDERR] [INFO] [1761012235.162098253] [stream_server]: Downlink client connected from ('127.0.0.1', 38452)
+[2025-10-21 11:03:57.874082][stream_server-2][STDERR] [INFO] [1761012237.873770768] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:57.874669][stream_server-2][STDERR] [INFO] [1761012237.874442417] [stream_server]: Downlink client connected from ('127.0.0.1', 38460)
+[2025-10-21 11:03:58.736005][stream_server-2][STDERR] [INFO] [1761012238.735557406] [stream_server]: Downlink connection closed
+[2025-10-21 11:03:58.736597][stream_server-2][STDERR] [INFO] [1761012238.736177710] [stream_server]: Downlink client connected from ('127.0.0.1', 38462)
+[2025-10-21 11:04:01.426516][stream_server-2][STDERR] [INFO] [1761012241.426097151] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:01.427168][stream_server-2][STDERR] [INFO] [1761012241.426834835] [stream_server]: Downlink client connected from ('127.0.0.1', 38472)
+[2025-10-21 11:04:02.741331][stream_server-2][STDERR] [INFO] [1761012242.740881808] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:02.742169][stream_server-2][STDERR] [INFO] [1761012242.741829944] [stream_server]: Downlink client connected from ('127.0.0.1', 38476)
+[2025-10-21 11:04:03.165279][stream_server-2][STDERR] [INFO] [1761012243.164901423] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:03.166040][stream_server-2][STDERR] [INFO] [1761012243.165741184] [stream_server]: Downlink client connected from ('127.0.0.1', 38478)
+[2025-10-21 11:04:05.881338][stream_server-2][STDERR] [INFO] [1761012245.880856124] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:05.882165][stream_server-2][STDERR] [INFO] [1761012245.881836704] [stream_server]: Downlink client connected from ('127.0.0.1', 44220)
+[2025-10-21 11:04:06.745575][stream_server-2][STDERR] [INFO] [1761012246.745093486] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:06.746552][stream_server-2][STDERR] [INFO] [1761012246.746221989] [stream_server]: Downlink client connected from ('127.0.0.1', 44228)
+[2025-10-21 11:04:09.431073][stream_server-2][STDERR] [INFO] [1761012249.430568946] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:09.431660][stream_server-2][STDERR] [INFO] [1761012249.431314643] [stream_server]: Downlink client connected from ('127.0.0.1', 44244)
+[2025-10-21 11:04:10.750351][stream_server-2][STDERR] [INFO] [1761012250.750055781] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:10.751112][stream_server-2][STDERR] [INFO] [1761012250.750784280] [stream_server]: Downlink client connected from ('127.0.0.1', 44256)
+[2025-10-21 11:04:11.174953][stream_server-2][STDERR] [INFO] [1761012251.174453900] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:11.175579][stream_server-2][STDERR] [INFO] [1761012251.175316491] [stream_server]: Downlink client connected from ('127.0.0.1', 44264)
+[2025-10-21 11:04:13.889975][stream_server-2][STDERR] [INFO] [1761012253.888985596] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:13.890701][stream_server-2][STDERR] [INFO] [1761012253.890287945] [stream_server]: Downlink client connected from ('127.0.0.1', 44274)
+[2025-10-21 11:04:14.753961][stream_server-2][STDERR] [INFO] [1761012254.753601440] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:14.754418][stream_server-2][STDERR] [INFO] [1761012254.754189181] [stream_server]: Downlink client connected from ('127.0.0.1', 35718)
+[2025-10-21 11:04:17.435345][stream_server-2][STDERR] [INFO] [1761012257.434966728] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:17.436091][stream_server-2][STDERR] [INFO] [1761012257.435852398] [stream_server]: Downlink client connected from ('127.0.0.1', 35734)
+[2025-10-21 11:04:18.759278][stream_server-2][STDERR] [INFO] [1761012258.758907718] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:18.759917][stream_server-2][STDERR] [INFO] [1761012258.759610783] [stream_server]: Downlink client connected from ('127.0.0.1', 35736)
+[2025-10-21 11:04:19.182038][stream_server-2][STDERR] [INFO] [1761012259.181643834] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:19.182811][stream_server-2][STDERR] [INFO] [1761012259.182539176] [stream_server]: Downlink client connected from ('127.0.0.1', 35750)
+[2025-10-21 11:04:21.894207][stream_server-2][STDERR] [INFO] [1761012261.893791140] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:21.895106][stream_server-2][STDERR] [INFO] [1761012261.894696922] [stream_server]: Downlink client connected from ('127.0.0.1', 35760)
+[2025-10-21 11:04:22.764314][stream_server-2][STDERR] [INFO] [1761012262.763967502] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:22.765391][stream_server-2][STDERR] [INFO] [1761012262.765078103] [stream_server]: Downlink client connected from ('127.0.0.1', 35770)
+[2025-10-21 11:04:25.441266][stream_server-2][STDERR] [INFO] [1761012265.440893890] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:25.442117][stream_server-2][STDERR] [INFO] [1761012265.441824436] [stream_server]: Downlink client connected from ('127.0.0.1', 44112)
+[2025-10-21 11:04:26.772878][stream_server-2][STDERR] [INFO] [1761012266.772578403] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:26.773437][stream_server-2][STDERR] [INFO] [1761012266.773198031] [stream_server]: Downlink client connected from ('127.0.0.1', 44122)
+[2025-10-21 11:04:27.185366][stream_server-2][STDERR] [INFO] [1761012267.184979446] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:27.185898][stream_server-2][STDERR] [INFO] [1761012267.185632358] [stream_server]: Downlink client connected from ('127.0.0.1', 44134)
+[2025-10-21 11:04:29.901865][stream_server-2][STDERR] [INFO] [1761012269.901524655] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:29.902596][stream_server-2][STDERR] [INFO] [1761012269.902240097] [stream_server]: Downlink client connected from ('127.0.0.1', 44148)
+[2025-10-21 11:04:30.777662][stream_server-2][STDERR] [INFO] [1761012270.777005027] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:30.778664][stream_server-2][STDERR] [INFO] [1761012270.778242990] [stream_server]: Downlink client connected from ('127.0.0.1', 44162)
+[2025-10-21 11:04:33.447179][stream_server-2][STDERR] [INFO] [1761012273.446815715] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:33.447905][stream_server-2][STDERR] [INFO] [1761012273.447660262] [stream_server]: Downlink client connected from ('127.0.0.1', 44178)
+[2025-10-21 11:04:34.782413][stream_server-2][STDERR] [INFO] [1761012274.782028635] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:34.783308][stream_server-2][STDERR] [INFO] [1761012274.783041283] [stream_server]: Downlink client connected from ('127.0.0.1', 44188)
+[2025-10-21 11:04:35.191353][stream_server-2][STDERR] [INFO] [1761012275.190918570] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:35.192281][stream_server-2][STDERR] [INFO] [1761012275.191982452] [stream_server]: Downlink client connected from ('127.0.0.1', 40844)
+[2025-10-21 11:04:37.905792][stream_server-2][STDERR] [INFO] [1761012277.905477974] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:37.906371][stream_server-2][STDERR] [INFO] [1761012277.906061753] [stream_server]: Downlink client connected from ('127.0.0.1', 40858)
+[2025-10-21 11:04:38.787349][stream_server-2][STDERR] [INFO] [1761012278.787019842] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:38.788265][stream_server-2][STDERR] [INFO] [1761012278.788008705] [stream_server]: Downlink client connected from ('127.0.0.1', 40874)
+[2025-10-21 11:04:41.452022][stream_server-2][STDERR] [INFO] [1761012281.451670106] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:41.452693][stream_server-2][STDERR] [INFO] [1761012281.452331203] [stream_server]: Downlink client connected from ('127.0.0.1', 40884)
+[2025-10-21 11:04:42.792287][stream_server-2][STDERR] [INFO] [1761012282.791776113] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:42.793319][stream_server-2][STDERR] [INFO] [1761012282.792860300] [stream_server]: Downlink client connected from ('127.0.0.1', 40896)
+[2025-10-21 11:04:43.198230][stream_server-2][STDERR] [INFO] [1761012283.197823014] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:43.198808][stream_server-2][STDERR] [INFO] [1761012283.198553563] [stream_server]: Downlink client connected from ('127.0.0.1', 40908)
+[2025-10-21 11:04:45.915248][stream_server-2][STDERR] [INFO] [1761012285.914816611] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:45.915985][stream_server-2][STDERR] [INFO] [1761012285.915676874] [stream_server]: Downlink client connected from ('127.0.0.1', 54794)
+[2025-10-21 11:04:46.796964][stream_server-2][STDERR] [INFO] [1761012286.796430177] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:46.797778][stream_server-2][STDERR] [INFO] [1761012286.797474825] [stream_server]: Downlink client connected from ('127.0.0.1', 54802)
+[2025-10-21 11:04:49.456261][stream_server-2][STDERR] [INFO] [1761012289.455873567] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:49.457130][stream_server-2][STDERR] [INFO] [1761012289.456862070] [stream_server]: Downlink client connected from ('127.0.0.1', 54814)
+[2025-10-21 11:04:50.801031][stream_server-2][STDERR] [INFO] [1761012290.800665586] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:50.801640][stream_server-2][STDERR] [INFO] [1761012290.801376302] [stream_server]: Downlink client connected from ('127.0.0.1', 54826)
+[2025-10-21 11:04:51.201965][stream_server-2][STDERR] [INFO] [1761012291.201627988] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:51.202508][stream_server-2][STDERR] [INFO] [1761012291.202237916] [stream_server]: Downlink client connected from ('127.0.0.1', 54836)
+[2025-10-21 11:04:53.920118][stream_server-2][STDERR] [INFO] [1761012293.919739970] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:53.920739][stream_server-2][STDERR] [INFO] [1761012293.920416247] [stream_server]: Downlink client connected from ('127.0.0.1', 54846)
+[2025-10-21 11:04:54.804883][stream_server-2][STDERR] [INFO] [1761012294.804541599] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:54.805438][stream_server-2][STDERR] [INFO] [1761012294.805192081] [stream_server]: Downlink client connected from ('127.0.0.1', 39792)
+[2025-10-21 11:04:57.462127][stream_server-2][STDERR] [INFO] [1761012297.461644422] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:57.463025][stream_server-2][STDERR] [INFO] [1761012297.462643608] [stream_server]: Downlink client connected from ('127.0.0.1', 39798)
+[2025-10-21 11:04:58.809300][stream_server-2][STDERR] [INFO] [1761012298.808801150] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:58.810203][stream_server-2][STDERR] [INFO] [1761012298.809773489] [stream_server]: Downlink client connected from ('127.0.0.1', 39806)
+[2025-10-21 11:04:59.209066][stream_server-2][STDERR] [INFO] [1761012299.208732294] [stream_server]: Downlink connection closed
+[2025-10-21 11:04:59.209687][stream_server-2][STDERR] [INFO] [1761012299.209429456] [stream_server]: Downlink client connected from ('127.0.0.1', 39814)
+[2025-10-21 11:05:01.927145][stream_server-2][STDERR] [INFO] [1761012301.926745011] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:01.928067][stream_server-2][STDERR] [INFO] [1761012301.927584217] [stream_server]: Downlink client connected from ('127.0.0.1', 39830)
+[2025-10-21 11:05:02.813180][stream_server-2][STDERR] [INFO] [1761012302.812824505] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:02.814348][stream_server-2][STDERR] [INFO] [1761012302.813931930] [stream_server]: Downlink client connected from ('127.0.0.1', 39836)
+[2025-10-21 11:05:05.468887][stream_server-2][STDERR] [INFO] [1761012305.468587046] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:05.469542][stream_server-2][STDERR] [INFO] [1761012305.469209881] [stream_server]: Downlink client connected from ('127.0.0.1', 49230)
+[2025-10-21 11:05:06.816991][stream_server-2][STDERR] [INFO] [1761012306.816601033] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:06.817726][stream_server-2][STDERR] [INFO] [1761012306.817312529] [stream_server]: Downlink client connected from ('127.0.0.1', 49244)
+[2025-10-21 11:05:07.213896][stream_server-2][STDERR] [INFO] [1761012307.213574250] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:07.214630][stream_server-2][STDERR] [INFO] [1761012307.214318430] [stream_server]: Downlink client connected from ('127.0.0.1', 49252)
+[2025-10-21 11:05:09.932142][stream_server-2][STDERR] [INFO] [1761012309.931780162] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:09.933116][stream_server-2][STDERR] [INFO] [1761012309.932803853] [stream_server]: Downlink client connected from ('127.0.0.1', 49268)
+[2025-10-21 11:05:10.821927][stream_server-2][STDERR] [INFO] [1761012310.821580502] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:10.822514][stream_server-2][STDERR] [INFO] [1761012310.822254360] [stream_server]: Downlink client connected from ('127.0.0.1', 49284)
+[2025-10-21 11:05:13.472919][stream_server-2][STDERR] [INFO] [1761012313.472515245] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:13.473697][stream_server-2][STDERR] [INFO] [1761012313.473430936] [stream_server]: Downlink client connected from ('127.0.0.1', 49294)
+[2025-10-21 11:05:14.827236][stream_server-2][STDERR] [INFO] [1761012314.826896791] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:14.828113][stream_server-2][STDERR] [INFO] [1761012314.827848011] [stream_server]: Downlink client connected from ('127.0.0.1', 49308)
+[2025-10-21 11:05:15.220629][stream_server-2][STDERR] [INFO] [1761012315.219970586] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:15.221850][stream_server-2][STDERR] [INFO] [1761012315.221239518] [stream_server]: Downlink client connected from ('127.0.0.1', 57756)
+[2025-10-21 11:05:17.935412][stream_server-2][STDERR] [INFO] [1761012317.935031877] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:17.936073][stream_server-2][STDERR] [INFO] [1761012317.935707630] [stream_server]: Downlink client connected from ('127.0.0.1', 57772)
+[2025-10-21 11:05:18.829518][stream_server-2][STDERR] [INFO] [1761012318.829172886] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:18.830138][stream_server-2][STDERR] [INFO] [1761012318.829885159] [stream_server]: Downlink client connected from ('127.0.0.1', 57776)
+[2025-10-21 11:05:21.479028][stream_server-2][STDERR] [INFO] [1761012321.478701881] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:21.479777][stream_server-2][STDERR] [INFO] [1761012321.479448904] [stream_server]: Downlink client connected from ('127.0.0.1', 57784)
+[2025-10-21 11:05:22.832663][stream_server-2][STDERR] [INFO] [1761012322.832343310] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:22.833299][stream_server-2][STDERR] [INFO] [1761012322.832962306] [stream_server]: Downlink client connected from ('127.0.0.1', 57790)
+[2025-10-21 11:05:23.224789][stream_server-2][STDERR] [INFO] [1761012323.224500291] [stream_server]: Downlink connection closed
+[2025-10-21 11:05:23.225303][stream_server-2][STDERR] [INFO] [1761012323.225084555] [stream_server]: Downlink client connected from ('127.0.0.1', 57804)
+[2025-10-21 11:05:25.346306][static_transform_publisher-3][STDERR] [INFO] [1761012325.333027063] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 11:05:25.348553][static_transform_publisher-4][STDERR] [INFO] [1761012325.333052252] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 11:05:25.349124][robot_state_publisher-1][STDERR] [INFO] [1761012325.333052207] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 11:05:25.349835][robot_state_publisher-1][STDERR] [INFO] [1761012325.345382411] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR] Traceback (most recent call last):
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/lib/draco_roundtrip/stream_server", line 7, in <module>
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]     main()
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py", line 619, in main
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]     node.destroy_node()
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py", line 578, in destroy_node
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]     super().destroy_node()
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 1692, in destroy_node
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]     self.destroy_service(self._services[0])
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 1616, in destroy_service
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]     service.destroy()
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/service.py", line 93, in destroy
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR]     self.__service.destroy_when_not_in_use()
+[2025-10-21 11:05:25.351056][stream_server-2][STDERR] KeyboardInterrupt
