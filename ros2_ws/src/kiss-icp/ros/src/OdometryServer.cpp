@@ -120,6 +120,10 @@ OdometryServer::OdometryServer(const rclcpp::NodeOptions &options)
         kpoints_publisher_ = create_publisher<sensor_msgs::msg::PointCloud2>("kiss/keypoints", qos);
         map_publisher_ = create_publisher<sensor_msgs::msg::PointCloud2>("kiss/local_map", qos);
     }
+    if (map_publish_saved_map_) {
+        saved_map_publisher_ =
+            create_publisher<sensor_msgs::msg::PointCloud2>("kiss/saved_map", qos);
+    }
 
     // Initialize the transform broadcaster
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -173,6 +177,10 @@ void OdometryServer::initializeParameters(kiss_icp::pipeline::KISSConfig &config
         declare_parameter<bool>("map.keep_full_history", map_keep_full_history_);
     RCLCPP_INFO(this->get_logger(), "\tKeep full history map: %d",
                 static_cast<int>(map_keep_full_history_));
+    map_publish_saved_map_ =
+        declare_parameter<bool>("map.publish_saved_map", map_publish_saved_map_);
+    RCLCPP_INFO(this->get_logger(), "\tPublish saved map topic: %d",
+                static_cast<int>(map_publish_saved_map_));
 
     config.max_range = declare_parameter<double>("data.max_range", config.max_range);
     RCLCPP_INFO(this->get_logger(), "\tMax range: %.2f", config.max_range);
@@ -355,6 +363,15 @@ void OdometryServer::SaveMapService(
     response->success = true;
     response->message = "Saved map to " + filepath.string();
     RCLCPP_INFO(this->get_logger(), "%s", response->message.c_str());
+    if (map_publish_saved_map_ && saved_map_publisher_) {
+        std_msgs::msg::Header saved_header;
+        saved_header.frame_id = lidar_odom_frame_;
+        saved_header.stamp = this->now();
+        auto saved_msg = EigenToPointCloud2(local_map, saved_header);
+        saved_map_publisher_->publish(std::move(saved_msg));
+        RCLCPP_INFO(this->get_logger(), "Published saved map to topic %s",
+                    saved_map_publisher_->get_topic_name());
+    }
 }
 
 bool OdometryServer::WriteLocalMapToFile(const std::vector<Eigen::Vector3d> &points,

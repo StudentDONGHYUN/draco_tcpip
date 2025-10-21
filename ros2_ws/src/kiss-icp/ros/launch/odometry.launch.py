@@ -58,6 +58,7 @@ def generate_launch_description():
     invert_odom_tf = LaunchConfiguration("invert_odom_tf", default=True)
     map_save_directory = LaunchConfiguration("map_save_directory", default="~/kiss_icp_maps")
     map_keep_full_history = LaunchConfiguration("map_keep_full_history", default="false")
+    map_publish_saved_map = LaunchConfiguration("map_publish_saved_map", default="false")
 
     position_covariance = LaunchConfiguration("position_covariance", default=0.1)
     orientation_covariance = LaunchConfiguration("orientation_covariance", default=0.1)
@@ -87,6 +88,7 @@ def generate_launch_description():
                 "orientation_covariance": orientation_covariance,
                 "map.save_directory": map_save_directory,
                 "map.keep_full_history": map_keep_full_history,
+                "map.publish_saved_map": map_publish_saved_map,
             },
             config_file,
         ],
@@ -119,6 +121,11 @@ def generate_launch_description():
                 "map_keep_full_history",
                 default_value="false",
                 description="Keep full map history instead of the default sliding window.",
+            ),
+            DeclareLaunchArgument(
+                "map_publish_saved_map",
+                default_value="false",
+                description="Publish saved maps on a PointCloud2 topic after writing to disk.",
             ),
             kiss_icp_node,
             rviz_node,

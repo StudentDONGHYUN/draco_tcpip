@@ -13,6 +13,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     map_save_directory = LaunchConfiguration("map_save_directory")
     map_keep_full_history = LaunchConfiguration("map_keep_full_history")
+    map_publish_saved_map = LaunchConfiguration("map_publish_saved_map")
 
     kiss_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -29,6 +30,7 @@ def generate_launch_description():
             'use_sim_time': use_sim_time,
             'map_save_directory': map_save_directory,
             'map_keep_full_history': map_keep_full_history,
+            'map_publish_saved_map': map_publish_saved_map,
         }.items()
     )
 
@@ -62,6 +64,11 @@ def generate_launch_description():
             "map_keep_full_history",
             default_value="false",
             description="Keep a full-history voxel map instead of a sliding local map.",
+        ),
+        DeclareLaunchArgument(
+            "map_publish_saved_map",
+            default_value="false",
+            description="Publish the saved map as a PointCloud2 message after writing the PLY.",
         ),
         kiss_launch,
     ])

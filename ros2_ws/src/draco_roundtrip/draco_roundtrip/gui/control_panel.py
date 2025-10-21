@@ -149,6 +149,7 @@ class SlamConfig:
     visualize: bool
     map_save_directory: str
     keep_full_history: bool
+    publish_saved_map: bool
 
     def as_launch_args(self) -> List[str]:
         args = [
@@ -161,6 +162,7 @@ class SlamConfig:
         if map_dir:
             args.append(_as_launch_arg("map_save_directory", map_dir))
         args.append(f"map_keep_full_history:={'true' if self.keep_full_history else 'false'}")
+        args.append(f"map_publish_saved_map:={'true' if self.publish_saved_map else 'false'}")
         return args
 
 
@@ -296,6 +298,7 @@ class ControlPanel(tk.Tk):
         self.slam_visualize = tk.BooleanVar(value=True)
         self.slam_map_directory = tk.StringVar(value=str(Path.home() / "kiss_icp_maps"))
         self.slam_keep_full_history = tk.BooleanVar(value=True)
+        self.slam_publish_saved_map = tk.BooleanVar(value=True)
 
         self._add_labeled_entry(slam_frame, "Input Topic", self.slam_topic, row=0)
         self._add_labeled_entry(slam_frame, "Base Frame", self.slam_base_frame, row=1)
@@ -308,28 +311,31 @@ class ControlPanel(tk.Tk):
         ttk.Checkbutton(
             slam_frame, text="Keep Full Map History", variable=self.slam_keep_full_history
         ).grid(row=4, column=0, columnspan=2, sticky="w", pady=(0, 5))
+        ttk.Checkbutton(
+            slam_frame, text="Publish Saved Map Topic", variable=self.slam_publish_saved_map
+        ).grid(row=5, column=0, columnspan=2, sticky="w", pady=(0, 5))
 
-        ttk.Label(slam_frame, text="Map Save Dir").grid(row=5, column=0, sticky="e")
+        ttk.Label(slam_frame, text="Map Save Dir").grid(row=6, column=0, sticky="e")
         ttk.Entry(slam_frame, textvariable=self.slam_map_directory, width=24).grid(
-            row=5, column=1, sticky="we", pady=2
+            row=6, column=1, sticky="we", pady=2
         )
         ttk.Button(slam_frame, text="Browse", command=self._browse_map_directory).grid(
-            row=5, column=2, sticky="we", padx=(5, 0)
+            row=6, column=2, sticky="we", padx=(5, 0)
         )
 
         ttk.Button(slam_frame, text="Start SLAM", command=self._start_slam).grid(
-            row=6, column=0, sticky="we", pady=(8, 0)
+            row=7, column=0, sticky="we", pady=(8, 0)
         )
         ttk.Button(slam_frame, text="Stop SLAM", command=self._stop_slam).grid(
-            row=6, column=1, sticky="we", pady=(8, 0), padx=(5, 0)
+            row=7, column=1, sticky="we", pady=(8, 0), padx=(5, 0)
         )
         ttk.Button(slam_frame, text="Save Map", command=self._save_map).grid(
-            row=6, column=2, sticky="we", pady=(8, 0)
+            row=7, column=2, sticky="we", pady=(8, 0)
         )
 
         self.slam_status = tk.StringVar(value="Stopped")
         ttk.Label(slam_frame, textvariable=self.slam_status).grid(
-            row=7, column=0, columnspan=3, sticky="we", pady=(5, 0)
+            row=8, column=0, columnspan=3, sticky="we", pady=(5, 0)
         )
 
     def _add_labeled_entry(
@@ -440,6 +446,7 @@ class ControlPanel(tk.Tk):
             visualize=self.slam_visualize.get(),
             map_save_directory=self.slam_map_directory.get(),
             keep_full_history=self.slam_keep_full_history.get(),
+            publish_saved_map=self.slam_publish_saved_map.get(),
         )
         command = [
             "ros2",

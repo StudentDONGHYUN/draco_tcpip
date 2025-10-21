@@ -19,6 +19,7 @@ from typing import Optional
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib import font_manager as _font_manager
 import rclpy
 from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import Path as NavPath
@@ -55,6 +56,50 @@ from draco_roundtrip.net.protocol import (
     send_message,
 )
 from draco_roundtrip.utils import ensure_directory
+
+
+def _select_plot_font() -> tuple[str, bool]:
+    """Return a font family suitable for plots and whether it can render Hangul."""
+
+    preferred_families = (
+        "NanumGothic",
+        "Noto Sans CJK KR",
+        "Noto Sans KR",
+        "AppleGothic",
+        "Malgun Gothic",
+    )
+    for family in preferred_families:
+        try:
+            _font_manager.findfont(_font_manager.FontProperties(family=family), fallback_to_default=False)
+        except (RuntimeError, ValueError):
+            continue
+        return family, True
+    default_family = matplotlib.rcParamsDefault.get("font.family", ["DejaVu Sans"])[0]
+    return default_family, False
+
+
+_PLOT_FONT_FAMILY, _PLOT_FONT_SUPPORTS_HANGUL = _select_plot_font()
+plt.rcParams["font.family"] = _PLOT_FONT_FAMILY
+
+_PLOT_TEXT_TRANSLATIONS = {
+    "프레임별 종단 간 지연 시간": "End-to-end latency per frame",
+    "프레임 순서": "Frame index",
+    "지연 시간 (ms)": "Latency (ms)",
+    "프레임별 처리량": "Throughput per frame",
+    "압축된 크기 (KB)": "Compressed size (KB)",
+    "프레임별 압축률": "Compression ratio per frame",
+    "비율": "Ratio",
+}
+
+
+def _plot_text(text: str) -> str:
+    if _PLOT_FONT_SUPPORTS_HANGUL:
+        return text
+    translated = _PLOT_TEXT_TRANSLATIONS.get(text)
+    if translated:
+        return translated
+    ascii_only = text.encode("ascii", "ignore").decode().strip()
+    return ascii_only or text
 
 
 @dataclass(slots=True)
@@ -430,9 +475,9 @@ class StreamServerNode(Node):
         try:
             fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
             ax.plot(x_data, y_data, marker='.', linestyle='-', color=color)
-            ax.set_title(title, fontsize=16)
-            ax.set_xlabel(xlabel, fontsize=12)
-            ax.set_ylabel(ylabel, fontsize=12)
+            ax.set_title(_plot_text(title), fontsize=16)
+            ax.set_xlabel(_plot_text(xlabel), fontsize=12)
+            ax.set_ylabel(_plot_text(ylabel), fontsize=12)
             ax.grid(True)
             fig.tight_layout()
 

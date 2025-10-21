@@ -1,0 +1,118 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-21T15:39:58.839417
+[2025-10-21 15:39:58.888721][static_transform_publisher-3][STDERR] [WARN] [1761028798.888244349] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 15:39:58.889781][static_transform_publisher-4][STDERR] [WARN] [1761028798.889415981] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 15:39:58.905069][static_transform_publisher-3][STDERR] [INFO] [1761028798.904051540] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-21 15:39:58.905069][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 15:39:58.905069][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 15:39:58.905069][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-21 15:39:58.913262][static_transform_publisher-4][STDERR] [INFO] [1761028798.912290551] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-21 15:39:58.913262][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 15:39:58.913262][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 15:39:58.913262][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-21 15:39:58.914342][robot_state_publisher-1][STDERR] [INFO] [1761028798.913882548] [robot_state_publisher]: got segment base_link
+[2025-10-21 15:39:58.914342][robot_state_publisher-1][STDERR] [INFO] [1761028798.913958509] [robot_state_publisher]: got segment lidar_frame
+[2025-10-21 15:40:01.547714][stream_server-2][STDERR] [INFO] [1761028801.547397906] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-21 15:40:01.548038][stream_server-2][STDERR] [INFO] [1761028801.547569695] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-21 15:40:07.491311][stream_server-2][STDERR] [INFO] [1761028807.490978485] [stream_server]: Downlink client connected from ('127.0.0.1', 36846)
+[2025-10-21 15:40:07.491709][stream_server-2][STDERR] [INFO] [1761028807.491420465] [stream_server]: Uplink client connected from ('127.0.0.1', 36242)
+[2025-10-21 15:41:24.265815][stream_server-2][STDERR] [INFO] [1761028884.265493787] [stream_server]: Downlink connection closed
+[2025-10-21 15:41:25.267053][stream_server-2][STDERR] [INFO] [1761028885.266642628] [stream_server]: Downlink client connected from ('127.0.0.1', 55750)
+[2025-10-21 15:41:27.116886][stream_server-2][STDERR] [INFO] [1761028887.116570492] [stream_server]: Uplink session summary: in=11469753 bytes, out=0 bytes
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 54532 (\N{HANGUL SYLLABLE PEU}) missing from current font.
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47112 (\N{HANGUL SYLLABLE RE}) missing from current font.
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 51076 (\N{HANGUL SYLLABLE IM}) missing from current font.
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 49692 (\N{HANGUL SYLLABLE SUN}) missing from current font.
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 49436 (\N{HANGUL SYLLABLE SEO}) missing from current font.
+[2025-10-21 15:41:27.168074][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 51648 (\N{HANGUL SYLLABLE JI}) missing from current font.
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 50672 (\N{HANGUL SYLLABLE YEON}) missing from current font.
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 49884 (\N{HANGUL SYLLABLE SI}) missing from current font.
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 44036 (\N{HANGUL SYLLABLE GAN}) missing from current font.
+[2025-10-21 15:41:27.198017][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.206856][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 48324 (\N{HANGUL SYLLABLE BYEOL}) missing from current font.
+[2025-10-21 15:41:27.206856][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.207931][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 51333 (\N{HANGUL SYLLABLE JONG}) missing from current font.
+[2025-10-21 15:41:27.207931][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.208801][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 45800 (\N{HANGUL SYLLABLE DAN}) missing from current font.
+[2025-10-21 15:41:27.208801][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.233339][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 54532 (\N{HANGUL SYLLABLE PEU}) missing from current font.
+[2025-10-21 15:41:27.233339][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47112 (\N{HANGUL SYLLABLE RE}) missing from current font.
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 51076 (\N{HANGUL SYLLABLE IM}) missing from current font.
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 49692 (\N{HANGUL SYLLABLE SUN}) missing from current font.
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 49436 (\N{HANGUL SYLLABLE SEO}) missing from current font.
+[2025-10-21 15:41:27.235777][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.252063][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 51648 (\N{HANGUL SYLLABLE JI}) missing from current font.
+[2025-10-21 15:41:27.252063][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.252910][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 50672 (\N{HANGUL SYLLABLE YEON}) missing from current font.
+[2025-10-21 15:41:27.252910][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.252910][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 49884 (\N{HANGUL SYLLABLE SI}) missing from current font.
+[2025-10-21 15:41:27.252910][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.252910][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 44036 (\N{HANGUL SYLLABLE GAN}) missing from current font.
+[2025-10-21 15:41:27.252910][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.267666][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 48324 (\N{HANGUL SYLLABLE BYEOL}) missing from current font.
+[2025-10-21 15:41:27.267666][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.268600][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 51333 (\N{HANGUL SYLLABLE JONG}) missing from current font.
+[2025-10-21 15:41:27.268600][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.268600][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 45800 (\N{HANGUL SYLLABLE DAN}) missing from current font.
+[2025-10-21 15:41:27.268600][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.382498][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 50517 (\N{HANGUL SYLLABLE AB}) missing from current font.
+[2025-10-21 15:41:27.382498][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 52629 (\N{HANGUL SYLLABLE CUG}) missing from current font.
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 46108 (\N{HANGUL SYLLABLE DOEN}) missing from current font.
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 53356 (\N{HANGUL SYLLABLE KEU}) missing from current font.
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 44592 (\N{HANGUL SYLLABLE GI}) missing from current font.
+[2025-10-21 15:41:27.383822][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.385197][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 52376 (\N{HANGUL SYLLABLE CEO}) missing from current font.
+[2025-10-21 15:41:27.385197][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.386165][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47532 (\N{HANGUL SYLLABLE RI}) missing from current font.
+[2025-10-21 15:41:27.386165][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.386165][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47049 (\N{HANGUL SYLLABLE RYANG}) missing from current font.
+[2025-10-21 15:41:27.386165][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.421789][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 50517 (\N{HANGUL SYLLABLE AB}) missing from current font.
+[2025-10-21 15:41:27.421789][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.422908][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 52629 (\N{HANGUL SYLLABLE CUG}) missing from current font.
+[2025-10-21 15:41:27.422908][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.422908][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 46108 (\N{HANGUL SYLLABLE DOEN}) missing from current font.
+[2025-10-21 15:41:27.422908][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.422908][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 53356 (\N{HANGUL SYLLABLE KEU}) missing from current font.
+[2025-10-21 15:41:27.422908][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.423516][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 44592 (\N{HANGUL SYLLABLE GI}) missing from current font.
+[2025-10-21 15:41:27.423516][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.426271][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 52376 (\N{HANGUL SYLLABLE CEO}) missing from current font.
+[2025-10-21 15:41:27.426271][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.426993][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47532 (\N{HANGUL SYLLABLE RI}) missing from current font.
+[2025-10-21 15:41:27.426993][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.426993][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47049 (\N{HANGUL SYLLABLE RYANG}) missing from current font.
+[2025-10-21 15:41:27.426993][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.566757][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 48708 (\N{HANGUL SYLLABLE BI}) missing from current font.
+[2025-10-21 15:41:27.566757][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.567394][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 50984 (\N{HANGUL SYLLABLE YUL}) missing from current font.
+[2025-10-21 15:41:27.567394][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.567887][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:437: UserWarning: Glyph 47456 (\N{HANGUL SYLLABLE RYUL}) missing from current font.
+[2025-10-21 15:41:27.567887][stream_server-2][STDERR]   fig.tight_layout()
+[2025-10-21 15:41:27.587237][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 48708 (\N{HANGUL SYLLABLE BI}) missing from current font.
+[2025-10-21 15:41:27.587237][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.587885][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 50984 (\N{HANGUL SYLLABLE YUL}) missing from current font.
+[2025-10-21 15:41:27.587885][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.590843][stream_server-2][STDERR] /home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py:440: UserWarning: Glyph 47456 (\N{HANGUL SYLLABLE RYUL}) missing from current font.
+[2025-10-21 15:41:27.590843][stream_server-2][STDERR]   fig.savefig(buf, format="png")
+[2025-10-21 15:41:27.629765][stream_server-2][STDERR] [INFO] [1761028887.629356020] [stream_server]: Server session report saved to logs/server_report_20251021_154127.html
+[2025-10-21 15:41:27.630406][stream_server-2][STDERR] [INFO] [1761028887.630146995] [stream_server]: Uplink connection closed by peer
+[2025-10-21 15:41:27.631340][stream_server-2][STDERR] [INFO] [1761028887.631113306] [stream_server]: Uplink session finished
+[2025-10-21 15:41:28.268480][stream_server-2][STDERR] [INFO] [1761028888.268056978] [stream_server]: Downlink connection closed

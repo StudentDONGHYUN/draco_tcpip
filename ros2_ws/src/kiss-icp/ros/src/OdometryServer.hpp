@@ -82,6 +82,7 @@ private:
     bool publish_odom_tf_{true};
     bool publish_debug_clouds_{true};
     bool map_keep_full_history_{false};
+    bool map_publish_saved_map_{false};
 
     /// Data subscribers.
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
@@ -91,6 +92,7 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr frame_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr kpoints_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr saved_map_publisher_;
 
     /// Service servers.
     rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service_;
