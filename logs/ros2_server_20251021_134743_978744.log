@@ -1,0 +1,20 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-21T13:47:43.978744
+[2025-10-21 13:47:44.033755][static_transform_publisher-3][STDERR] [WARN] [1761022064.033254059] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 13:47:44.034263][static_transform_publisher-4][STDERR] [WARN] [1761022064.033550150] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 13:47:44.049011][static_transform_publisher-4][STDERR] [INFO] [1761022064.046397078] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-21 13:47:44.049011][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 13:47:44.049011][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 13:47:44.049011][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-21 13:47:44.050249][static_transform_publisher-3][STDERR] [INFO] [1761022064.047339306] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-21 13:47:44.050249][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 13:47:44.050249][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 13:47:44.050249][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-21 13:47:44.053563][robot_state_publisher-1][STDERR] [INFO] [1761022064.053183956] [robot_state_publisher]: got segment base_link
+[2025-10-21 13:47:44.053934][robot_state_publisher-1][STDERR] [INFO] [1761022064.053247427] [robot_state_publisher]: got segment lidar_frame
+[2025-10-21 13:47:47.105506][stream_server-2][STDERR] [INFO] [1761022067.105134091] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-21 13:47:47.105896][stream_server-2][STDERR] [INFO] [1761022067.105347472] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-21 14:03:16.898590][static_transform_publisher-3][STDERR] [INFO] [1761022996.895130581] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 14:03:16.898959][robot_state_publisher-1][STDERR] [INFO] [1761022996.895169968] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 14:03:16.899371][static_transform_publisher-4][STDERR] [INFO] [1761022996.895170117] [rclcpp]: signal_handler(signum=2)

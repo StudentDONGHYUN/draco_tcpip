@@ -37,8 +37,11 @@
 #include <std_srvs/srv/empty.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "kiss_icp/core/VoxelHashMap.hpp"
 
 namespace kiss_icp_ros {
 
@@ -75,9 +78,10 @@ private:
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
     std::unique_ptr<tf2_ros::TransformListener> tf2_listener_;
-    bool invert_odom_tf_;
-    bool publish_odom_tf_;
-    bool publish_debug_clouds_;
+    bool invert_odom_tf_{true};
+    bool publish_odom_tf_{true};
+    bool publish_debug_clouds_{true};
+    bool map_keep_full_history_{false};
 
     /// Data subscribers.
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
@@ -100,10 +104,11 @@ private:
     std::string base_frame_{};
 
     /// Covariance diagonal
-    double position_covariance_;
-    double orientation_covariance_;
+    double position_covariance_{0.1};
+    double orientation_covariance_{0.1};
     std::filesystem::path map_save_directory_;
-    bool map_save_binary_;
+    bool map_save_binary_{true};
+    std::unique_ptr<kiss_icp::VoxelHashMap> global_map_history_;
 };
 
 }  // namespace kiss_icp_ros

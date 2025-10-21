@@ -11,6 +11,8 @@ def generate_launch_description():
     base_frame = LaunchConfiguration("base_frame")
     visualize = LaunchConfiguration("visualize")
     use_sim_time = LaunchConfiguration("use_sim_time")
+    map_save_directory = LaunchConfiguration("map_save_directory")
+    map_keep_full_history = LaunchConfiguration("map_keep_full_history")
 
     kiss_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -25,6 +27,8 @@ def generate_launch_description():
             'base_frame': base_frame,
             'visualize': visualize,
             'use_sim_time': use_sim_time,
+            'map_save_directory': map_save_directory,
+            'map_keep_full_history': map_keep_full_history,
         }.items()
     )
 
@@ -48,6 +52,16 @@ def generate_launch_description():
             "use_sim_time",
             default_value="true",
             description="Use simulation clock for KISS-ICP.",
+        ),
+        DeclareLaunchArgument(
+            "map_save_directory",
+            default_value="~/kiss_icp_maps",
+            description="Directory where the KISS-ICP Trigger service writes map snapshots.",
+        ),
+        DeclareLaunchArgument(
+            "map_keep_full_history",
+            default_value="false",
+            description="Keep a full-history voxel map instead of a sliding local map.",
         ),
         kiss_launch,
     ])

@@ -1,0 +1,32 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-21T14:58:03.241757
+[2025-10-21 14:58:03.291971][static_transform_publisher-3][STDERR] [WARN] [1761026283.291503473] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 14:58:03.293865][static_transform_publisher-4][STDERR] [WARN] [1761026283.293213909] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 14:58:03.305005][static_transform_publisher-3][STDERR] [INFO] [1761026283.301164047] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-21 14:58:03.305005][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 14:58:03.305005][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 14:58:03.305005][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-21 14:58:03.306666][static_transform_publisher-4][STDERR] [INFO] [1761026283.305981238] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-21 14:58:03.306666][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 14:58:03.306666][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 14:58:03.306666][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-21 14:58:03.309640][robot_state_publisher-1][STDERR] [INFO] [1761026283.309220561] [robot_state_publisher]: got segment base_link
+[2025-10-21 14:58:03.310004][robot_state_publisher-1][STDERR] [INFO] [1761026283.309314985] [robot_state_publisher]: got segment lidar_frame
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR] Traceback (most recent call last):
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/lib/draco_roundtrip/stream_server", line 7, in <module>
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]     main()
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py", line 613, in main
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]     node = StreamServerNode()
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]   File "/home/kkit/newdisk/draco_tcpip/ros2_ws/install/draco_roundtrip/local/lib/python3.10/dist-packages/draco_roundtrip/nodes/stream_server.py", line 111, in __init__
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]     self.declare_parameter("downlink_rate", 10.0)
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 367, in declare_parameter
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]     return self.declare_parameters('', [args], ignore_override)[0]
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 494, in declare_parameters
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]     self._set_parameters(
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 739, in _set_parameters
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR]     raise InvalidParameterTypeException(
+[2025-10-21 14:58:05.655255][stream_server-2][STDERR] rclpy.exceptions.InvalidParameterTypeException: Trying to set parameter 'downlink_rate' to '10' of type 'INTEGER', expecting type 'DOUBLE'
+[2025-10-21 15:00:08.192505][static_transform_publisher-3][STDERR] [INFO] [1761026408.189509320] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 15:00:08.192964][robot_state_publisher-1][STDERR] [INFO] [1761026408.189505005] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 15:00:08.193368][static_transform_publisher-4][STDERR] [INFO] [1761026408.189506122] [rclcpp]: signal_handler(signum=2)

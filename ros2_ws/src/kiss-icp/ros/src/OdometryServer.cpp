@@ -21,10 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <Eigen/Core>
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <memory>
 #include <sophus/se3.hpp>
 #include <sstream>
@@ -167,6 +169,10 @@ void OdometryServer::initializeParameters(kiss_icp::pipeline::KISSConfig &config
     RCLCPP_INFO(this->get_logger(), "\tMap save directory: %s", map_dir_string.c_str());
     map_save_binary_ = declare_parameter<bool>("map.save_binary", true);
     RCLCPP_INFO(this->get_logger(), "\tMap save binary: %d", static_cast<int>(map_save_binary_));
+    map_keep_full_history_ =
+        declare_parameter<bool>("map.keep_full_history", map_keep_full_history_);
+    RCLCPP_INFO(this->get_logger(), "\tKeep full history map: %d",
+                static_cast<int>(map_keep_full_history_));
 
     config.max_range = declare_parameter<double>("data.max_range", config.max_range);
     RCLCPP_INFO(this->get_logger(), "\tMax range: %.2f", config.max_range);
@@ -199,6 +205,12 @@ void OdometryServer::initializeParameters(kiss_icp::pipeline::KISSConfig &config
                     "[WARNING] max_range is smaller than min_range, settng min_range to 0.0");
         config.min_range = 0.0;
     }
+
+    if (map_keep_full_history_) {
+        global_map_history_ = std::make_unique<kiss_icp::VoxelHashMap>(
+            config.voxel_size, std::numeric_limits<double>::infinity(),
+            static_cast<unsigned int>(config.max_points_per_voxel));
+    }
 }
 
 void OdometryServer::RegisterFrame(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg) {
@@ -211,6 +223,13 @@ void OdometryServer::RegisterFrame(const sensor_msgs::msg::PointCloud2::ConstSha
 
     // Extract the last KISS-ICP pose, ego-centric to the LiDAR
     const Sophus::SE3d kiss_pose = kiss_icp_->pose();
+
+    if (map_keep_full_history_ && global_map_history_) {
+        std::vector<Eigen::Vector3d> frame_in_odom(frame.size());
+        std::transform(frame.cbegin(), frame.cend(), frame_in_odom.begin(),
+                       [&](const Eigen::Vector3d &point) { return kiss_pose * point; });
+        global_map_history_->AddPoints(frame_in_odom);
+    }
 
     // Spit the current estimated pose to ROS msgs handling the desired target frame
     PublishOdometry(kiss_pose, msg->header);
@@ -267,7 +286,9 @@ void OdometryServer::PublishOdometry(const Sophus::SE3d &kiss_pose,
 void OdometryServer::PublishClouds(const std::vector<Eigen::Vector3d> &frame,
                                    const std::vector<Eigen::Vector3d> &keypoints,
                                    const std_msgs::msg::Header &header) {
-    const auto kiss_map = kiss_icp_->LocalMap();
+    const auto kiss_map = (map_keep_full_history_ && global_map_history_)
+                              ? global_map_history_->Pointcloud()
+                              : kiss_icp_->LocalMap();
 
     frame_publisher_->publish(std::move(EigenToPointCloud2(frame, header)));
     kpoints_publisher_->publish(std::move(EigenToPointCloud2(keypoints, header)));
@@ -282,6 +303,9 @@ void OdometryServer::ResetService(
 
     // Reset the KISS-ICP pipeline
     kiss_icp_->Reset();
+    if (global_map_history_) {
+        global_map_history_->Clear();
+    }
 
     RCLCPP_INFO(this->get_logger(), "KISS-ICP reset completed successfully");
 }
@@ -289,7 +313,9 @@ void OdometryServer::ResetService(
 void OdometryServer::SaveMapService(
     [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
-    const auto local_map = kiss_icp_->LocalMap();
+    const auto local_map = (map_keep_full_history_ && global_map_history_)
+                               ? global_map_history_->Pointcloud()
+                               : kiss_icp_->LocalMap();
     if (local_map.empty()) {
         response->success = false;
         response->message = "Local map is empty; nothing to save.";

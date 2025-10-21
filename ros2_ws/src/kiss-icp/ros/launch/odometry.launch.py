@@ -24,7 +24,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
 from launch.conditions import IfCondition
 from launch.substitutions import (
     LaunchConfiguration,
@@ -56,6 +56,8 @@ def generate_launch_description():
     lidar_odom_frame = LaunchConfiguration("lidar_odom_frame", default="odom_lidar")
     publish_odom_tf = LaunchConfiguration("publish_odom_tf", default=True)
     invert_odom_tf = LaunchConfiguration("invert_odom_tf", default=True)
+    map_save_directory = LaunchConfiguration("map_save_directory", default="~/kiss_icp_maps")
+    map_keep_full_history = LaunchConfiguration("map_keep_full_history", default="false")
 
     position_covariance = LaunchConfiguration("position_covariance", default=0.1)
     orientation_covariance = LaunchConfiguration("orientation_covariance", default=0.1)
@@ -83,6 +85,8 @@ def generate_launch_description():
                 "use_sim_time": use_sim_time,
                 "position_covariance": position_covariance,
                 "orientation_covariance": orientation_covariance,
+                "map.save_directory": map_save_directory,
+                "map.keep_full_history": map_keep_full_history,
             },
             config_file,
         ],
@@ -106,6 +110,16 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "map_save_directory",
+                default_value="~/kiss_icp_maps",
+                description="Directory used by the save_map service when persisting the local map.",
+            ),
+            DeclareLaunchArgument(
+                "map_keep_full_history",
+                default_value="false",
+                description="Keep full map history instead of the default sliding window.",
+            ),
             kiss_icp_node,
             rviz_node,
             bagfile_play,
