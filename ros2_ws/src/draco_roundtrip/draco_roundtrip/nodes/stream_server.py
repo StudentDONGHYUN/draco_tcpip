@@ -170,7 +170,7 @@ class StreamServerNode(Node):
         self.work_dir = ensure_directory(FSPath(work_dir_param).resolve())
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
-        qos.reliability = ReliabilityPolicy.RELIABLE
+        qos.reliability = ReliabilityPolicy.BEST_EFFORT
         self.pub_points = self.create_publisher(
             PointCloud2, str(self.get_parameter("points_topic").value), qos
         )

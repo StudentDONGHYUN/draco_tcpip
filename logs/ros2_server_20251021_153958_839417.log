@@ -116,3 +116,6 @@
 [2025-10-21 15:41:27.630406][stream_server-2][STDERR] [INFO] [1761028887.630146995] [stream_server]: Uplink connection closed by peer
 [2025-10-21 15:41:27.631340][stream_server-2][STDERR] [INFO] [1761028887.631113306] [stream_server]: Uplink session finished
 [2025-10-21 15:41:28.268480][stream_server-2][STDERR] [INFO] [1761028888.268056978] [stream_server]: Downlink connection closed
+[2025-10-21 15:49:16.750284][static_transform_publisher-4][STDERR] [INFO] [1761029356.746332666] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 15:49:16.750748][robot_state_publisher-1][STDERR] [INFO] [1761029356.746381014] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 15:49:16.751200][static_transform_publisher-3][STDERR] [INFO] [1761029356.746384797] [rclcpp]: signal_handler(signum=2)

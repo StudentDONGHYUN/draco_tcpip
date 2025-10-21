@@ -1,0 +1,102 @@
+# 로그 생성 정보
+# 명령어: ros2 launch draco_roundtrip server.launch.py use_sim_time:=true
+# 생성 시각: 2025-10-21T15:49:41.008650
+[2025-10-21 15:49:41.058378][static_transform_publisher-3][STDERR] [WARN] [1761029381.057917814] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 15:49:41.060689][static_transform_publisher-4][STDERR] [WARN] [1761029381.059268195] []: Old-style arguments are deprecated; see --help for new-style arguments
+[2025-10-21 15:49:41.075961][robot_state_publisher-1][STDERR] [INFO] [1761029381.072688241] [robot_state_publisher]: got segment base_link
+[2025-10-21 15:49:41.075961][robot_state_publisher-1][STDERR] [INFO] [1761029381.072777632] [robot_state_publisher]: got segment lidar_frame
+[2025-10-21 15:49:41.079591][static_transform_publisher-3][STDERR] [INFO] [1761029381.075029402] [static_map_to_odom]: Spinning until stopped - publishing transform
+[2025-10-21 15:49:41.079591][static_transform_publisher-3][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 15:49:41.079591][static_transform_publisher-3][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 15:49:41.079591][static_transform_publisher-3][STDERR] from 'map' to 'odom'
+[2025-10-21 15:49:41.081390][static_transform_publisher-4][STDERR] [INFO] [1761029381.080615437] [static_odom_to_base_link]: Spinning until stopped - publishing transform
+[2025-10-21 15:49:41.081390][static_transform_publisher-4][STDERR] translation: ('0.000000', '0.000000', '0.000000')
+[2025-10-21 15:49:41.081390][static_transform_publisher-4][STDERR] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[2025-10-21 15:49:41.081390][static_transform_publisher-4][STDERR] from 'odom' to 'base_link'
+[2025-10-21 15:49:43.741496][stream_server-2][STDERR] [INFO] [1761029383.741173500] [stream_server]: Listening for uplink on 0.0.0.0:5000
+[2025-10-21 15:49:43.741849][stream_server-2][STDERR] [INFO] [1761029383.741309228] [stream_server]: Listening for downlink on 0.0.0.0:5001
+[2025-10-21 15:49:53.491770][stream_server-2][STDERR] [INFO] [1761029393.491413711] [stream_server]: Downlink client connected from ('127.0.0.1', 58856)
+[2025-10-21 15:49:53.492202][stream_server-2][STDERR] [INFO] [1761029393.491533320] [stream_server]: Uplink client connected from ('127.0.0.1', 38376)
+[2025-10-21 15:50:41.266304][stream_server-2][STDERR] [INFO] [1761029441.265887086] [stream_server]: Uplink session summary: in=7230801 bytes, out=0 bytes
+[2025-10-21 15:50:41.663414][stream_server-2][STDERR] [INFO] [1761029441.662884018] [stream_server]: Server session report saved to logs/server_report_20251021_155041.html
+[2025-10-21 15:50:41.664073][stream_server-2][STDERR] [INFO] [1761029441.663627526] [stream_server]: Uplink connection closed by peer
+[2025-10-21 15:50:41.664789][stream_server-2][STDERR] [INFO] [1761029441.664457634] [stream_server]: Uplink session finished
+[2025-10-21 15:50:42.379252][stream_server-2][STDERR] [INFO] [1761029442.378885171] [stream_server]: Downlink connection closed
+[2025-10-21 15:51:51.041672][stream_server-2][STDERR] [INFO] [1761029511.041237038] [stream_server]: Uplink client connected from ('127.0.0.1', 60160)
+[2025-10-21 15:51:51.042218][stream_server-2][STDERR] [INFO] [1761029511.041459037] [stream_server]: Downlink client connected from ('127.0.0.1', 35546)
+[2025-10-21 15:53:07.560907][stream_server-2][STDERR] [INFO] [1761029587.560564684] [stream_server]: Downlink connection closed
+[2025-10-21 15:53:08.562205][stream_server-2][STDERR] [INFO] [1761029588.561800074] [stream_server]: Downlink client connected from ('127.0.0.1', 45298)
+[2025-10-21 15:53:10.400865][stream_server-2][STDERR] [INFO] [1761029590.400538044] [stream_server]: Uplink session summary: in=11469753 bytes, out=0 bytes
+[2025-10-21 15:53:10.797895][stream_server-2][STDERR] [INFO] [1761029590.797272488] [stream_server]: Server session report saved to logs/server_report_20251021_155310.html
+[2025-10-21 15:53:10.799403][stream_server-2][STDERR] [INFO] [1761029590.798197939] [stream_server]: Uplink connection closed by peer
+[2025-10-21 15:53:10.800037][stream_server-2][STDERR] [INFO] [1761029590.799235104] [stream_server]: Uplink session finished
+[2025-10-21 15:53:11.565644][stream_server-2][STDERR] [INFO] [1761029591.565158985] [stream_server]: Downlink connection closed
+[2025-10-21 15:53:37.440781][stream_server-2][STDERR] [INFO] [1761029617.440350883] [stream_server]: Downlink client connected from ('127.0.0.1', 40692)
+[2025-10-21 15:53:37.441291][stream_server-2][STDERR] [INFO] [1761029617.440479942] [stream_server]: Uplink client connected from ('127.0.0.1', 47134)
+[2025-10-21 15:54:56.214326][stream_server-2][STDERR] [INFO] [1761029696.213853693] [stream_server]: Downlink connection closed
+[2025-10-21 15:54:57.215219][stream_server-2][STDERR] [INFO] [1761029697.214827665] [stream_server]: Downlink client connected from ('127.0.0.1', 38214)
+[2025-10-21 15:54:59.270228][stream_server-2][STDERR] [INFO] [1761029699.269855826] [stream_server]: Uplink session summary: in=11469753 bytes, out=0 bytes
+[2025-10-21 15:54:59.683175][stream_server-2][STDERR] [INFO] [1761029699.682739513] [stream_server]: Server session report saved to logs/server_report_20251021_155459.html
+[2025-10-21 15:54:59.683996][stream_server-2][STDERR] [INFO] [1761029699.683673731] [stream_server]: Uplink connection closed by peer
+[2025-10-21 15:54:59.685427][stream_server-2][STDERR] [INFO] [1761029699.684961960] [stream_server]: Uplink session finished
+[2025-10-21 15:55:00.219401][stream_server-2][STDERR] [INFO] [1761029700.218899378] [stream_server]: Downlink connection closed
+[2025-10-21 15:56:14.831506][stream_server-2][STDERR] [INFO] [1761029774.831142237] [stream_server]: Downlink client connected from ('127.0.0.1', 37016)
+[2025-10-21 15:56:14.831974][stream_server-2][STDERR] [INFO] [1761029774.831471633] [stream_server]: Uplink client connected from ('127.0.0.1', 36172)
+[2025-10-21 15:56:28.176687][stream_server-2][STDERR] [INFO] [1761029788.176281153] [stream_server]: Uplink session summary: in=2233367 bytes, out=0 bytes
+[2025-10-21 15:56:28.510016][stream_server-2][STDERR] [INFO] [1761029788.509510640] [stream_server]: Server session report saved to logs/server_report_20251021_155628.html
+[2025-10-21 15:56:28.510599][stream_server-2][STDERR] [INFO] [1761029788.510123433] [stream_server]: Uplink connection closed by peer
+[2025-10-21 15:56:28.511173][stream_server-2][STDERR] [INFO] [1761029788.510825674] [stream_server]: Uplink session finished
+[2025-10-21 15:56:30.018566][stream_server-2][STDERR] [INFO] [1761029790.018208193] [stream_server]: Downlink connection closed
+[2025-10-21 15:59:01.996731][stream_server-2][STDERR] [INFO] [1761029941.996345433] [stream_server]: Downlink client connected from ('127.0.0.1', 56962)
+[2025-10-21 15:59:01.997432][stream_server-2][STDERR] [INFO] [1761029941.996531609] [stream_server]: Uplink client connected from ('127.0.0.1', 54350)
+[2025-10-21 16:00:12.350832][stream_server-2][STDERR] [INFO] [1761030012.350200993] [stream_server]: Uplink session summary: in=10175955 bytes, out=0 bytes
+[2025-10-21 16:00:12.705812][stream_server-2][STDERR] [INFO] [1761030012.705288622] [stream_server]: Server session report saved to logs/server_report_20251021_160012.html
+[2025-10-21 16:00:12.706432][stream_server-2][STDERR] [INFO] [1761030012.705929763] [stream_server]: Uplink connection closed by peer
+[2025-10-21 16:00:12.707219][stream_server-2][STDERR] [INFO] [1761030012.706858816] [stream_server]: Uplink session finished
+[2025-10-21 16:00:13.695980][stream_server-2][STDERR] [INFO] [1761030013.695539580] [stream_server]: Downlink connection closed
+[2025-10-21 16:01:58.584095][stream_server-2][STDERR] [INFO] [1761030118.583755074] [stream_server]: Downlink client connected from ('127.0.0.1', 49010)
+[2025-10-21 16:01:58.584440][stream_server-2][STDERR] [INFO] [1761030118.583892919] [stream_server]: Uplink client connected from ('127.0.0.1', 42978)
+[2025-10-21 16:03:19.373080][stream_server-2][STDERR] [INFO] [1761030199.372647293] [stream_server]: Downlink connection closed
+[2025-10-21 16:03:20.374316][stream_server-2][STDERR] [INFO] [1761030200.373992081] [stream_server]: Downlink client connected from ('127.0.0.1', 59698)
+[2025-10-21 16:03:22.469837][stream_server-2][STDERR] [INFO] [1761030202.469344632] [stream_server]: Uplink session summary: in=11469753 bytes, out=0 bytes
+[2025-10-21 16:03:22.874374][stream_server-2][STDERR] [INFO] [1761030202.873836680] [stream_server]: Server session report saved to logs/server_report_20251021_160322.html
+[2025-10-21 16:03:22.875099][stream_server-2][STDERR] [INFO] [1761030202.874779760] [stream_server]: Uplink connection closed by peer
+[2025-10-21 16:03:22.876115][stream_server-2][STDERR] [INFO] [1761030202.875774628] [stream_server]: Uplink session finished
+[2025-10-21 16:03:23.377363][stream_server-2][STDERR] [INFO] [1761030203.377004541] [stream_server]: Downlink connection closed
+[2025-10-21 16:09:42.433728][stream_server-2][STDERR] [INFO] [1761030582.433108778] [stream_server]: Downlink client connected from ('127.0.0.1', 39696)
+[2025-10-21 16:09:42.434337][stream_server-2][STDERR] [INFO] [1761030582.433933054] [stream_server]: Uplink client connected from ('127.0.0.1', 39092)
+[2025-10-21 16:10:59.085893][stream_server-2][STDERR] [INFO] [1761030659.085524949] [stream_server]: Downlink connection closed
+[2025-10-21 16:11:00.087172][stream_server-2][STDERR] [INFO] [1761030660.086665176] [stream_server]: Downlink client connected from ('127.0.0.1', 41244)
+[2025-10-21 16:11:01.835564][stream_server-2][STDERR] [INFO] [1761030661.835225299] [stream_server]: Uplink session summary: in=11469753 bytes, out=0 bytes
+[2025-10-21 16:11:02.135245][stream_server-2][STDERR] [INFO] [1761030662.134773575] [stream_server]: Server session report saved to logs/server_report_20251021_161102.html
+[2025-10-21 16:11:02.136125][stream_server-2][STDERR] [INFO] [1761030662.135798452] [stream_server]: Uplink connection closed by peer
+[2025-10-21 16:11:02.137128][stream_server-2][STDERR] [INFO] [1761030662.136864838] [stream_server]: Uplink session finished
+[2025-10-21 16:11:03.088895][stream_server-2][STDERR] [INFO] [1761030663.088572926] [stream_server]: Downlink connection closed
+[2025-10-21 16:11:54.340617][stream_server-2][STDERR] [INFO] [1761030714.340133783] [stream_server]: Uplink client connected from ('127.0.0.1', 35590)
+[2025-10-21 16:11:54.341274][stream_server-2][STDERR] [INFO] [1761030714.340986027] [stream_server]: Downlink client connected from ('127.0.0.1', 38628)
+[2025-10-21 16:12:31.428710][stream_server-2][STDERR] [INFO] [1761030751.428354463] [stream_server]: Uplink session summary: in=5928463 bytes, out=0 bytes
+[2025-10-21 16:12:31.778815][stream_server-2][STDERR] [INFO] [1761030751.778499739] [stream_server]: Server session report saved to logs/server_report_20251021_161231.html
+[2025-10-21 16:12:31.779311][stream_server-2][STDERR] [INFO] [1761030751.779095635] [stream_server]: Uplink connection closed by peer
+[2025-10-21 16:12:31.780492][stream_server-2][STDERR] [INFO] [1761030751.780275197] [stream_server]: Uplink session finished
+[2025-10-21 16:12:32.954038][stream_server-2][STDERR] [INFO] [1761030752.953637998] [stream_server]: Downlink connection closed
+[2025-10-21 16:12:39.635179][stream_server-2][STDERR] [INFO] [1761030759.634720550] [stream_server]: Downlink client connected from ('127.0.0.1', 59024)
+[2025-10-21 16:12:39.635703][stream_server-2][STDERR] [INFO] [1761030759.634866234] [stream_server]: Uplink client connected from ('127.0.0.1', 51522)
+[2025-10-21 16:13:56.153045][stream_server-2][STDERR] [INFO] [1761030836.152689709] [stream_server]: Downlink connection closed
+[2025-10-21 16:13:57.154124][stream_server-2][STDERR] [INFO] [1761030837.153770512] [stream_server]: Downlink client connected from ('127.0.0.1', 42942)
+[2025-10-21 16:13:58.735777][stream_server-2][STDERR] [INFO] [1761030838.735356569] [stream_server]: Uplink session summary: in=11469753 bytes, out=0 bytes
+[2025-10-21 16:13:59.052487][stream_server-2][STDERR] [INFO] [1761030839.052027130] [stream_server]: Server session report saved to logs/server_report_20251021_161359.html
+[2025-10-21 16:13:59.053327][stream_server-2][STDERR] [INFO] [1761030839.052926553] [stream_server]: Uplink connection closed by peer
+[2025-10-21 16:13:59.054322][stream_server-2][STDERR] [INFO] [1761030839.054060061] [stream_server]: Uplink session finished
+[2025-10-21 16:14:00.159173][stream_server-2][STDERR] [INFO] [1761030840.158535082] [stream_server]: Downlink connection closed
+[2025-10-21 16:16:07.318816][stream_server-2][STDERR] [INFO] [1761030967.318454395] [stream_server]: Uplink client connected from ('127.0.0.1', 60302)
+[2025-10-21 16:16:07.319271][stream_server-2][STDERR] [INFO] [1761030967.318704032] [stream_server]: Downlink client connected from ('127.0.0.1', 54366)
+[2025-10-21 16:17:23.930889][stream_server-2][STDERR] [INFO] [1761031043.930513817] [stream_server]: Downlink connection closed
+[2025-10-21 16:17:24.932272][stream_server-2][STDERR] [INFO] [1761031044.931823487] [stream_server]: Downlink client connected from ('127.0.0.1', 36590)
+[2025-10-21 16:17:27.043907][stream_server-2][STDERR] [INFO] [1761031047.043549219] [stream_server]: Uplink session summary: in=11469753 bytes, out=0 bytes
+[2025-10-21 16:17:27.416924][stream_server-2][STDERR] [INFO] [1761031047.416612639] [stream_server]: Server session report saved to logs/server_report_20251021_161727.html
+[2025-10-21 16:17:27.417512][stream_server-2][STDERR] [INFO] [1761031047.417242050] [stream_server]: Uplink connection closed by peer
+[2025-10-21 16:17:27.418326][stream_server-2][STDERR] [INFO] [1761031047.418131978] [stream_server]: Uplink session finished
+[2025-10-21 16:17:27.936525][stream_server-2][STDERR] [INFO] [1761031047.936101013] [stream_server]: Downlink connection closed
+[2025-10-21 16:28:51.643127][static_transform_publisher-3][STDERR] [INFO] [1761031731.639528575] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 16:28:51.643573][static_transform_publisher-4][STDERR] [INFO] [1761031731.639528863] [rclcpp]: signal_handler(signum=2)
+[2025-10-21 16:28:51.643927][robot_state_publisher-1][STDERR] [INFO] [1761031731.639540749] [rclcpp]: signal_handler(signum=2)

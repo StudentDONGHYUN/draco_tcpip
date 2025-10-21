@@ -59,7 +59,7 @@ class ClientBridgeNode(Node):
         super().__init__("draco_client_bridge")
         qos = QoSProfile(depth=10)
         qos.history = HistoryPolicy.KEEP_LAST
-        qos.reliability = ReliabilityPolicy.RELIABLE
+        qos.reliability = ReliabilityPolicy.BEST_EFFORT
         self.pub_src = self.create_publisher(PointCloud2, f"/{playback_prefix}/source" if playback_prefix else "/stream_pair/source", qos)
         self.pub_dec = self.create_publisher(PointCloud2, f"/{playback_prefix}/decoded" if playback_prefix else "/stream_pair/decoded", qos)
         self.pub_pose = self.create_publisher(PoseStamped, pose_topic, qos)
@@ -180,4 +180,3 @@ class ClientBridge:
         self.queue.put(("shutdown", None))
         if self.thread.is_alive():
             self.thread.join(timeout=1.0)
-
