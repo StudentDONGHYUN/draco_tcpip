@@ -4,22 +4,18 @@ Draco TCP/IP Roundtrip 워크스페이스는 LiDAR 포인트클라우드를 Drac
 
 ## 문서 네비게이터
 
-전체 문서 모음은 [`docs/reference/Documentation_Index.md`](docs/reference/Documentation_Index.md)에서 범주별로 바로가기를 제공합니다. 주요 문서를 빠르게 살펴보려면 아래 표를 참고하세요.
+전체 문서 모음은 [`docs/reference/Documentation_Index.md`](docs/reference/Documentation_Index.md)에서 범주별로 바로가기를 제공합니다. 사양 중심으로 탐색하려면 아래 Spec-Driven 요약을 먼저 확인하세요.
 
-| 카테고리 | 문서 | 핵심 내용 |
+| 사양 영역 | 주요 문서 | 다루는 질문 |
 | --- | --- | --- |
-| 가이드 | [사용자 가이드](docs/guides/User_Guide.md) | 환경 설정, 스트리밍/SLAM bringup, 로그 수집 절차를 순서대로 안내합니다. |
-| 아키텍처 | [아키텍처 설계 및 지연 시간 계획](docs/architecture/Architectural_Design_and_Plan.md) | 비동기 파이프라인, 제어 플레인, 지연 최적화 로드맵을 설명합니다. |
-| 추적성 | [추적성 매트릭스](docs/architecture/Traceability_Matrix.md) | 요구사항, 구현, 테스트 간 연결을 관리합니다. |
-| 참조 | [구성 참조](docs/reference/Configuration_Reference.md) | 레이아웃 프로파일, QoS 검색 규칙, 주요 CLI 플래그를 정의합니다. |
-|  | [프로토콜 및 스키마 참조](docs/reference/Protocol_and_Schema_Reference.md) | 제어 메시지, 상태 기계, 텔레메트리 스키마를 명세합니다. |
-| 개발 | [개발 프로세스](docs/development/Development_Process.md) | 체크리스트 기반 워크플로와 완료 정의를 제공합니다. |
-|  | [성능 시험 계획](docs/development/Performance_Test_Plan.md) | rosbag 회귀 벤치마크 구성과 실행 절차를 명시합니다. |
-|  | [런타임 안정성 메모](docs/development/Runtime_Stability_Notes.md) | 실패 모드와 완화 전략을 정리합니다. |
-| 운영 품질 | [성능 시험 계획(요약)](docs/quality/Performance_Test_Plan.md) | 자동화된 지연/하트비트 목표와 검증 항목을 추적합니다. |
-|  | [실험 결과 템플릿](docs/quality/results_template.md) | 실행 보고서에 필요한 메타데이터와 목표를 템플릿으로 제공합니다. |
-| 보고서 | [프로젝트 진행 보고서](docs/reports/Project_Progress_Report.md) | 단·중기 계획과 상태 표를 요약합니다. |
-|  | [리팩터 및 감사 로그](docs/reports/Refactor_and_Audit_Log.md) | 감사 결과, 리팩터 타임라인, 후속 작업을 기록합니다. |
+| **제품/목표** | [아키텍처 설계 및 지연 시간 계획](docs/architecture/Architectural_Design_and_Plan.md) | 시스템이 어떤 성능·지연 목표와 파이프라인 경계를 가져야 하는가? |
+| **추적성** | [추적성 매트릭스](docs/architecture/Traceability_Matrix.md) | 요구사항·구현·테스트가 어떻게 연결되는가? |
+| **인터페이스/프로토콜** | [프로토콜 및 스키마 참조](docs/reference/Protocol_and_Schema_Reference.md) / [구성 참조](docs/reference/Configuration_Reference.md) | 제어/데이터 계약, 헤더, QoS·프로파일 규칙은 무엇인가? |
+| **운영 시나리오** | [사용자 가이드](docs/guides/User_Guide.md) | 어떻게 bringup·스트리밍·로그 수집을 수행하고 어떤 플래그를 써야 하는가? |
+| **검증/증거** | [성능 시험 계획](docs/development/Performance_Test_Plan.md) / [성능 시험 계획(요약)](docs/quality/Performance_Test_Plan.md) | p95 지연 목표와 회귀 벤치마크는 무엇이며 어떻게 실행되는가? |
+| **거버넌스** | [개발 프로세스](docs/development/Development_Process.md) / [리팩터 및 감사 로그](docs/reports/Refactor_and_Audit_Log.md) | 변경 통제, 완료 정의, 후속 작업 관리는 어떻게 하는가? |
+
+Spec-Driven 흐름으로 문서를 탐색하려면 [Spec-Driven 문서 재구성 지도](docs/reference/Spec_Driven_Documentation.md)를 참고하세요.
 
 ## 빠른 시작
 
