@@ -14,6 +14,7 @@ Draco TCP/IP Roundtrip 워크스페이스는 LiDAR 포인트클라우드를 Drac
 | **운영 시나리오** | [사용자 가이드](docs/guides/User_Guide.md) | 어떻게 bringup·스트리밍·로그 수집을 수행하고 어떤 플래그를 써야 하는가? |
 | **검증/증거** | [성능 시험 계획](docs/development/Performance_Test_Plan.md) / [성능 시험 계획(요약)](docs/quality/Performance_Test_Plan.md) | p95 지연 목표와 회귀 벤치마크는 무엇이며 어떻게 실행되는가? |
 | **거버넌스** | [개발 프로세스](docs/development/Development_Process.md) / [리팩터 및 감사 로그](docs/reports/Refactor_and_Audit_Log.md) | 변경 통제, 완료 정의, 후속 작업 관리는 어떻게 하는가? |
+| **품질 특성** | [소프트웨어 품질 특성 카탈로그](docs/reference/Quality_Attributes_Catalog.md) | 기능성·성능·신뢰성·보안성·운영성·사용성 등 10가지 품질 특성을 어떻게 증명하고 문서화하는가? |
 
 Spec-Driven 흐름으로 문서를 탐색하려면 [Spec-Driven 문서 재구성 지도](docs/reference/Spec_Driven_Documentation.md)를 참고하세요.
 

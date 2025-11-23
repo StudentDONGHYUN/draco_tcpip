@@ -24,6 +24,14 @@ _마지막 업데이트: 2025-03-17_
 - **운영 정합성 검증**: bringup/로그 수집/모니터링 절차가 바뀌면 [사용자 가이드](../guides/User_Guide.md)와 런타임 메모를 업데이트합니다.
 - **근거 보존**: 실행 결과는 [결과 템플릿](../quality/results_template.md)으로 기록하고, 회귀 위험은 [리팩터 및 감사 로그](../reports/Refactor_and_Audit_Log.md)에 남깁니다.
 
+### 품질 특성 점검 루틴
+스펙 변경이 품질 속성에 미치는 영향을 반복적으로 확인하기 위한 공통 루틴입니다. 모든 변경 PR은 아래 항목을 충족해야 합니다.
+
+1. **카탈로그 싱크**: 변경된 스펙의 품질 특성 영향과 증거를 [`Quality_Attributes_Catalog`](../reference/Quality_Attributes_Catalog.md)·[추적성 매트릭스](../architecture/Traceability_Matrix.md)에 반영한다.
+2. **게이트 실행**: 성능/신뢰성/보안에 영향을 주는 변경이면 `pytest tests/perf/test_latency_gate.py`와 관련 단위 테스트를 실행하고, 결과를 [결과 템플릿](../reports/results_template.md) 품질 게이트 표에 기록한다.
+3. **운영/이식성 확인**: 사용자 가이드와 구성 참조의 명령·기본값이 여전히 동작하는지 검증하고, 실패 시 재현 명령과 환경 변수를 문서에 추가한다.
+4. **로그·알람 준비**: 신규 플래그/상수는 로그에 표준 키(pending, RTT, p50/p95/p99)를 남기며, 알람 조건을 `results_template`와 동일하게 유지한다.
+
 ## 완료 정의
 ### 코드 개선 스트림
 1. **제어 플레인 핸드셰이크**: 종료 시 `FrameType.EOF`가 교환되고, 로그에 `EOF sent`/`EOF received`와 `pending=0` 요약이 표시됩니다.
