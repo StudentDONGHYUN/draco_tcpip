@@ -17,6 +17,17 @@
 
 > 변경 시 **PR-TBD**를 실제 병합 PR 번호로 교체하고, 신규 테스트 경로가 있으면 같은 행에 추가합니다.
 
+## 2-1. 품질 특성 매핑
+요구사항이 품질 특성에 어떻게 기여하는지와 검증 위치를 명시합니다. 새로운 요구사항을 추가하면 [`Quality_Attributes_Catalog`](../reference/Quality_Attributes_Catalog.md)와 함께 업데이트하십시오.
+
+| 요구사항 ID | 품질 특성 | 검증/증거 | 게이트 |
+| --- | --- | --- | --- |
+| RQ-CP-001 | 신뢰성·운영 가능성 | 상태 전이 로그(FAILED/TERMINATED), 하트비트 타이머 테스트 | `docs/reports/results_template.md` 품질 게이트(신뢰성, 운영) |
+| RQ-FRAG-001 | 성능·신뢰성 | 프래그먼트 TTL/GC 단위 테스트, 메모리 상한 로그 | `tests/unit/test_fragment_buffer.py`, 퍼포먼스 회귀 보고서 |
+| RQ-TEL-001 | 관측 가능성·테스트 가능성 | 텔레메트리 스키마 검증, 필드 누락 시 실패 | `docs/quality/results_template.md` 텔레메트리/게이트 섹션 |
+| RQ-CLI-001 | 유지보수성·이식성 | CLI 도움말/플래그 표 일치, OS/네트워크 프로파일별 기본값 검토 | `docs/reference/Configuration_Reference.md` 플래그 매트릭스 |
+| RQ-SEC-001 | 보안성 | 텍스트 프로토콜 상한 초과 시 즉시 종료/로깅 | `tests/unit/test_text_protocol_limits.py`, 보안 리뷰 체크리스트 |
+
 ## 3. 업데이트 메모
 - 개발 프로세스 체크리스트의 상태를 함께 조정하고, 삭제된 요구사항은 별도 아카이브 테이블에 이동합니다.
 

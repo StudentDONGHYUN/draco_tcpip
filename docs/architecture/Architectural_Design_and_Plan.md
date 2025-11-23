@@ -7,6 +7,17 @@
 - **안전한 메모리/조각화**: `--tx-fragment-size`가 활성화될 때 MTU 안전 조각(256–1400 B)을 사용하고, 서버 프래그먼트 버퍼는 TTL·상한으로 GC한다.
 - **호환성 유지**: Python 노드와 향후 rclcpp/Asio 이행을 동시에 고려하며, CLI/런치/문서에서 동일한 플래그와 경로 규칙을 사용한다.
 
+### 품질 특성 보증 매핑
+아키텍처 결정이 품질 특성에 어떻게 기여하는지와 증거를 한눈에 검증할 수 있도록 정리했습니다. 변경 시 [`Quality_Attributes_Catalog`](../reference/Quality_Attributes_Catalog.md) 표를 함께 갱신합니다.
+
+| 품질 특성 | 아키텍처 훅 | 증거/검증 |
+| --- | --- | --- |
+| 성능·확장성 | 제한 큐, `max_inflight`, 적응 윈도, 조각화(MTU 안전) | `tests/perf/test_latency_gate.py`, netem 프로파일에서 in-flight 감소 및 p95 < 250 ms 로그 |
+| 신뢰성·안정성 | 상태 전이(EOF/FAILED), 하트비트 2 s/6 s, 프래그먼트 TTL 300 s | `tests/unit/test_fragment_buffer.py`, ROS 로그의 `pending=0` 요약 |
+| 보안성 | 텍스트 프로토콜 크기 제한, 단일 소켓 제어 경고 | `tests/unit/test_text_protocol_limits.py`, 실행 로그의 drop 카운터 |
+| 유지보수성·테스트 가능성 | 단일 헤더/소켓 계약, CLI 플래그 표준화 | 스키마/플래그가 [구성 참조](../reference/Configuration_Reference.md)와 일치하는지 CI 린트/도큐먼트 리뷰 |
+| 운영 가능성 | EOF/ACK 요약 로그, 텔레메트리 필드(p50/p95/p99, pending) | [`docs/reports/results_template.md`](../reports/results_template.md)의 게이트 테이블을 채우는지 확인 |
+
 ## 2. 엔드투엔드 파이프라인
 ```
 [Capture] → [Encode Worker Pool] → [TX Loop] → (TCP v2 Frame) → [RX Pump] → [Decode Pool] → [Publish]

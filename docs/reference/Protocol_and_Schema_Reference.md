@@ -105,12 +105,28 @@ sequenceDiagram
 
 텔레메트리 작성자는 파일을 저장하기 전에 `docs/specs/telemetry_schema.json`을 사용해 유효성을 검사해야 합니다. 유효하지 않은 텔레메트리는 `INTERNAL_ERROR` 코드의 `ERROR`로 처리하고 저장을 중단해야 합니다.
 
+### 품질 특성 게이트
+프로토콜/스키마 요소가 품질 특성별로 어떤 근거를 제공하는지 명확히 합니다. 스펙을 변경하면 표를 업데이트하고 [`Quality_Attributes_Catalog`](Quality_Attributes_Catalog.md)과 추적성 매트릭스에 반영합니다.
+
+| 품질 특성 | 프로토콜/스키마 근거 | 검증/증거 |
+| --- | --- | --- |
+| 기능성·정확성 | FrameType 값, 단일 헤더 레이아웃, 필수 텔레메트리 필드 | 헤더/스키마 단위 테스트, `tests/unit/test_protocol_header.py`, 텔레메트리 스키마 검증 |
+| 신뢰성 | 상태 기계(FAILED/TERMINATED), 하트비트 2 s/6 s, ACK 타임아웃 0.5 s | `tests/unit/test_single_channel_mux.py`, 실패 로그에 상태 전이 기록 |
+| 보안성 | 텍스트 프로토콜 길이 제한, 단일 소켓 강제(보조 포트 비활성) | `tests/unit/test_text_protocol_limits.py`, 신규 플래그 추가 시 보안 리뷰 체크리스트 |
+| 성능/효율성·확장성 | MTU 안전 조각화(256–1400 B), in-flight ACK 회로, CONTROL_POLL 50 ms | `tests/perf/test_latency_gate.py`, netem에서 조각화와 윈도 설정 조합 실험 |
+| 운영 가능성·관측 | 종료 시 pending/p50/p95/p99 로그, 텔레메트리 필드(queues, throughput) | `docs/reports/results_template.md`의 게이트 테이블을 채우는 로그 샘플, rosbag 재현 명령 |
+| 이식성 | `--legacy-mode` v1 호환성, 바이너리/텍스트 프로토콜 전환 | v1/v2 호환 회귀 테스트, CLI 도움말/문서가 일치하는지 확인 |
+| 테스트 가능성·유지보수성 | 스키마 버전 필드, 단일 진입점 플래그, 명시적 상수 테이블 | 스키마 버전 변경 시 CI 실패 여부, 상수 값이 [`Configuration_Reference`](Configuration_Reference.md)와 일치 |
+
 ## 검증 체크리스트
 - [ ] 바이너리 프로토콜 헤더가 위 메시지 표와 일치한다.
 - [ ] 하트비트와 ACK 타이머가 [구성 참조](../reference/Configuration_Reference.md)의 타임아웃 상수 및 CLI 오버라이드를 준수한다.
 - [ ] 텔레메트리 JSON이 필수 필드를 포함하고 스키마 검증을 통과한다.
 - [ ] 종료 로그가 소켓을 닫기 전에 `pending` 카운트와 p50/p95/p99 지표를 기록한다.
 - [ ] 조각화가 활성화되면 256–1400 B 범위를 지킨다.
+- [ ] 텍스트 프로토콜 제한을 초과하면 즉시 연결을 종료하고 `_text_limit_drops` 카운터를 남긴다.
+- [ ] `--legacy-mode`와 v2 기본 경로 모두에서 동일한 상태 전이/에러 코드 로그를 남긴다.
+- [ ] 프로토콜/스키마 변경 시 `report_version`과 템플릿(품질 게이트 표)을 동기화한다.
 
 ## 자동 생성 와이어 참조
 <!-- AUTODOC:PROTOCOL:BEGIN -->
