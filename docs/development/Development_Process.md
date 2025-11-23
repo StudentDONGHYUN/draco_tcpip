@@ -1,9 +1,10 @@
 # 개발 프로세스
 이 문서는 Draco Roundtrip의 지속적 개선 워크플로를 설명하며, 코드 품질·하이브리드 아키텍처·리팩터링 이정표를 위한 검토 결과와 실행 가능한 체크리스트를 통합합니다.
-_마지막 업데이트: 2025-03-16_
+_마지막 업데이트: 2025-03-17_
 
 **목차**
 - [워크플로 개요](#워크플로-개요)
+- [Spec-Driven 흐름](#spec-driven-흐름)
 - [완료 정의](#완료-정의)
 - [실행 체크리스트](#실행-체크리스트)
 - [미해결 작업](#미해결-작업)
@@ -14,6 +15,14 @@ _마지막 업데이트: 2025-03-16_
 - **부트스트랩**: Python 3.11 가상환경을 활성화하고 `pip install -e .`를 실행합니다. IDE에서 `PYTHONPATH`에 저장소 루트를 `ros2_ws/src`보다 앞에 추가해 모듈 그림자를 방지합니다.
 - **타입 검사**: Pyright strict 모드를 필수로 사용합니다. `pytest.ini`는 `tests/` 패키지만 검색하도록 제한해 ROS 패키지 충돌을 막습니다.
 - **테스트 전략**: `pytest`, 목표 성능 게이트, 필요 시 `ros2_ws`에서 `colcon test`를 실행하고, 결과를 [결과 템플릿](../reports/results_template.md)에 기록합니다.
+
+## Spec-Driven 흐름
+사양을 중심으로 변경을 통제하기 위해 아래 단계를 기본 규칙으로 사용합니다. 각 단계는 [Spec-Driven 문서 재구성 지도](../reference/Spec_Driven_Documentation.md)에 매핑되어 있습니다.
+- **목표 명시**: 요구사항/지연 목표가 변경되면 [추적성 매트릭스](../architecture/Traceability_Matrix.md)에 추가하고 영향을 받는 사양을 지정합니다.
+- **인터페이스 우선 정리**: 새 플래그나 제어 메시지는 [프로토콜 및 스키마 참조](../reference/Protocol_and_Schema_Reference.md) 또는 [구성 참조](../reference/Configuration_Reference.md)에서 먼저 정의합니다.
+- **테스트 연결**: 성능·기능 요구는 [성능 시험 계획](../development/Performance_Test_Plan.md) 또는 대응 테스트 파일로 링크해 검증 경로를 명확히 합니다.
+- **운영 정합성 검증**: bringup/로그 수집/모니터링 절차가 바뀌면 [사용자 가이드](../guides/User_Guide.md)와 런타임 메모를 업데이트합니다.
+- **근거 보존**: 실행 결과는 [결과 템플릿](../quality/results_template.md)으로 기록하고, 회귀 위험은 [리팩터 및 감사 로그](../reports/Refactor_and_Audit_Log.md)에 남깁니다.
 
 ## 완료 정의
 ### 코드 개선 스트림
